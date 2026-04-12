@@ -22,6 +22,7 @@ die()  { echo -e "${RED}error:${RESET} $1" >&2; exit 1; }
 info() { echo -e "${DIM}$1${RESET}"; }
 
 # ── Submodule paths ──────────────────────────────────────────────────
+DIR_TYPES="$ROOT/types/background-fetch"
 DIR_NATIVE="$ROOT/native/background-fetch"
 DIR_RN="$ROOT/react-native/background-fetch"
 DIR_CORDOVA="$ROOT/cordova/background-fetch"
@@ -50,6 +51,11 @@ run_build() {
   shift || true
 
   case "$target" in
+    types)
+      require_dir "$DIR_TYPES" "types/background-fetch"
+      echo -e "${CYAN}Building types...${RESET}"
+      cd "$DIR_TYPES" && npm run build
+      ;;
     ios)
       require_dir "$DIR_NATIVE" "native/background-fetch"
       echo -e "${CYAN}Building iOS XCFramework...${RESET}"
@@ -84,6 +90,7 @@ run_build() {
       echo -e "${DIM}Flutter has no build step — consumed as a pub package.${RESET}"
       ;;
     all)
+      "$0" build types
       "$0" build ios
       "$0" build android
       "$0" build react-native
@@ -162,6 +169,11 @@ run_publish() {
           die "Unknown native publish target: $sub\nUsage: forge publish native <ios|android>"
           ;;
       esac
+      ;;
+    types)
+      require_dir "$DIR_TYPES" "types/background-fetch"
+      echo -e "${CYAN}Publishing types to npm...${RESET}"
+      cd "$DIR_TYPES" && npm publish "$@"
       ;;
     react-native|rn)
       require_dir "$DIR_RN" "react-native/background-fetch"
@@ -513,6 +525,7 @@ run_status() {
   echo
 
   echo -e "${BOLD}Versions${RESET}"
+  printf "  %-18s %s\n" "types"          "$(get_version_npm "$DIR_TYPES")"
   printf "  %-18s %s\n" "native-ios"     "$(get_version_native_ios)"
   printf "  %-18s %s\n" "native-android" "$(get_version_native_android)"
   printf "  %-18s %s\n" "react-native"   "$(get_version_npm "$DIR_RN")"

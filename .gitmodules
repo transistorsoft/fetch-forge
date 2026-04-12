@@ -17,3 +17,6 @@
 [submodule "flutter/background_fetch"]
 	path = flutter/background_fetch
 	url = https://github.com/transistorsoft/flutter_background_fetch.git
+[submodule "types/background-fetch"]
+	path = types/background-fetch
+	url = https://github.com/transistorsoft/background-fetch-types.git
