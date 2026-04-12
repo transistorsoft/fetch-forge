@@ -1,0 +1,19 @@
+[submodule "native/background-fetch"]
+	path = native/background-fetch
+	url = https://github.com/transistorsoft/transistor-background-fetch.git
+
+[submodule "react-native/background-fetch"]
+	path = react-native/background-fetch
+	url = https://github.com/transistorsoft/react-native-background-fetch.git
+
+[submodule "cordova/background-fetch"]
+	path = cordova/background-fetch
+	url = https://github.com/transistorsoft/cordova-plugin-background-fetch.git
+
+[submodule "capacitor/background-fetch"]
+	path = capacitor/background-fetch
+	url = https://github.com/transistorsoft/capacitor-background-fetch.git
+
+[submodule "flutter/background_fetch"]
+	path = flutter/background_fetch
+	url = https://github.com/transistorsoft/flutter_background_fetch.git

@@ -1,0 +1,667 @@
+#!/usr/bin/env bash
+# ──────────────────────────────────────────────────────────────────────
+# forge — unified CLI for the Fetch Forge monorepo
+#
+# Usage:
+#   forge <domain> <command> [args...]   # platform commands
+#   forge help [domain]                  # show help
+#   forge status                         # submodule + version overview
+# ──────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+CYAN=$'\033[0;36m'
+DIM=$'\033[2m'
+BOLD=$'\033[1m'
+RESET=$'\033[0m'
+
+die()  { echo -e "${RED}error:${RESET} $1" >&2; exit 1; }
+info() { echo -e "${DIM}$1${RESET}"; }
+
+# ── Submodule paths ──────────────────────────────────────────────────
+DIR_NATIVE="$ROOT/native/background-fetch"
+DIR_RN="$ROOT/react-native/background-fetch"
+DIR_CORDOVA="$ROOT/cordova/background-fetch"
+DIR_CAPACITOR="$ROOT/capacitor/background-fetch"
+DIR_FLUTTER="$ROOT/flutter/background_fetch"
+
+# ── Helpers ──────────────────────────────────────────────────────────
+require_dir() {
+  [[ -d "$1" ]] || die "$2 not found at $1\nRun: git submodule update --init ${1#$ROOT/}"
+}
+
+get_version_npm() { node -p "require('$1/package.json').version" 2>/dev/null || echo "?"; }
+get_version_pub() { grep '^version:' "$1/pubspec.yaml" 2>/dev/null | awk '{print $2}' || echo "?"; }
+get_version_native_ios() {
+  grep "s\.version\s*=" "$DIR_NATIVE/TSBackgroundFetch.podspec" 2>/dev/null \
+    | head -1 | sed "s/.*=\s*'\([^']*\)'.*/\1/" || echo "?"
+}
+get_version_native_android() {
+  local f="$DIR_NATIVE/android/versioning/tsbackgroundfetch.properties"
+  grep '^VERSION_NAME=' "$f" 2>/dev/null | cut -d= -f2 || echo "?"
+}
+
+# ── build domain ─────────────────────────────────────────────────────
+run_build() {
+  local target="${1:-}"
+  shift || true
+
+  case "$target" in
+    ios)
+      require_dir "$DIR_NATIVE" "native/background-fetch"
+      echo -e "${CYAN}Building iOS XCFramework...${RESET}"
+      "$DIR_NATIVE/scripts/build-ios.sh" "$@"
+      ;;
+    android)
+      require_dir "$DIR_NATIVE" "native/background-fetch"
+      echo -e "${CYAN}Building Android (assembleRelease)...${RESET}"
+      cd "$DIR_NATIVE/android"
+      ./gradlew :tsbackgroundfetch:assembleRelease "$@"
+      ;;
+    native)
+      "$0" build ios "$@"
+      "$0" build android "$@"
+      ;;
+    react-native|rn)
+      require_dir "$DIR_RN" "react-native/background-fetch"
+      echo -e "${CYAN}Building React Native...${RESET}"
+      cd "$DIR_RN" && npm run build "$@"
+      ;;
+    capacitor|cap)
+      require_dir "$DIR_CAPACITOR" "capacitor/background-fetch"
+      echo -e "${CYAN}Building Capacitor (tsc + rollup)...${RESET}"
+      cd "$DIR_CAPACITOR" && npm run build
+      ;;
+    cordova)
+      require_dir "$DIR_CORDOVA" "cordova/background-fetch"
+      echo -e "${CYAN}Building Cordova (tsc)...${RESET}"
+      cd "$DIR_CORDOVA" && npm run build
+      ;;
+    flutter)
+      echo -e "${DIM}Flutter has no build step — consumed as a pub package.${RESET}"
+      ;;
+    all)
+      "$0" build ios
+      "$0" build android
+      "$0" build react-native
+      "$0" build capacitor
+      "$0" build cordova
+      ;;
+    ""|--help|-h)
+      show_help build
+      ;;
+    *)
+      die "Unknown build target: $target\nRun 'forge build --help' for available targets."
+      ;;
+  esac
+}
+
+# ── publish domain ───────────────────────────────────────────────────
+check_no_ios_links() {
+  local found=()
+  local native_pkg="$DIR_NATIVE/Package.swift"
+  local cap_pkg="$DIR_CAPACITOR/Package.swift"
+  local rn_pods="$DIR_RN/example/ios/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework"
+  local flutter_pods="$DIR_FLUTTER/example/ios/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework"
+  local cordova_pods="$DIR_CORDOVA/example/ios/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework"
+
+  [[ -f "$native_pkg" ]] && grep -q 'LOCAL OVERRIDE' "$native_pkg" 2>/dev/null && found+=("native/background-fetch/Package.swift")
+  [[ -f "$cap_pkg" ]] && grep -q 'LOCAL OVERRIDE' "$cap_pkg" 2>/dev/null && found+=("capacitor/background-fetch/Package.swift")
+  [[ -L "$rn_pods" ]] && found+=("react-native Pods/TSBackgroundFetch (symlink)")
+  [[ -L "$flutter_pods" ]] && found+=("flutter Pods/TSBackgroundFetch (symlink)")
+  [[ -L "$cordova_pods" ]] && found+=("cordova Pods/TSBackgroundFetch (symlink)")
+
+  if [[ ${#found[@]} -gt 0 ]]; then
+    echo -e "${RED}error:${RESET} Local iOS links detected — cannot publish:" >&2
+    for f in "${found[@]}"; do
+      echo -e "  • $f" >&2
+    done
+    echo -e "\nRun ${BOLD}forge unlink-ios all${RESET} first." >&2
+    exit 1
+  fi
+}
+
+run_publish() {
+  local target="${1:-}"
+  shift || true
+
+  check_no_ios_links
+
+  case "$target" in
+    native)
+      local sub="${1:-}"
+      shift || true
+      case "$sub" in
+        ios)
+          require_dir "$DIR_NATIVE" "native/background-fetch"
+          echo -e "${CYAN}Publishing iOS (CocoaPods + SPM)...${RESET}"
+          "$DIR_NATIVE/scripts/publish-ios.sh" "$@"
+          ;;
+        android)
+          require_dir "$DIR_NATIVE" "native/background-fetch"
+          echo -e "${CYAN}Publishing Android...${RESET}"
+          cd "$DIR_NATIVE/android"
+          if [[ "$*" == *--snapshot* ]]; then
+            ./gradlew :tsbackgroundfetch:publishSnapshotToSonatype
+          else
+            ./gradlew :tsbackgroundfetch:publishToSonatype \
+                      :tsbackgroundfetch:closeAndReleaseSonatypeStagingRepository
+          fi
+          ;;
+        ""|--help|-h)
+          echo "forge publish native <ios|android> [args...]"
+          echo
+          echo "  ios              Publish XCFramework to CocoaPods + SPM"
+          echo "  android          Publish AAR to Maven Central (Sonatype)"
+          echo "  android --snapshot  Publish SNAPSHOT to Sonatype snapshots"
+          ;;
+        *)
+          die "Unknown native publish target: $sub\nUsage: forge publish native <ios|android>"
+          ;;
+      esac
+      ;;
+    react-native|rn)
+      require_dir "$DIR_RN" "react-native/background-fetch"
+      echo -e "${CYAN}Publishing react-native to npm...${RESET}"
+      cd "$DIR_RN" && npm publish "$@"
+      ;;
+    capacitor|cap)
+      require_dir "$DIR_CAPACITOR" "capacitor/background-fetch"
+      echo -e "${CYAN}Publishing capacitor to npm...${RESET}"
+      cd "$DIR_CAPACITOR" && npm publish "$@"
+      ;;
+    cordova)
+      require_dir "$DIR_CORDOVA" "cordova/background-fetch"
+      echo -e "${CYAN}Publishing cordova to npm...${RESET}"
+      cd "$DIR_CORDOVA" && npm publish "$@"
+      ;;
+    flutter)
+      require_dir "$DIR_FLUTTER" "flutter/background_fetch"
+      echo -e "${CYAN}Publishing flutter to pub.dev...${RESET}"
+      cd "$DIR_FLUTTER" && dart pub publish "$@"
+      ;;
+    ""|--help|-h)
+      show_help publish
+      ;;
+    *)
+      die "Unknown publish target: $target\nRun 'forge publish --help' for available targets."
+      ;;
+  esac
+}
+
+# ── SPM: remind user to clean build ─────────────────────────────────
+clear_spm_cache() {
+  if pgrep -q Xcode; then
+    echo -e "  ${CYAN}⚠ Xcode is running — Clean Build (⇧⌘K) before building${RESET}"
+  fi
+}
+
+# ── link-ios domain ──────────────────────────────────────────────────
+run_link_ios() {
+  local target="${1:-}"
+  shift || true
+
+  case "$target" in
+    ""|--help|-h)
+      show_help link-ios
+      return
+      ;;
+  esac
+
+  local build_dir="$DIR_NATIVE/build/Release-Publish"
+  [[ -d "$build_dir" ]] || die "No builds found at $build_dir\nRun 'forge build ios' first."
+
+  # Find most recent xcframework build by modification time.
+  local latest
+  latest=$(ls -dt "$build_dir"/TSBackgroundFetch_XCFramework_* 2>/dev/null | head -1)
+  [[ -n "$latest" ]] || die "No TSBackgroundFetch_XCFramework_* dirs in $build_dir"
+
+  local xcfw="$latest/TSBackgroundFetch.xcframework"
+  [[ -d "$xcfw" ]] || die "XCFramework not found at $xcfw"
+
+  local version
+  version=$(basename "$latest" | sed 's/TSBackgroundFetch_XCFramework_//')
+
+  echo -e "${CYAN}Linking TSBackgroundFetch ${BOLD}${version}${RESET}${CYAN} → ${RESET}${DIM}${xcfw}${RESET}"
+  echo
+
+  # ── Resolve target → plugin dir + example ios dir ──
+  resolve_target() {
+    case "$1" in
+      react-native|rn)  echo "$DIR_RN"        "$DIR_RN/example/ios" ;;
+      flutter)          echo "$DIR_FLUTTER"    "$DIR_FLUTTER/example/ios" ;;
+      capacitor|cap)    echo "$DIR_CAPACITOR"  "$DIR_CAPACITOR/example/ios" ;;
+      cordova)          echo "$DIR_CORDOVA"    "$DIR_CORDOVA/example/ios" ;;
+      *) return 1 ;;
+    esac
+  }
+
+  # ── Detect CocoaPods vs SPM for a given plugin ──
+  detect_ios_deps() {
+    local plugin_dir="$1" ios_dir="$2"
+    if [[ -d "$ios_dir/Pods/TSBackgroundFetch" ]] || [[ -L "$ios_dir/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework" ]]; then
+      echo "pods"
+    elif [[ -f "$plugin_dir/Package.swift" ]] && grep -q 'transistor-background-fetch' "$plugin_dir/Package.swift" 2>/dev/null; then
+      echo "spm"
+    elif [[ -f "$ios_dir/Podfile" ]]; then
+      echo "pods"
+    else
+      echo "unknown"
+    fi
+  }
+
+  # ── CocoaPods: symlink xcframework into Pods/ ──
+  link_pods() {
+    local label="$1" ios_dir="$2"
+    local pods_dir="$ios_dir/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework"
+    if [[ ! -d "$(dirname "$pods_dir")" ]]; then
+      echo -e "  ${DIM}${label} — Pods not installed, skipping${RESET}"
+      return
+    fi
+    if [[ -L "$pods_dir" ]]; then
+      echo -e "  ${CYAN}${label} → updating symlink${RESET}"
+      rm "$pods_dir"
+    elif [[ -d "$pods_dir" ]]; then
+      echo -e "  ${CYAN}${label} → replacing framework with symlink${RESET}"
+      rm -rf "$pods_dir"
+    else
+      echo -e "  ${GREEN}${label} → linking${RESET}"
+    fi
+    ln -s "$xcfw" "$pods_dir"
+  }
+
+  # ── SPM: rewrite Package.swift files to use local path ──
+  link_spm() {
+    local label="$1" plugin_dir="$2"
+    local native_pkg="$DIR_NATIVE/Package.swift"
+    local plugin_pkg="$plugin_dir/Package.swift"
+
+    # 1) Native: .binaryTarget(url:...,checksum:...) → .binaryTarget(path:...)
+    local rel_xcfw
+    rel_xcfw="build/Release-Publish/$(basename "$latest")/TSBackgroundFetch.xcframework"
+    if grep -q 'binaryTarget' "$native_pkg" && ! grep -q 'LOCAL OVERRIDE' "$native_pkg"; then
+      sed -i '' \
+        -e '/\.binaryTarget(/,/)/c\
+        // ── LOCAL OVERRIDE (forge link-ios) ──\
+        .binaryTarget(\
+            name: "TSBackgroundFetch",\
+            path: "'"$rel_xcfw"'"\
+        ),' \
+        "$native_pkg"
+      echo -e "  ${CYAN}native/background-fetch/Package.swift → local binaryTarget${RESET}"
+    else
+      echo -e "  ${DIM}native/background-fetch/Package.swift → already linked${RESET}"
+    fi
+
+    # 2) Plugin: .package(url:...transistor-background-fetch...) → .package(path:...)
+    #    Use a symlink with a distinct name to avoid SPM identity collision.
+    if [[ -f "$plugin_pkg" ]] && grep -q 'transistor-background-fetch' "$plugin_pkg"; then
+      local link_name="transistor-background-fetch-local"
+      local link_path="$ROOT/$link_name"
+      ln -sfn native/background-fetch "$link_path"
+      local rel_link
+      rel_link=$(python3 -c "import os.path; print(os.path.relpath('$link_path', '$plugin_dir'))")
+      sed -i '' \
+        's|\.package(url: "https://github.com/transistorsoft/transistor-background-fetch.git", from: "[^"]*")|// LOCAL OVERRIDE (forge link-ios)\
+        .package(name: "transistor-background-fetch", path: "'"$rel_link"'")|' \
+        "$plugin_pkg"
+      echo -e "  ${CYAN}${label}/Package.swift → local path (via ${link_name})${RESET}"
+    fi
+    clear_spm_cache
+  }
+
+  # ── Link a single target (auto-detect deps system) ──
+  link_target() {
+    local label="$1"
+    local resolved
+    resolved=$(resolve_target "$label") || die "Unknown target: $label"
+    local plugin_dir ios_dir
+    read -r plugin_dir ios_dir <<< "$resolved"
+
+    local deps_type
+    deps_type=$(detect_ios_deps "$plugin_dir" "$ios_dir")
+
+    case "$deps_type" in
+      pods) link_pods "$label" "$ios_dir" ;;
+      spm)  link_spm "$label" "$plugin_dir" ;;
+      *)    echo -e "  ${DIM}${label} — no CocoaPods or SPM dependency detected, skipping${RESET}" ;;
+    esac
+  }
+
+  case "$target" in
+    react-native|rn)  link_target "react-native" ;;
+    flutter)          link_target "flutter" ;;
+    capacitor|cap)    link_target "capacitor" ;;
+    cordova)          link_target "cordova" ;;
+    all)
+      link_target "react-native"
+      link_target "flutter"
+      link_target "capacitor"
+      link_target "cordova"
+      ;;
+    *)
+      die "Unknown link-ios target: $target\nRun 'forge link-ios --help' for available targets."
+      ;;
+  esac
+}
+
+# ── unlink-ios domain ────────────────────────────────────────────────
+run_unlink_ios() {
+  local target="${1:-}"
+  shift || true
+
+  case "$target" in
+    ""|--help|-h)
+      show_help unlink-ios
+      return
+      ;;
+  esac
+
+  # ── Resolve target → plugin dir + example ios dir ──
+  resolve_target() {
+    case "$1" in
+      react-native|rn)  echo "$DIR_RN"        "$DIR_RN/example/ios" ;;
+      flutter)          echo "$DIR_FLUTTER"    "$DIR_FLUTTER/example/ios" ;;
+      capacitor|cap)    echo "$DIR_CAPACITOR"  "$DIR_CAPACITOR/example/ios" ;;
+      cordova)          echo "$DIR_CORDOVA"    "$DIR_CORDOVA/example/ios" ;;
+      *) return 1 ;;
+    esac
+  }
+
+  # ── Detect: check for active link type ──
+  detect_link_type() {
+    local plugin_dir="$1" ios_dir="$2"
+    local pods_dir="$ios_dir/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework"
+    if [[ -L "$pods_dir" ]]; then
+      echo "pods"
+    elif [[ -f "$DIR_NATIVE/Package.swift" ]] && grep -q 'LOCAL OVERRIDE' "$DIR_NATIVE/Package.swift" 2>/dev/null; then
+      echo "spm"
+    elif [[ -f "$plugin_dir/Package.swift" ]] && grep -q 'LOCAL OVERRIDE' "$plugin_dir/Package.swift" 2>/dev/null; then
+      echo "spm"
+    else
+      echo "none"
+    fi
+  }
+
+  # ── CocoaPods: remove symlink + pod update ──
+  unlink_pods() {
+    local label="$1" ios_dir="$2"
+    local pods_dir="$ios_dir/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework"
+    rm "$pods_dir"
+    echo -e "  ${CYAN}${label} → symlink removed, restoring pod...${RESET}"
+    if (cd "$ios_dir" && LANG=en_US.UTF-8 pod update TSBackgroundFetch --no-repo-update 2>&1); then
+      echo -e "  ${GREEN}${label} → restored${RESET}"
+    else
+      echo -e "  ${CYAN}${label} → pod update failed; run manually: cd ${ios_dir} && pod install${RESET}"
+    fi
+  }
+
+  # ── SPM: git checkout Package.swift + clean up symlink ──
+  unlink_spm() {
+    local label="$1" plugin_dir="$2"
+    local native_pkg="$DIR_NATIVE/Package.swift"
+    local plugin_pkg="$plugin_dir/Package.swift"
+
+    if grep -q 'LOCAL OVERRIDE' "$native_pkg" 2>/dev/null; then
+      git -C "$DIR_NATIVE" checkout Package.swift
+      echo -e "  ${GREEN}native/background-fetch/Package.swift → restored${RESET}"
+    fi
+
+    if [[ -f "$plugin_pkg" ]] && grep -q 'LOCAL OVERRIDE' "$plugin_pkg" 2>/dev/null; then
+      git -C "$plugin_dir" checkout Package.swift
+      echo -e "  ${GREEN}${label}/Package.swift → restored${RESET}"
+    fi
+
+    local link_path="$ROOT/transistor-background-fetch-local"
+    if [[ -L "$link_path" ]]; then
+      rm "$link_path"
+      echo -e "  ${GREEN}transistor-background-fetch-local symlink → removed${RESET}"
+    fi
+    clear_spm_cache
+  }
+
+  # ── Unlink a single target (auto-detect link type) ──
+  unlink_target() {
+    local label="$1"
+    local resolved
+    resolved=$(resolve_target "$label") || die "Unknown target: $label"
+    local plugin_dir ios_dir
+    read -r plugin_dir ios_dir <<< "$resolved"
+
+    local link_type
+    link_type=$(detect_link_type "$plugin_dir" "$ios_dir")
+
+    case "$link_type" in
+      pods) unlink_pods "$label" "$ios_dir" ;;
+      spm)  unlink_spm "$label" "$plugin_dir" ;;
+      *)    echo -e "  ${DIM}${label} → not linked, nothing to do${RESET}" ;;
+    esac
+  }
+
+  case "$target" in
+    react-native|rn)  unlink_target "react-native" ;;
+    flutter)          unlink_target "flutter" ;;
+    capacitor|cap)    unlink_target "capacitor" ;;
+    cordova)          unlink_target "cordova" ;;
+    all)
+      unlink_target "react-native"
+      unlink_target "flutter"
+      unlink_target "capacitor"
+      unlink_target "cordova"
+      ;;
+    *)
+      die "Unknown unlink-ios target: $target\nRun 'forge unlink-ios --help' for available targets."
+      ;;
+  esac
+}
+
+# ── setup domain ─────────────────────────────────────────────────────
+run_setup() {
+  local target="${1:-tools}"
+  shift || true
+
+  case "$target" in
+    tools)
+      local tools_dir="$ROOT/tools"
+      local bin_dir="${HOME}/bin"
+
+      [[ -d "$tools_dir" ]] || die "tools/ directory not found at $tools_dir"
+      mkdir -p "$bin_dir"
+
+      for script in "$tools_dir"/*; do
+        [[ -f "$script" ]] || continue
+        local name
+        name="$(basename "$script")"
+        local dest="$bin_dir/$name"
+
+        if [[ -L "$dest" ]]; then
+          local existing
+          existing="$(readlink "$dest")"
+          if [[ "$existing" == "$script" ]]; then
+            echo -e "  ${DIM}$name → already linked${RESET}"
+            continue
+          fi
+          echo -e "  ${CYAN}$name → updating symlink (was $existing)${RESET}"
+          rm "$dest"
+        elif [[ -e "$dest" ]]; then
+          echo -e "  ${CYAN}$name → replacing file with symlink (backup: ${dest}.bak)${RESET}"
+          mv "$dest" "${dest}.bak"
+        else
+          echo -e "  ${GREEN}$name → linking${RESET}"
+        fi
+
+        ln -s "$script" "$dest"
+      done
+
+      echo -e "\n${GREEN}Tools linked into $bin_dir${RESET}"
+      ;;
+    ""|--help|-h)
+      show_help setup
+      ;;
+    *)
+      die "Unknown setup target: $target\nRun 'forge setup --help' for available targets."
+      ;;
+  esac
+}
+
+# ── status ───────────────────────────────────────────────────────────
+run_status() {
+  echo -e "${BOLD}Fetch Forge — status${RESET}"
+  echo
+
+  echo -e "${BOLD}Versions${RESET}"
+  printf "  %-18s %s\n" "native-ios"     "$(get_version_native_ios)"
+  printf "  %-18s %s\n" "native-android" "$(get_version_native_android)"
+  printf "  %-18s %s\n" "react-native"   "$(get_version_npm "$DIR_RN")"
+  printf "  %-18s %s\n" "capacitor"      "$(get_version_npm "$DIR_CAPACITOR")"
+  printf "  %-18s %s\n" "cordova"        "$(get_version_npm "$DIR_CORDOVA")"
+  printf "  %-18s %s\n" "flutter"        "$(get_version_pub "$DIR_FLUTTER")"
+
+  echo
+  echo -e "${BOLD}Submodules${RESET}"
+  git -C "$ROOT" submodule status | while read -r hash path desc; do
+    local dirty=""
+    [[ "$hash" == +* ]] && dirty=" ${RED}(dirty)${RESET}"
+    printf "  %-45s %s%b\n" "$path" "${desc:-}" "$dirty"
+  done
+}
+
+# ── help ─────────────────────────────────────────────────────────────
+show_help() {
+  local domain="${1:-}"
+
+  case "$domain" in
+    build)
+      cat <<EOF
+forge build <target> [args...]
+
+Targets:
+  ios              Build XCFramework (native/background-fetch/scripts/build-ios.sh)
+  android          gradlew :tsbackgroundfetch:assembleRelease
+  native           Build both ios and android
+  react-native     npm run build
+  capacitor        npm run build (tsc + rollup)
+  cordova          npm run build (tsc)
+  flutter          (no build step)
+  all              Build everything
+
+Aliases: rn → react-native, cap → capacitor
+EOF
+      ;;
+    publish)
+      cat <<EOF
+forge publish <target> [args...]
+
+Targets:
+  native ios           Publish XCFramework (CocoaPods + SPM)
+  native android       Publish AAR to Maven Central (Sonatype)
+  native android --snapshot  Publish SNAPSHOT to Sonatype snapshots
+  react-native         npm publish
+  capacitor            npm publish
+  cordova              npm publish
+  flutter              dart pub publish
+
+Aliases: rn → react-native, cap → capacitor
+
+Extra args are forwarded (e.g. forge publish react-native --dry-run)
+EOF
+      ;;
+    link-ios)
+      cat <<EOF
+forge link-ios <target>
+
+Point a plugin example app at the most recent local iOS XCFramework
+build for testing without publishing.
+
+Auto-detects CocoaPods vs SPM per target:
+  CocoaPods → symlinks xcframework into Pods/TSBackgroundFetch/
+  SPM       → rewrites Package.swift to use local binaryTarget path
+
+Targets:
+  react-native     RN example app
+  flutter          Flutter example app
+  capacitor        Capacitor example app
+  cordova          Cordova example app
+  all              All of the above
+
+Aliases: rn → react-native, cap → capacitor
+
+Undo with: forge unlink-ios <target>
+EOF
+      ;;
+    unlink-ios)
+      cat <<EOF
+forge unlink-ios <target>
+
+Undo a previous 'forge link-ios'.
+
+Auto-detects the active link type:
+  CocoaPods → removes symlink + runs pod update
+  SPM       → git checkout Package.swift + cleans up
+
+Targets: react-native (rn), flutter, capacitor (cap), cordova, all
+EOF
+      ;;
+    setup)
+      cat <<EOF
+forge setup [target]
+
+Targets:
+  tools          Symlink tools/* into ~/bin (default)
+EOF
+      ;;
+    status)
+      echo "forge status — Show versions and submodule status"
+      ;;
+    "")
+      cat <<EOF
+${BOLD}forge${RESET} — Fetch Forge monorepo CLI
+
+${BOLD}Build${RESET}
+  forge build <target>       Build a platform SDK
+  forge build all            Build everything
+
+${BOLD}Publish${RESET}
+  forge publish native ios         Publish iOS (CocoaPods + SPM)
+  forge publish native android     Publish Android to Maven Central
+  forge publish <platform>         Publish platform SDK
+
+${BOLD}Link${RESET} (local iOS development)
+  forge link-ios <target>    Use local XCFramework in example app (Pods/SPM)
+  forge unlink-ios <target>  Undo link-ios (restore remote deps)
+
+${BOLD}Setup${RESET}
+  forge setup tools          Symlink tools/* into ~/bin
+
+${BOLD}Status${RESET}
+  forge status               Version + submodule overview
+
+Targets: ios, android, native, react-native (rn), capacitor (cap), cordova, flutter
+
+Run ${BOLD}forge help <domain>${RESET} for details.
+EOF
+      ;;
+    *)
+      die "Unknown help topic: $domain"
+      ;;
+  esac
+}
+
+# ── Main dispatch ────────────────────────────────────────────────────
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  build)      run_build "$@" ;;
+  publish)    run_publish "$@" ;;
+  link-ios)   run_link_ios "$@" ;;
+  unlink-ios) run_unlink_ios "$@" ;;
+  setup)      run_setup "$@" ;;
+  status)     run_status "$@" ;;
+  help|-h|--help)
+              show_help "$@" ;;
+  *)          die "Unknown command: $cmd\nRun 'forge help' for usage." ;;
+esac

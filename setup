@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Fetch Forge — first-time setup for fresh clones.
+# Usage: ./setup
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+DIM='\033[2m'
+RESET='\033[0m'
+
+ok()   { echo -e "  ${GREEN}✓${RESET} $1"; }
+fail() { echo -e "  ${RED}✗${RESET} $1"; exit 1; }
+info() { echo -e "  ${DIM}$1${RESET}"; }
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
+
+echo "Fetch Forge setup"
+echo
+
+# ── Prerequisites ────────────────────────────────────────────────────
+echo "Checking prerequisites..."
+
+command -v git  >/dev/null || fail "git not found"
+command -v node >/dev/null || fail "node not found"
+ok "git, node"
+
+# ── Submodules ───────────────────────────────────────────────────────
+echo
+echo "Initialising submodules..."
+
+git submodule update --init --recursive
+ok "submodules"
+
+# ── npm dependencies for JS platforms ───────────────────────────────
+echo
+echo "Installing npm dependencies..."
+
+for dir in \
+  react-native/background-fetch \
+  cordova/background-fetch \
+  capacitor/background-fetch
+do
+  if [[ -d "$ROOT/$dir" && -f "$ROOT/$dir/package.json" ]]; then
+    echo -e "  ${DIM}$dir${RESET}"
+    (cd "$ROOT/$dir" && npm install --silent)
+  fi
+done
+ok "npm dependencies"
+
+# ── Verify ───────────────────────────────────────────────────────────
+echo
+echo "Verifying..."
+
+"$ROOT/forge" --help >/dev/null 2>&1 && ok "forge CLI" || fail "forge CLI failed"
+
+echo
+echo -e "${GREEN}Setup complete.${RESET}"
+echo
+info "Quick start:"
+info "  ./forge status               # show versions"
+info "  ./forge build ios            # build XCFramework"
+info "  ./forge build android        # build Android AAR"
+info "  ./forge link-ios all         # link local XCFramework for testing"
