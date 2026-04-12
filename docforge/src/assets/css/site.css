@@ -1,0 +1,27 @@
+/* fetch.transistorsoft.com — site styles */
+
+/* Platform badges for Android-only / iOS-only markers */
+.platform-badge {
+  display: inline-block;
+  font-size: 0.7em;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.platform-badge--android {
+  background: #3ddc84;
+  color: #000;
+}
+.platform-badge--ios {
+  background: #555;
+  color: #fff;
+}
+
+/* Tighten heading spacing in API pages */
+.md-content h2 {
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  padding-top: 1rem;
+  margin-top: 2rem;
+}

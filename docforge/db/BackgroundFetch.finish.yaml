@@ -1,0 +1,49 @@
+id: BackgroundFetch.finish
+kind: method
+description: |-
+  Signal to the OS that your background task is complete.
+
+  ⚠️ You **must** call `finish` at the end of every background-fetch event callback.
+  Failure to call `finish` has serious consequences:
+
+  - **iOS** — The OS may terminate your app and penalise future background-wake frequency.
+  - **Android** — The `JobScheduler` job will not be considered complete and the OS may
+    throttle or block future executions.
+
+  Always call `finish` as quickly as possible, even when your task encounters an error.
+  For timeout events, call `finish` immediately without doing any additional work.
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        BackgroundFetch.configure({}, async (taskId) => {
+          try {
+            await doMyWork();
+          } catch (e) {
+            console.warn(e);
+          } finally {
+            // Always call finish, even on error.
+            BackgroundFetch.finish(taskId);
+          }
+        }, (taskId) => {
+          // Timeout — stop immediately.
+          BackgroundFetch.finish(taskId);
+        });
+      dart: |-
+        BackgroundFetch.configure(BackgroundFetchConfig(), (String taskId) async {
+          try {
+            await doMyWork();
+          } catch (e) {
+            print('Error: $e');
+          } finally {
+            BackgroundFetch.finish(taskId);
+          }
+        }, (String taskId) {
+          BackgroundFetch.finish(taskId);
+        });
+signatures:
+  ts: "static finish(taskId?: string): void;"
+  dart: "static Future<void> finish(String taskId)"

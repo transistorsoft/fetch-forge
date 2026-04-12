@@ -1,0 +1,42 @@
+id: HeadlessEvent
+kind: interface
+description: |-
+  The event object delivered to a [[BackgroundFetch.registerHeadlessTask]] handler
+  when the app is running in a terminated (headless) state on Android.
+
+  | Property | Type | Description |
+  |---|---|---|
+  | [[HeadlessEvent.taskId\|taskId]] | `string` | Identifier of the task that fired. Pass to [[BackgroundFetch.finish]]. |
+  | [[HeadlessEvent.timeout\|timeout]] | `boolean` | `true` when the OS signals that background time is nearly exhausted. |
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        import BackgroundFetch, { HeadlessEvent } from 'react-native-background-fetch';
+
+        const BackgroundFetchHeadlessTask = async (event: HeadlessEvent) => {
+          if (event.timeout) {
+            BackgroundFetch.finish(event.taskId);
+            return;
+          }
+          console.log('[BackgroundFetch] headless taskId:', event.taskId);
+          BackgroundFetch.finish(event.taskId);
+        };
+
+        BackgroundFetch.registerHeadlessTask(BackgroundFetchHeadlessTask);
+      dart: |-
+        @pragma('vm:entry-point')
+        void backgroundFetchHeadlessTask(HeadlessTask task) async {
+          if (task.timeout) {
+            BackgroundFetch.finish(task.taskId);
+            return;
+          }
+          print('[BackgroundFetch] headless taskId: ${task.taskId}');
+          BackgroundFetch.finish(task.taskId);
+        }
+signatures:
+  ts: "interface HeadlessEvent"
+  dart: "class HeadlessTask"

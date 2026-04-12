@@ -1,0 +1,82 @@
+id: BackgroundFetch.configure
+kind: method
+description: |-
+  Configure the plugin and begin listening for background-fetch events.
+
+  Calling `configure` automatically starts background-fetch (equivalent to calling
+  [[BackgroundFetch.start]] immediately after configuration).
+
+  The [[BackgroundFetchConfig.minimumFetchInterval]] option controls how frequently
+  iOS will wake your app in the background.  Android uses `JobScheduler` (or
+  `AlarmManager` when [[AbstractConfig.forceAlarmManager]] is `true`) and supports
+  additional scheduling constraints such as [[AbstractConfig.requiredNetworkType]],
+  [[AbstractConfig.requiresCharging]], etc.
+
+  ⚠️ You **must** call [[BackgroundFetch.finish]] within your event callback.  Failure to
+  do so will result in the OS throttling future background events for your app.
+
+  @example example-basic
+  @example example-android
+examples:
+  example-basic:
+    title: Basic configuration
+    code:
+      ts: |-
+        const status = await BackgroundFetch.configure({
+          minimumFetchInterval: 15,     // <-- iOS: minimum interval in minutes
+        }, async (taskId) => {
+          console.log('[BackgroundFetch] taskId:', taskId);
+          // ⚠️ You MUST call finish() when your work is complete.
+          BackgroundFetch.finish(taskId);
+        }, (taskId) => {
+          // The OS is about to kill your app — stop all work immediately.
+          console.log('[BackgroundFetch] TIMEOUT, taskId:', taskId);
+          BackgroundFetch.finish(taskId);
+        });
+
+        console.log('[BackgroundFetch] status:', status);
+      dart: |-
+        int status = await BackgroundFetch.configure(BackgroundFetchConfig(
+          minimumFetchInterval: 15,
+        ), (String taskId) async {
+          print('[BackgroundFetch] taskId: $taskId');
+          BackgroundFetch.finish(taskId);
+        }, (String taskId) {
+          print('[BackgroundFetch] TIMEOUT: $taskId');
+          BackgroundFetch.finish(taskId);
+        });
+
+        print('[BackgroundFetch] status: $status');
+  example-android:
+    title: Android configuration
+    code:
+      ts: |-
+        BackgroundFetch.configure({
+          minimumFetchInterval: 15,
+          stopOnTerminate: false,     // <-- Continue after app termination
+          startOnBoot: true,          // <-- Restart on device reboot
+          enableHeadless: true,       // <-- Enable headless task for terminated app
+          requiresCharging: false,
+          requiresBatteryNotLow: true,
+        }, async (taskId) => {
+          console.log('[BackgroundFetch] taskId:', taskId);
+          BackgroundFetch.finish(taskId);
+        }, (taskId) => {
+          BackgroundFetch.finish(taskId);
+        });
+      dart: |-
+        BackgroundFetch.configure(BackgroundFetchConfig(
+          minimumFetchInterval: 15,
+          stopOnTerminate: false,
+          startOnBoot: true,
+          enableHeadless: true,
+          requiresBatteryNotLow: true,
+        ), (String taskId) async {
+          print('[BackgroundFetch] taskId: $taskId');
+          BackgroundFetch.finish(taskId);
+        }, (String taskId) {
+          BackgroundFetch.finish(taskId);
+        });
+signatures:
+  ts: "static configure(config: BackgroundFetchConfig, onEvent: (taskId: string) => void, onTimeout?: (taskId: string) => void): Promise<BackgroundFetchStatus>;"
+  dart: "static Future<int> configure(BackgroundFetchConfig config, Function(String) onFetch, [Function(String)? onTimeout])"

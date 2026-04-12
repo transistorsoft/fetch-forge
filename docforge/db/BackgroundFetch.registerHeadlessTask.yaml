@@ -1,0 +1,75 @@
+id: BackgroundFetch.registerHeadlessTask
+kind: method
+description: |-
+  [Android only] Register a function to execute when the app is terminated while
+  background-fetch events remain active.
+
+  Requires [[AbstractConfig.stopOnTerminate]] `false` and
+  [[AbstractConfig.enableHeadless]] `true`.
+
+  ## How it works
+
+  When Android terminates the app, the native module launches a minimal JS context
+  (without the React Native UI) and invokes your headless task function.  This allows
+  you to handle background events even when the app is not running.
+
+  ## Registration
+
+  Call `registerHeadlessTask` at your app's **entry point** (`index.js`), *outside* any
+  React component.  The registration must happen before the OS attempts to fire a
+  headless event.
+
+  ## ⚠️ Restrictions
+
+  - Do **not** import modules that depend on the React Native UI runtime (e.g. components,
+    navigation, Redux stores that render UI).
+  - Keep the task lightweight — the OS may kill the JS context at any time.
+  - Always call [[BackgroundFetch.finish]] before the returned `Promise` resolves.
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        // index.js — register at the app entry point.
+        import BackgroundFetch, { HeadlessEvent } from 'react-native-background-fetch';
+
+        const BackgroundFetchHeadlessTask = async (event: HeadlessEvent) => {
+          const taskId = event.taskId;
+
+          if (event.timeout) {
+            // OS is about to kill the context — finish immediately.
+            BackgroundFetch.finish(taskId);
+            return;
+          }
+
+          console.log('[BackgroundFetch] Headless event, taskId:', taskId);
+          // ... perform lightweight work ...
+          BackgroundFetch.finish(taskId);
+        };
+
+        BackgroundFetch.registerHeadlessTask(BackgroundFetchHeadlessTask);
+      dart: |-
+        // main.dart — register at the top level, annotated with @pragma.
+        @pragma('vm:entry-point')
+        void backgroundFetchHeadlessTask(HeadlessTask task) async {
+          String taskId = task.taskId;
+          bool isTimeout = task.timeout;
+
+          if (isTimeout) {
+            BackgroundFetch.finish(taskId);
+            return;
+          }
+          print('[BackgroundFetch] Headless event, taskId: $taskId');
+          // ... perform lightweight work ...
+          BackgroundFetch.finish(taskId);
+        }
+
+        void main() {
+          BackgroundFetch.registerHeadlessTask(backgroundFetchHeadlessTask);
+          runApp(MyApp());
+        }
+signatures:
+  ts: "static registerHeadlessTask(task: (event: HeadlessEvent) => Promise<void>): void;"
+  dart: "static Future<bool> registerHeadlessTask(Function(HeadlessTask) callback)"

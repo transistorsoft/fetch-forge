@@ -1,0 +1,12 @@
+id: AbstractConfig.enableHeadless
+kind: property
+ts_type: boolean
+optional: true
+description: |-
+  [Android only] Set `true` to enable the [[BackgroundFetch.registerHeadlessTask]]
+  mechanism for handling fetch events after app termination.  Defaults to `false`.
+
+  ❗ NOTE: Requires [[AbstractConfig.stopOnTerminate]] `false`.
+signatures:
+  ts: "enableHeadless?: boolean;"
+  dart: "bool? enableHeadless"

@@ -1,0 +1,10 @@
+id: AbstractConfig.requiresBatteryNotLow
+kind: property
+ts_type: boolean
+optional: true
+description: |-
+  [Android only] Set `true` to require the device's battery level to be above the
+  "low battery" threshold before running this task.  Defaults to `false`.
+signatures:
+  ts: "requiresBatteryNotLow?: boolean;"
+  dart: "bool? requiresBatteryNotLow"

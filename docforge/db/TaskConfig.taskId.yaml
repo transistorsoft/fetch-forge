@@ -1,0 +1,39 @@
+id: TaskConfig.taskId
+kind: property
+ts_type: string
+optional: false
+description: |-
+  A unique identifier for this task.
+
+  The same `taskId` is delivered to the `onEvent` callback registered in
+  [[BackgroundFetch.configure]].  Pass it to [[BackgroundFetch.finish]] to signal
+  completion and to [[BackgroundFetch.stop]] to cancel the task.
+
+  Use reverse-domain notation to avoid collisions with other tasks.
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        BackgroundFetch.scheduleTask({
+          taskId: 'com.myapp.sync',
+          delay: 60000,
+        });
+
+        // In your configure() callback:
+        BackgroundFetch.configure({}, async (taskId) => {
+          if (taskId === 'com.myapp.sync') {
+            await performSync();
+          }
+          BackgroundFetch.finish(taskId);
+        });
+      dart: |-
+        BackgroundFetch.scheduleTask(TaskConfig(
+          taskId: 'com.myapp.sync',
+          delay: 60000,
+        ));
+signatures:
+  ts: "taskId: string;"
+  dart: "String taskId"

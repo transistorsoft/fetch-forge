@@ -1,0 +1,17 @@
+id: AbstractConfig.forceAlarmManager
+kind: property
+ts_type: boolean
+optional: true
+description: |-
+  [Android only] Force the use of Android's `AlarmManager` API instead of
+  `JobScheduler`.  Defaults to `false`.
+
+  By default the plugin uses `JobScheduler` on API 21+ and falls back to `AlarmManager`
+  on older devices.  Set `true` to force `AlarmManager` regardless of API level.
+
+  ❗ NOTE: `AlarmManager` bypasses the scheduling optimisations of `JobScheduler` and
+  is less battery-efficient.  Use it only when `JobScheduler` does not meet your timing
+  requirements.
+signatures:
+  ts: "forceAlarmManager?: boolean;"
+  dart: "bool? forceAlarmManager"

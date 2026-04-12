@@ -1,0 +1,10 @@
+id: AbstractConfig.requiresCharging
+kind: property
+ts_type: boolean
+optional: true
+description: |-
+  [Android only] Set `true` to require the device to be charging (or connected to
+  permanent power) before running this task.  Defaults to `false`.
+signatures:
+  ts: "requiresCharging?: boolean;"
+  dart: "bool? requiresCharging"

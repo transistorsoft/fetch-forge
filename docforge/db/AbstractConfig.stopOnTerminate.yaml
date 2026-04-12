@@ -1,0 +1,34 @@
+id: AbstractConfig.stopOnTerminate
+kind: property
+ts_type: boolean
+optional: true
+description: |-
+  [Android only] Set `false` to continue receiving background-fetch events after the
+  user terminates the app.  Defaults to `true`.
+
+  ❗ NOTE: [[AbstractConfig.startOnBoot]] requires `stopOnTerminate: false`.
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        BackgroundFetch.configure({
+          stopOnTerminate: false,
+          startOnBoot: true,
+          enableHeadless: true,
+        }, async (taskId) => {
+          BackgroundFetch.finish(taskId);
+        });
+      dart: |-
+        BackgroundFetch.configure(BackgroundFetchConfig(
+          stopOnTerminate: false,
+          startOnBoot: true,
+          enableHeadless: true,
+        ), (String taskId) async {
+          BackgroundFetch.finish(taskId);
+        });
+signatures:
+  ts: "stopOnTerminate?: boolean;"
+  dart: "bool? stopOnTerminate"

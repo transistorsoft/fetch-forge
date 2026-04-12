@@ -1,0 +1,30 @@
+id: TaskConfig.periodic
+kind: property
+ts_type: boolean
+optional: true
+description: |-
+  Set `true` to schedule a repeating task.  Defaults to `false` (one-shot).
+
+  When `true`, the task automatically re-schedules itself after each execution
+  using the same [[TaskConfig.delay]] as the repeat interval.
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        BackgroundFetch.scheduleTask({
+          taskId: 'com.foo.periodic',
+          delay: 900000,    // 15 minutes in ms
+          periodic: true,
+        });
+      dart: |-
+        BackgroundFetch.scheduleTask(TaskConfig(
+          taskId: 'com.foo.periodic',
+          delay: 900000,
+          periodic: true,
+        ));
+signatures:
+  ts: "periodic?: boolean;"
+  dart: "bool? periodic"

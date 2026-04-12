@@ -1,0 +1,13 @@
+[project]
+name = "fetch-docforge"
+version = "0.1.0"
+description = "Documentation pipeline for the Background Fetch SDK"
+requires-python = ">=3.11"
+dependencies = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.6",
+    "pyyaml>=6.0.3",
+]
+
+[tool.uv]
+package = false

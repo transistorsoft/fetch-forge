@@ -1,0 +1,29 @@
+id: TaskConfig.delay
+kind: property
+ts_type: number
+optional: false
+description: |-
+  The minimum delay in **milliseconds** before this task fires.
+
+  The OS may delay the task beyond this value depending on device conditions, battery
+  state, and other scheduling constraints.
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        // Fire at least 30 seconds from now.
+        BackgroundFetch.scheduleTask({
+          taskId: 'com.foo.task',
+          delay: 30000,
+        });
+      dart: |-
+        BackgroundFetch.scheduleTask(TaskConfig(
+          taskId: 'com.foo.task',
+          delay: 30000,
+        ));
+signatures:
+  ts: "delay: number;"
+  dart: "int delay"

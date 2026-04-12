@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Shell wrapper — delegates to forge.py via uv.
+set -euo pipefail
+DIR="$(cd "$(dirname "$0")" && pwd)"
+exec uv run --project "$DIR" python3 "$DIR/forge.py" "$@"

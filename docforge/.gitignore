@@ -1,0 +1,6 @@
+mkdocs-site/site/
+mkdocs-site/docs/
+mkdocs-site/mkdocs.yml
+__pycache__/
+.venv/
+*.pyc

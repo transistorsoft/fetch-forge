@@ -1,0 +1,13 @@
+id: AbstractConfig.requiresDeviceIdle
+kind: property
+ts_type: boolean
+optional: true
+description: |-
+  [Android only] Set `true` to require the device to be idle (not actively used)
+  before running this task.  Defaults to `false`.
+
+  This is a good option for resource-intensive tasks.  Battery usage is still
+  attributed to your app and surfaced to the user in battery stats.
+signatures:
+  ts: "requiresDeviceIdle?: boolean;"
+  dart: "bool? requiresDeviceIdle"

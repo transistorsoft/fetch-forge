@@ -470,6 +470,58 @@ run_unlink_ios() {
   esac
 }
 
+# ── docs domain ──────────────────────────────────────────────────────
+run_docs() {
+  exec "$ROOT/docforge/docforge" "$@"
+}
+
+# ── publish docs ──────────────────────────────────────────────────────
+publish_docs() {
+  local DOCFORGE_DIR="$ROOT/docforge"
+  require_dir "$DOCFORGE_DIR" "docforge"
+
+  echo -e "${CYAN}Building docs site...${RESET}"
+  "$DOCFORGE_DIR/docforge" site
+
+  local TMP_SITE TMP_WORKTREE
+  TMP_SITE="$(mktemp -d)"
+  TMP_WORKTREE="$(mktemp -d)"
+  rm -rf "$TMP_WORKTREE"
+
+  cp -R "$DOCFORGE_DIR/mkdocs-site/site/." "$TMP_SITE/"
+
+  local CURRENT_BRANCH
+  CURRENT_BRANCH="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)"
+
+  if ! git -C "$ROOT" show-ref --verify --quiet refs/heads/gh-pages; then
+    echo -e "${CYAN}Creating gh-pages branch...${RESET}"
+    git -C "$ROOT" checkout --orphan gh-pages
+    git -C "$ROOT" rm -rf . --quiet
+    git -C "$ROOT" commit --allow-empty -m "chore: initialise gh-pages"
+    git -C "$ROOT" checkout "$CURRENT_BRANCH"
+  fi
+
+  echo -e "${CYAN}Checking out gh-pages via worktree...${RESET}"
+  git -C "$ROOT" worktree add "$TMP_WORKTREE" gh-pages
+  git -C "$TMP_WORKTREE" rm -rf . --quiet 2>/dev/null || true
+  cp -R "$TMP_SITE/." "$TMP_WORKTREE/"
+  touch "$TMP_WORKTREE/.nojekyll"
+  echo "fetch.transistorsoft.com" > "$TMP_WORKTREE/CNAME"
+
+  git -C "$TMP_WORKTREE" add -A
+  if git -C "$TMP_WORKTREE" diff --cached --quiet; then
+    echo -e "${DIM}No changes to publish.${RESET}"
+  else
+    git -C "$TMP_WORKTREE" commit -m "docs: publish site from ${CURRENT_BRANCH}"
+    echo -e "${CYAN}Pushing gh-pages...${RESET}"
+    git -C "$TMP_WORKTREE" push origin gh-pages
+    echo -e "${GREEN}Published → https://fetch.transistorsoft.com${RESET}"
+  fi
+
+  git -C "$ROOT" worktree remove --force "$TMP_WORKTREE"
+  rm -rf "$TMP_SITE"
+}
+
 # ── setup domain ─────────────────────────────────────────────────────
 run_setup() {
   local target="${1:-tools}"
@@ -629,9 +681,25 @@ EOF
     status)
       echo "forge status — Show versions and submodule status"
       ;;
+    docs)
+      cat <<EOF
+forge docs <command>
+
+Commands:
+  site   Generate MkDocs content from db/ and build the site
+  serve  Generate + serve live-reloading dev server on port 8082
+
+Extra args are forwarded to docforge/forge.py.
+EOF
+      ;;
     "")
       cat <<EOF
 ${BOLD}forge${RESET} — Fetch Forge monorepo CLI
+
+${BOLD}Docs${RESET}
+  forge docs site            Build docs site (docforge/mkdocs-site/site/)
+  forge docs serve           Live-reloading dev server on port 8082
+  forge publish docs         Push site to gh-pages → fetch.transistorsoft.com
 
 ${BOLD}Build${RESET}
   forge build <target>       Build a platform SDK
@@ -668,8 +736,13 @@ cmd="${1:-help}"
 shift || true
 
 case "$cmd" in
+  docs)       run_docs "$@" ;;
   build)      run_build "$@" ;;
-  publish)    run_publish "$@" ;;
+  publish)
+    # Intercept 'publish docs' before passing to run_publish
+    if [[ "${1:-}" == "docs" ]]; then shift; publish_docs "$@"
+    else run_publish "$@"; fi
+    ;;
   link-ios)   run_link_ios "$@" ;;
   unlink-ios) run_unlink_ios "$@" ;;
   setup)      run_setup "$@" ;;

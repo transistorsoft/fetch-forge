@@ -1,0 +1,10 @@
+id: AbstractConfig.requiresStorageNotLow
+kind: property
+ts_type: boolean
+optional: true
+description: |-
+  [Android only] Set `true` to require the device's available storage to be above
+  the "low storage" threshold before running this task.  Defaults to `false`.
+signatures:
+  ts: "requiresStorageNotLow?: boolean;"
+  dart: "bool? requiresStorageNotLow"

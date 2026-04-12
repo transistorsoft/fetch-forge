@@ -1,0 +1,30 @@
+id: BackgroundFetch.stop
+kind: method
+description: |-
+  Stop subscribing to background-fetch events.
+
+  - If a `taskId` is provided, only that specific scheduled task is cancelled.
+  - If no `taskId` is provided, **all** background-fetch and scheduled tasks are cancelled.
+
+  Use [[BackgroundFetch.start]] to resume after stopping.
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        // Stop all background-fetch events.
+        await BackgroundFetch.stop();
+
+        // Stop a single scheduled task by taskId.
+        await BackgroundFetch.stop('com.foo.customtask');
+      dart: |-
+        // Stop all background-fetch events.
+        await BackgroundFetch.stop();
+
+        // Stop a single scheduled task by taskId.
+        await BackgroundFetch.stop('com.foo.customtask');
+signatures:
+  ts: "static stop(taskId?: string): Promise<boolean>;"
+  dart: "static Future<int> stop([String? taskId])"

@@ -1,0 +1,45 @@
+id: BackgroundFetch.status
+kind: method
+description: |-
+  Query the current authorization status of the Background Fetch API.
+
+  | Value | Constant | Description |
+  |---|---|---|
+  | `0` | [[BackgroundFetch.STATUS_RESTRICTED]] | Background fetch updates are unavailable and the user cannot enable them again (e.g. parental controls). |
+  | `1` | [[BackgroundFetch.STATUS_DENIED]] | The user explicitly disabled background behavior for this app or the whole system. |
+  | `2` | [[BackgroundFetch.STATUS_AVAILABLE]] | Background fetch is available and enabled. |
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        const status = await BackgroundFetch.status();
+        switch (status) {
+          case BackgroundFetch.STATUS_RESTRICTED:
+            console.log('Background fetch restricted');
+            break;
+          case BackgroundFetch.STATUS_DENIED:
+            console.log('Background fetch denied by user');
+            break;
+          case BackgroundFetch.STATUS_AVAILABLE:
+            console.log('Background fetch available');
+            break;
+        }
+      dart: |-
+        int status = await BackgroundFetch.status;
+        switch (status) {
+          case BackgroundFetch.STATUS_RESTRICTED:
+            print('Background fetch restricted');
+            break;
+          case BackgroundFetch.STATUS_DENIED:
+            print('Background fetch denied by user');
+            break;
+          case BackgroundFetch.STATUS_AVAILABLE:
+            print('Background fetch available');
+            break;
+        }
+signatures:
+  ts: "static status(callback?: (status: BackgroundFetchStatus) => void): Promise<BackgroundFetchStatus>;"
+  dart: "static Future<int> get status"

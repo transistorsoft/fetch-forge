@@ -1,0 +1,32 @@
+id: BackgroundFetchConfig.minimumFetchInterval
+kind: property
+ts_type: number
+optional: true
+description: |-
+  The minimum interval in **minutes** between background-fetch events.
+  Defaults to `15` minutes.  The minimum allowed value is `15` minutes.
+
+  ❗ NOTE: The OS does not guarantee fetch events will fire at exactly this interval.
+  iOS adjusts timing based on usage patterns and battery state.  This is a *minimum*
+  hint, not a precise schedule.
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        BackgroundFetch.configure({
+          minimumFetchInterval: 15,   // iOS: fire no more often than every 15 minutes
+        }, async (taskId) => {
+          BackgroundFetch.finish(taskId);
+        });
+      dart: |-
+        BackgroundFetch.configure(BackgroundFetchConfig(
+          minimumFetchInterval: 15,
+        ), (String taskId) async {
+          BackgroundFetch.finish(taskId);
+        });
+signatures:
+  ts: "minimumFetchInterval?: number;"
+  dart: "int? minimumFetchInterval"

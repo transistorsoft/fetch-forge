@@ -1,0 +1,64 @@
+id: BackgroundFetch.scheduleTask
+kind: method
+description: |-
+  Schedule a custom one-shot or periodic background task in addition to the default
+  fetch event registered with [[BackgroundFetch.configure]].
+
+  Custom tasks fire the same `onEvent` callback registered in [[BackgroundFetch.configure]],
+  identified by their [[TaskConfig.taskId]].  Call [[BackgroundFetch.finish]] with that
+  `taskId` to signal completion, and [[BackgroundFetch.stop]] with the `taskId` to cancel.
+
+  ## iOS
+
+  On iOS, custom tasks are registered using the `BGProcessingTask` API.  You must declare
+  each `taskId` in your app's `Info.plist` under `BGTaskSchedulerPermittedIdentifiers`
+  before calling `scheduleTask`.
+
+  ## Android
+
+  Android uses `JobScheduler` (or `AlarmManager` when [[AbstractConfig.forceAlarmManager]]
+  is `true`) and supports all [[AbstractConfig]] scheduling constraints.
+
+  @example example-oneshot
+  @example example-periodic
+examples:
+  example-oneshot:
+    title: One-shot task
+    code:
+      ts: |-
+        BackgroundFetch.scheduleTask({
+          taskId: 'com.foo.customtask',   // <-- unique identifier
+          delay: 5000,                    // <-- minimum delay in ms
+          forceAlarmManager: true,        // <-- Android: bypass JobScheduler
+          stopOnTerminate: false,
+        });
+
+        // The same onEvent callback from configure() will fire with taskId 'com.foo.customtask'.
+      dart: |-
+        BackgroundFetch.scheduleTask(TaskConfig(
+          taskId: 'com.foo.customtask',
+          delay: 5000,
+          stopOnTerminate: false,
+        ));
+  example-periodic:
+    title: Periodic task
+    code:
+      ts: |-
+        BackgroundFetch.scheduleTask({
+          taskId: 'com.foo.periodic-sync',
+          delay: 600000,       // <-- 10 minutes in ms
+          periodic: true,      // <-- repeat indefinitely
+          requiredNetworkType: BackgroundFetch.NETWORK_TYPE_ANY,  // <-- Android
+          requiresNetworkConnectivity: true,  // <-- iOS
+        });
+      dart: |-
+        BackgroundFetch.scheduleTask(TaskConfig(
+          taskId: 'com.foo.periodic-sync',
+          delay: 600000,
+          periodic: true,
+          requiredNetworkType: BackgroundFetch.NETWORK_TYPE_ANY,
+          requiresNetworkConnectivity: true,
+        ));
+signatures:
+  ts: "static scheduleTask(config: TaskConfig): Promise<boolean>;"
+  dart: "static Future<bool> scheduleTask(TaskConfig config)"

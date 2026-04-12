@@ -1,0 +1,31 @@
+id: TaskConfig.requiresNetworkConnectivity
+kind: property
+ts_type: boolean
+optional: true
+description: |-
+  [iOS only] Set `true` to require a network connection before this task runs.
+
+  On Android, use [[AbstractConfig.requiredNetworkType]] instead.
+
+  @example example-1
+examples:
+  example-1:
+    title: Example
+    code:
+      ts: |-
+        BackgroundFetch.scheduleTask({
+          taskId: 'com.foo.networktask',
+          delay: 60000,
+          requiresNetworkConnectivity: true,      // <-- iOS
+          requiredNetworkType: BackgroundFetch.NETWORK_TYPE_ANY, // <-- Android
+        });
+      dart: |-
+        BackgroundFetch.scheduleTask(TaskConfig(
+          taskId: 'com.foo.networktask',
+          delay: 60000,
+          requiresNetworkConnectivity: true,
+          requiredNetworkType: BackgroundFetch.NETWORK_TYPE_ANY,
+        ));
+signatures:
+  ts: "requiresNetworkConnectivity?: boolean;"
+  dart: "bool? requiresNetworkConnectivity"
