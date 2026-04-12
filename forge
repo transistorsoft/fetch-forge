@@ -36,8 +36,8 @@ require_dir() {
 get_version_npm() { node -p "require('$1/package.json').version" 2>/dev/null || echo "?"; }
 get_version_pub() { grep '^version:' "$1/pubspec.yaml" 2>/dev/null | awk '{print $2}' || echo "?"; }
 get_version_native_ios() {
-  grep "s\.version\s*=" "$DIR_NATIVE/TSBackgroundFetch.podspec" 2>/dev/null \
-    | head -1 | sed "s/.*=\s*'\([^']*\)'.*/\1/" || echo "?"
+  grep "s\.version" "$DIR_NATIVE/TSBackgroundFetch.podspec" 2>/dev/null \
+    | head -1 | sed "s/.*'\([^']*\)'.*/\1/" || echo "?"
 }
 get_version_native_android() {
   local f="$DIR_NATIVE/android/versioning/tsbackgroundfetch.properties"
