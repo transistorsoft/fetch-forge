@@ -1,167 +1,167 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://fetch.transistorsoft.com/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/capacitor/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/capacitor/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/capacitor/BackgroundFetch/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/capacitor/BackgroundFetch/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/capacitor/BackgroundFetchConfig/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/capacitor/BackgroundFetchConfig/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/capacitor/BackgroundFetchStatus/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/capacitor/BackgroundFetchStatus/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/capacitor/HeadlessEvent/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/capacitor/HeadlessEvent/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/capacitor/NetworkType/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/capacitor/NetworkType/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/capacitor/TaskConfig/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/capacitor/TaskConfig/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/capacitor/debugging/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/capacitor/debugging/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/capacitor/examples/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/capacitor/examples/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/capacitor/setup/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/capacitor/setup/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/cordova/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/cordova/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/cordova/BackgroundFetch/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/cordova/BackgroundFetch/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/cordova/BackgroundFetchConfig/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/cordova/BackgroundFetchConfig/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/cordova/BackgroundFetchStatus/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/cordova/BackgroundFetchStatus/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/cordova/HeadlessEvent/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/cordova/HeadlessEvent/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/cordova/NetworkType/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/cordova/NetworkType/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/cordova/TaskConfig/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/cordova/TaskConfig/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/cordova/debugging/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/cordova/debugging/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/cordova/examples/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/cordova/examples/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/cordova/setup/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/cordova/setup/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/flutter/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/flutter/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/flutter/BackgroundFetch/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/flutter/BackgroundFetch/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/flutter/BackgroundFetchConfig/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/flutter/BackgroundFetchConfig/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/flutter/BackgroundFetchStatus/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/flutter/BackgroundFetchStatus/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/flutter/HeadlessEvent/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/flutter/HeadlessEvent/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/flutter/NetworkType/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/flutter/NetworkType/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/flutter/TaskConfig/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/flutter/TaskConfig/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/flutter/debugging/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/flutter/debugging/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/flutter/examples/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/flutter/examples/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/flutter/setup/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/flutter/setup/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/react-native/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/react-native/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/react-native/BackgroundFetch/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/react-native/BackgroundFetch/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/react-native/BackgroundFetchConfig/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/react-native/BackgroundFetchConfig/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/react-native/BackgroundFetchStatus/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/react-native/BackgroundFetchStatus/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/react-native/HeadlessEvent/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/react-native/HeadlessEvent/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/react-native/NetworkType/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/react-native/NetworkType/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/react-native/TaskConfig/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/react-native/TaskConfig/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/react-native/debugging/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/react-native/debugging/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/react-native/examples/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/react-native/examples/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
     <url>
-         <loc>https://fetch.transistorsoft.com/react-native/setup/</loc>
+         <loc>https://transistorsoft.github.io/transistor-background-fetch/react-native/setup/</loc>
          <lastmod>2026-04-14</lastmod>
     </url>
 </urlset>
