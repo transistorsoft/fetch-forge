@@ -1,0 +1,7 @@
+id: NetworkType.NETWORK_TYPE_NONE
+kind: constant
+description: |-
+  No network constraint — the task will run regardless of connectivity.  This is the default.
+signatures:
+  ts: "static NETWORK_TYPE_NONE: NetworkType = 0;"
+  dart: "NetworkType.NONE"

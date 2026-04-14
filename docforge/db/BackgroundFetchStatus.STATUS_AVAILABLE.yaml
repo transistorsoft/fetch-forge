@@ -1,0 +1,7 @@
+id: BackgroundFetchStatus.STATUS_AVAILABLE
+kind: constant
+description: |-
+  Background fetch is available and enabled.
+signatures:
+  ts: "static STATUS_AVAILABLE: BackgroundFetchStatus = 2;"
+  dart: "static const int STATUS_AVAILABLE = 2;"

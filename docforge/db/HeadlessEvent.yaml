@@ -10,6 +10,167 @@ description: |-
   | [[HeadlessEvent.timeout\|timeout]] | `boolean` | `true` when the OS signals that background time is nearly exhausted. |
 
   @example example-1
+platform_description:
+  react-native: |-
+    The event object delivered to a [[BackgroundFetch.registerHeadlessTask]] handler
+    when the app is running in a terminated (headless) state on Android.
+
+    | Property | Type | Description |
+    |---|---|---|
+    | [[HeadlessEvent.taskId\|taskId]] | `string` | Identifier of the task that fired. Pass to [[BackgroundFetch.finish]]. |
+    | [[HeadlessEvent.timeout\|timeout]] | `boolean` | `true` when the OS signals that background time is nearly exhausted. |
+
+    📂 **`index.js`** (**MUST** be in `index.js`):
+
+    ```typescript
+    import BackgroundFetch, { HeadlessEvent } from "react-native-background-fetch";
+
+    const MyHeadlessTask = async (event: HeadlessEvent) => {
+      let taskId = event.taskId;
+      let isTimeout = event.timeout;
+      if (isTimeout) {
+        console.log('[BackgroundFetch] Headless TIMEOUT:', taskId);
+        BackgroundFetch.finish(taskId);
+        return;
+      }
+      console.log('[BackgroundFetch HeadlessTask] start:', taskId);
+
+      // Perform your work here...
+
+      BackgroundFetch.finish(taskId);
+    };
+
+    // Register your BackgroundFetch HeadlessTask
+    BackgroundFetch.registerHeadlessTask(MyHeadlessTask);
+    ```
+  capacitor: |-
+    The event object delivered to a headless task handler when the app is running
+    in a terminated (headless) state on Android.
+
+    With your app open in **Android Studio**, browse the **`app`** folder to find the **`MainActivity`** class.
+    Right-click the *containing folder* and click **New > Java Class**.
+
+    ![](https://dl.dropbox.com/s/ao511vydybru03y/capacitor-background-fetch-headless-setup-step1.png?dl=1)
+
+    You **MUST** name the file **`BackgroundFetchHeadlessTask`**.
+
+    ![](https://dl.dropbox.com/s/h15plzjh8mcsbur/capacitor-background-fetch-headless-setup-step2.png?dl=1)
+
+    Add the following Java code, taking care to preserve your **`package`** declaration:
+
+    ```java
+    package com.your.package.name;  // <-- DO NOT REPLACE THIS LINE
+
+    import android.content.Context;
+    import android.util.Log;
+
+    import com.transistorsoft.tsbackgroundfetch.BackgroundFetch;
+    import com.transistorsoft.tsbackgroundfetch.BGTask;
+
+    public class BackgroundFetchHeadlessTask {
+        public void onFetch(Context context, BGTask task) {
+            BackgroundFetch backgroundFetch = BackgroundFetch.getInstance(context);
+            String taskId = task.getTaskId();
+            boolean isTimeout = task.getTimedOut();
+            if (isTimeout) {
+                backgroundFetch.finish(taskId);
+                return;
+            }
+            Log.d("MyHeadlessTask", "onFetch: " + taskId);
+            // Do your work here...
+
+            backgroundFetch.finish(taskId);
+        }
+    }
+    ```
+  cordova: |-
+    The event object delivered to a headless task handler when the app is running
+    in a terminated (headless) state on Android.
+
+    !!! warning
+        You must be prepared to **write Java code**.
+
+    **Step 1:** Create a file named **`BackgroundFetchHeadlessTask.java`** in your app (e.g. `src/android/`).
+    The file can be located anywhere but **MUST** be named **`BackgroundFetchHeadlessTask.java`**:
+
+    ```java
+    package com.transistorsoft.cordova.backgroundfetch;
+
+    import android.content.Context;
+    import android.util.Log;
+
+    import com.transistorsoft.tsbackgroundfetch.BackgroundFetch;
+    import com.transistorsoft.tsbackgroundfetch.BGTask;
+
+    public class BackgroundFetchHeadlessTask implements HeadlessTask {
+        @Override
+        public void onFetch(Context context, BGTask task) {
+            String taskId = task.getTaskId();
+            boolean isTimeout = task.getTimedOut();
+            if (isTimeout) {
+                Log.d(BackgroundFetch.TAG, "TIMEOUT: " + taskId);
+                BackgroundFetch.getInstance(context).finish(taskId);
+                return;
+            }
+            Log.d(BackgroundFetch.TAG, "onFetch: " + taskId);
+            // Perform your work here...
+
+            BackgroundFetch.getInstance(context).finish(taskId);
+        }
+    }
+    ```
+
+    **Step 2:** In your **`config.xml`**, add a **`<resource-file>`** within `<platform name="android">`:
+
+    ```xml
+    <platform name="android">
+        <resource-file
+            src="src/android/BackgroundFetchHeadlessTask.java"
+            target="app/src/main/java/com/transistorsoft/cordova/backgroundfetch/BackgroundFetchHeadlessTask.java" />
+    </platform>
+    ```
+
+    - `src`: path to your custom `BackgroundFetchHeadlessTask.java`.
+    - `target`: **must** be exactly as shown above.
+  flutter: |-
+    The event object delivered to a [[BackgroundFetch.registerHeadlessTask]] handler
+    when the app is running in a terminated (headless) state on Android.
+
+    | Property | Type | Description |
+    |---|---|---|
+    | [[HeadlessEvent.taskId\|taskId]] | `String` | Identifier of the task that fired. Pass to [[BackgroundFetch.finish]]. |
+    | [[HeadlessEvent.timeout\|timeout]] | `bool` | `true` when the OS signals that background time is nearly exhausted. |
+
+    📂 **`lib/main.dart`**:
+
+    ```dart
+    import 'package:flutter/material.dart';
+    import 'package:background_fetch/background_fetch.dart';
+
+    // This "Headless Task" is run when the app is terminated.
+    // Must be a top-level or static function.
+    @pragma('vm:entry-point')
+    void backgroundFetchHeadlessTask(HeadlessEvent task) async {
+      String taskId = task.taskId;
+      bool isTimeout = task.timeout;
+      if (isTimeout) {
+        // This task has exceeded its allowed running-time.
+        print("[BackgroundFetch] Headless TIMEOUT: $taskId");
+        BackgroundFetch.finish(taskId);
+        return;
+      }
+      print("[BackgroundFetch] Headless event received: $taskId");
+      BackgroundFetch.finish(taskId);
+    }
+
+    void main() {
+      runApp(MyApp());
+
+      // Register to receive BackgroundFetch events after app is terminated.
+      // Requires {stopOnTerminate: false, enableHeadless: true}
+      BackgroundFetch.registerHeadlessTask(backgroundFetchHeadlessTask);
+    }
+    ```
 examples:
   example-1:
     title: Example
@@ -29,7 +190,7 @@ examples:
         BackgroundFetch.registerHeadlessTask(BackgroundFetchHeadlessTask);
       dart: |-
         @pragma('vm:entry-point')
-        void backgroundFetchHeadlessTask(HeadlessTask task) async {
+        void backgroundFetchHeadlessTask(HeadlessEvent task) async {
           if (task.timeout) {
             BackgroundFetch.finish(task.taskId);
             return;
@@ -39,4 +200,4 @@ examples:
         }
 signatures:
   ts: "interface HeadlessEvent"
-  dart: "class HeadlessTask"
+  dart: "class HeadlessEvent"

@@ -4,7 +4,7 @@ docforge — documentation pipeline for fetch-forge.
 
 Commands:
   site    Generate MkDocs content from db/*.yaml and build the site.
-  serve   Generate + serve a live-reloading dev server on port 8082.
+  serve   Generate + serve a live-reloading dev server (default port 9000).
   help    Show this help.
 """
 
@@ -39,12 +39,19 @@ def cmd_site(args):
 
 
 def cmd_serve(args):
-    """Generate content and start a live-reloading dev server on port 8082."""
+    """Generate content and start a live-reloading dev server (default port 9000)."""
     _generate()
     site_dir = ROOT / "mkdocs-site"
-    print(_cyan("Starting MkDocs dev server on http://127.0.0.1:8082 ..."))
+    port = "9000"
+    for arg in args:
+        if arg.startswith("--port="):
+            port = arg.split("=", 1)[1]
+        elif arg.isdigit():
+            port = arg
+    addr = f"127.0.0.1:{port}"
+    print(_cyan(f"Starting MkDocs dev server on http://{addr} ..."))
     subprocess.run(
-        ["mkdocs", "serve", "--dev-addr", "127.0.0.1:8082"],
+        ["mkdocs", "serve", "--dev-addr", addr],
         cwd=site_dir,
         check=True,
     )

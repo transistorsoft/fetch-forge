@@ -12,8 +12,9 @@ description: |-
   additional scheduling constraints such as [[AbstractConfig.requiredNetworkType]],
   [[AbstractConfig.requiresCharging]], etc.
 
-  ⚠️ You **must** call [[BackgroundFetch.finish]] within your event callback.  Failure to
-  do so will result in the OS throttling future background events for your app.
+  !!! warning
+      You **must** call [[BackgroundFetch.finish]] within your event callback.  Failure to
+      do so will result in the OS throttling future background events for your app.
 
   @example example-basic
   @example example-android
@@ -26,7 +27,7 @@ examples:
           minimumFetchInterval: 15,     // <-- iOS: minimum interval in minutes
         }, async (taskId) => {
           console.log('[BackgroundFetch] taskId:', taskId);
-          // ⚠️ You MUST call finish() when your work is complete.
+          // You MUST call finish() when your work is complete.
           BackgroundFetch.finish(taskId);
         }, (taskId) => {
           // The OS is about to kill your app — stop all work immediately.

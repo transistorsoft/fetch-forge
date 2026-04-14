@@ -1,0 +1,12 @@
+id: HeadlessEvent.timeout
+kind: property
+ts_type: boolean
+description: |-
+  `true` when the OS signals that background running-time is nearly exhausted.
+
+  When a timeout event fires you **must** immediately call [[BackgroundFetch.finish]]
+  and stop any in-progress work.  Failure to do so may cause the OS to penalize
+  your app.
+signatures:
+  ts: "timeout: boolean;"
+  dart: "bool timeout"

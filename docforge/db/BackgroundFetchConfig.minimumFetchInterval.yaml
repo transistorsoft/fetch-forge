@@ -6,9 +6,10 @@ description: |-
   The minimum interval in **minutes** between background-fetch events.
   Defaults to `15` minutes.  The minimum allowed value is `15` minutes.
 
-  ❗ NOTE: The OS does not guarantee fetch events will fire at exactly this interval.
-  iOS adjusts timing based on usage patterns and battery state.  This is a *minimum*
-  hint, not a precise schedule.
+  !!! note
+      The OS does not guarantee fetch events will fire at exactly this interval.
+      iOS adjusts timing based on usage patterns and battery state.  This is a *minimum*
+      hint, not a precise schedule.
 
   @example example-1
 examples:

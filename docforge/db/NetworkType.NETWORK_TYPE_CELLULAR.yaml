@@ -1,0 +1,7 @@
+id: NetworkType.NETWORK_TYPE_CELLULAR
+kind: constant
+description: |-
+  Requires a cellular (mobile data) network connection.
+signatures:
+  ts: "static NETWORK_TYPE_CELLULAR: NetworkType = 2;"
+  dart: "NetworkType.CELLULAR"

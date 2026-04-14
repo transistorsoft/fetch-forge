@@ -5,9 +5,9 @@ description: |-
 
   | Value | Constant | Description |
   |---|---|---|
-  | `0` | [[BackgroundFetch.STATUS_RESTRICTED]] | Background fetch updates are unavailable and the user cannot enable them again (e.g. parental controls). |
-  | `1` | [[BackgroundFetch.STATUS_DENIED]] | The user explicitly disabled background behavior for this app or the whole system. |
-  | `2` | [[BackgroundFetch.STATUS_AVAILABLE]] | Background fetch is available and enabled. |
+  | `0` | [[BackgroundFetchStatus.STATUS_RESTRICTED]] | Background fetch updates are unavailable and the user cannot enable them again (e.g. parental controls). |
+  | `1` | [[BackgroundFetchStatus.STATUS_DENIED]] | The user explicitly disabled background behavior for this app or the whole system. |
+  | `2` | [[BackgroundFetchStatus.STATUS_AVAILABLE]] | Background fetch is available and enabled. |
 
   @example example-1
 examples:

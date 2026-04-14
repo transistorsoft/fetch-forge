@@ -1,0 +1,7 @@
+id: BackgroundFetchStatus
+kind: enum
+description: |-
+  Authorization status returned by [[BackgroundFetch.status]] and [[BackgroundFetch.configure]].
+signatures:
+  ts: "type BackgroundFetchStatus = 0 | 1 | 2;"
+  dart: "int"

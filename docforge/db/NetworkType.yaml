@@ -1,0 +1,8 @@
+id: NetworkType
+kind: enum
+description: |-
+  [Android only] Network connectivity constraint for use with
+  [[AbstractConfig.requiredNetworkType]].
+signatures:
+  ts: "type NetworkType = 0 | 1 | 2 | 3 | 4;"
+  dart: "enum NetworkType"

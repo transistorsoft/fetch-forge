@@ -6,7 +6,8 @@ description: |-
   [Android only] Set `true` to resume background-fetch events when the device is
   rebooted.  Defaults to `false`.
 
-  ❗ NOTE: Requires [[AbstractConfig.stopOnTerminate]] `false`.
+  !!! note
+      Requires [[AbstractConfig.stopOnTerminate]] `false`.
 signatures:
   ts: "startOnBoot?: boolean;"
   dart: "bool? startOnBoot"

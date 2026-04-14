@@ -1,0 +1,7 @@
+id: NetworkType.NETWORK_TYPE_UNMETERED
+kind: constant
+description: |-
+  Requires an unmetered network connection (e.g. Wi-Fi).
+signatures:
+  ts: "static NETWORK_TYPE_UNMETERED: NetworkType = 3;"
+  dart: "NetworkType.UNMETERED"

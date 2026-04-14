@@ -1,0 +1,8 @@
+id: BackgroundFetchStatus.STATUS_RESTRICTED
+kind: constant
+description: |-
+  Background fetch updates are unavailable and the user cannot enable them again
+  (e.g. parental controls are in effect).
+signatures:
+  ts: "static STATUS_RESTRICTED: BackgroundFetchStatus = 0;"
+  dart: "static const int STATUS_RESTRICTED = 0;"

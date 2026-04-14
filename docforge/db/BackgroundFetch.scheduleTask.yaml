@@ -8,13 +8,13 @@ description: |-
   identified by their [[TaskConfig.taskId]].  Call [[BackgroundFetch.finish]] with that
   `taskId` to signal completion, and [[BackgroundFetch.stop]] with the `taskId` to cancel.
 
-  ## iOS
+  ### iOS
 
   On iOS, custom tasks are registered using the `BGProcessingTask` API.  You must declare
   each `taskId` in your app's `Info.plist` under `BGTaskSchedulerPermittedIdentifiers`
   before calling `scheduleTask`.
 
-  ## Android
+  ### Android
 
   Android uses `JobScheduler` (or `AlarmManager` when [[AbstractConfig.forceAlarmManager]]
   is `true`) and supports all [[AbstractConfig]] scheduling constraints.

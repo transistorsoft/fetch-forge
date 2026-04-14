@@ -1,0 +1,7 @@
+id: NetworkType.NETWORK_TYPE_ANY
+kind: constant
+description: |-
+  Requires any active network connection.
+signatures:
+  ts: "static NETWORK_TYPE_ANY: NetworkType = 1;"
+  dart: "NetworkType.ANY"

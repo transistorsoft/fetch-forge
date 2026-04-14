@@ -6,7 +6,8 @@ description: |-
   [Android only] Set `false` to continue receiving background-fetch events after the
   user terminates the app.  Defaults to `true`.
 
-  ❗ NOTE: [[AbstractConfig.startOnBoot]] requires `stopOnTerminate: false`.
+  !!! note
+      [[AbstractConfig.startOnBoot]] requires `stopOnTerminate: false`.
 
   @example example-1
 examples:

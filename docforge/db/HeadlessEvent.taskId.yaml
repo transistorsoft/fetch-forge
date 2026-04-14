@@ -1,0 +1,10 @@
+id: HeadlessEvent.taskId
+kind: property
+ts_type: string
+description: |-
+  The identifier of the task that fired this headless event.
+
+  Pass this value to [[BackgroundFetch.finish]] when your work is complete.
+signatures:
+  ts: "taskId: string;"
+  dart: "String taskId"

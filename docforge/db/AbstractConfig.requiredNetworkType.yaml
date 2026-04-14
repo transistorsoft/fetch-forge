@@ -4,18 +4,18 @@ ts_type: NetworkType
 optional: true
 description: |-
   [Android only] Specify the kind of network connectivity required to run this task.
-  Defaults to [[BackgroundFetch.NETWORK_TYPE_NONE]] (no network required).
+  Defaults to [[NetworkType.NETWORK_TYPE_NONE]] (no network required).
 
   If the required network type is unavailable, the task will not run until the
   constraint is satisfied.
 
   | Value | Constant | Description |
   |---|---|---|
-  | `0` | [[BackgroundFetch.NETWORK_TYPE_NONE]] | No network constraint. |
-  | `1` | [[BackgroundFetch.NETWORK_TYPE_ANY]] | Any active network connection. |
-  | `2` | [[BackgroundFetch.NETWORK_TYPE_CELLULAR]] | Cellular (mobile data) connection. |
-  | `3` | [[BackgroundFetch.NETWORK_TYPE_UNMETERED]] | Unmetered (e.g. Wi-Fi) connection. |
-  | `4` | [[BackgroundFetch.NETWORK_TYPE_NOT_ROAMING]] | Non-roaming connection. |
+  | `0` | [[NetworkType.NETWORK_TYPE_NONE]] | No network constraint. |
+  | `1` | [[NetworkType.NETWORK_TYPE_ANY]] | Any active network connection. |
+  | `2` | [[NetworkType.NETWORK_TYPE_CELLULAR]] | Cellular (mobile data) connection. |
+  | `3` | [[NetworkType.NETWORK_TYPE_UNMETERED]] | Unmetered (e.g. Wi-Fi) connection. |
+  | `4` | [[NetworkType.NETWORK_TYPE_NOT_ROAMING]] | Non-roaming connection. |
 
   On iOS, use [[TaskConfig.requiresNetworkConnectivity]] instead.
 

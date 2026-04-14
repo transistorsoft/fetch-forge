@@ -1,0 +1,7 @@
+id: BackgroundFetchStatus.STATUS_DENIED
+kind: constant
+description: |-
+  The user explicitly disabled background behavior for this app or for the whole system.
+signatures:
+  ts: "static STATUS_DENIED: BackgroundFetchStatus = 1;"
+  dart: "static const int STATUS_DENIED = 1;"
