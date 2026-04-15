@@ -78,8 +78,6 @@
     'CocoaPods':                      'layers',
     'Background Modes':               'radio',
     'Info.plist':                     'file-code',
-    'AppDelegate':                    'file-cog',
-    'AppDelegate.swift':              'file-cog',
     // Android sub-sections
     // Expo sub-sections
     'app.json':                       'file-json',

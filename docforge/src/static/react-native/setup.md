@@ -34,16 +34,6 @@
 
     {{> ios-info-plist.md}}
 
-    #### AppDelegate
-
-    === "Objective-C"
-
-        {{> ios-appdelegate-objc.md}}
-
-    === "Swift"
-
-        {{> ios-appdelegate-swift.md}}
-
     ### Android Setup
 
     !!! success "No Gradle configuration required"

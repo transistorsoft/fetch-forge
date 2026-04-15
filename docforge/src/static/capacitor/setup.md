@@ -29,40 +29,6 @@
 
 {{> ios-info-plist.md}}
 
-### AppDelegate.swift
-
-```swift hl_lines="3 13-16 21-27"
-import UIKit
-import Capacitor
-import TSBackgroundFetch
-
-@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
-
-    var window: UIWindow?
-
-    func application(_ application: UIApplication,
-                     didFinishLaunchingWithOptions launchOptions:
-                       [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // [REQUIRED] Register BackgroundFetch
-        let fetchManager = TSBackgroundFetch.sharedInstance()
-        fetchManager?.didFinishLaunching()
-
-        return true
-    }
-
-    // [REQUIRED] Background fetch delegate
-    func application(_ application: UIApplication,
-                     performFetchWithCompletionHandler completionHandler:
-                       @escaping (UIBackgroundFetchResult) -> Void) {
-        let fetchManager = TSBackgroundFetch.sharedInstance()
-        fetchManager?.perform(completionHandler: completionHandler,
-                              applicationState: application.applicationState)
-    }
-}
-```
-
-
 ## Android Setup
 
 No additional Android setup is required.
