@@ -541,7 +541,9 @@ run_docs() {
 # ── publish docs ──────────────────────────────────────────────────────
 publish_docs() {
   local DOCFORGE_DIR="$ROOT/docforge"
+  local DEPLOY_REPO="$DIR_NATIVE"   # transistor-background-fetch hosts the GitHub Pages site
   require_dir "$DOCFORGE_DIR" "docforge"
+  require_dir "$DEPLOY_REPO" "native/background-fetch"
 
   echo -e "${CYAN}Building docs site...${RESET}"
   "$DOCFORGE_DIR/docforge" site
@@ -554,18 +556,25 @@ publish_docs() {
   cp -R "$DOCFORGE_DIR/mkdocs-site/site/." "$TMP_SITE/"
 
   local CURRENT_BRANCH
-  CURRENT_BRANCH="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)"
+  CURRENT_BRANCH="$(git -C "$DEPLOY_REPO" rev-parse --abbrev-ref HEAD)"
 
-  if ! git -C "$ROOT" show-ref --verify --quiet refs/heads/gh-pages; then
-    echo -e "${CYAN}Creating gh-pages branch...${RESET}"
-    git -C "$ROOT" checkout --orphan gh-pages
-    git -C "$ROOT" rm -rf . --quiet
-    git -C "$ROOT" commit --allow-empty -m "chore: initialise gh-pages"
-    git -C "$ROOT" checkout "$CURRENT_BRANCH"
+  if ! git -C "$DEPLOY_REPO" show-ref --verify --quiet refs/heads/gh-pages; then
+    # Fetch remote gh-pages if it exists; otherwise create an orphan in the worktree.
+    if git -C "$DEPLOY_REPO" fetch origin gh-pages 2>/dev/null; then
+      git -C "$DEPLOY_REPO" branch gh-pages FETCH_HEAD
+    else
+      echo -e "${CYAN}Creating orphan gh-pages branch...${RESET}"
+      git -C "$DEPLOY_REPO" worktree add --detach "$TMP_WORKTREE"
+      git -C "$TMP_WORKTREE" checkout --orphan gh-pages
+      git -C "$TMP_WORKTREE" rm -rf . --quiet 2>/dev/null || true
+      git -C "$TMP_WORKTREE" commit --allow-empty -m "chore: initialise gh-pages"
+      git -C "$DEPLOY_REPO" worktree remove --force "$TMP_WORKTREE"
+      TMP_WORKTREE="$(mktemp -d)"; rm -rf "$TMP_WORKTREE"
+    fi
   fi
 
-  echo -e "${CYAN}Checking out gh-pages via worktree...${RESET}"
-  git -C "$ROOT" worktree add "$TMP_WORKTREE" gh-pages
+  echo -e "${CYAN}Checking out gh-pages via worktree (native/background-fetch)...${RESET}"
+  git -C "$DEPLOY_REPO" worktree add "$TMP_WORKTREE" gh-pages
   git -C "$TMP_WORKTREE" rm -rf . --quiet 2>/dev/null || true
   cp -R "$TMP_SITE/." "$TMP_WORKTREE/"
   touch "$TMP_WORKTREE/.nojekyll"
@@ -576,12 +585,12 @@ publish_docs() {
     echo -e "${DIM}No changes to publish.${RESET}"
   else
     git -C "$TMP_WORKTREE" commit -m "docs: publish site from ${CURRENT_BRANCH}"
-    echo -e "${CYAN}Pushing gh-pages...${RESET}"
-    git -C "$TMP_WORKTREE" push origin gh-pages
+    echo -e "${CYAN}Pushing gh-pages to transistor-background-fetch...${RESET}"
+    git -C "$TMP_WORKTREE" push --force origin gh-pages
     echo -e "${GREEN}Published → https://fetch.transistorsoft.com${RESET}"
   fi
 
-  git -C "$ROOT" worktree remove --force "$TMP_WORKTREE"
+  git -C "$DEPLOY_REPO" worktree remove --force "$TMP_WORKTREE"
   rm -rf "$TMP_SITE"
 }
 

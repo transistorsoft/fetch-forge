@@ -24,18 +24,18 @@ def _dim(s):   return f"\033[2m{s}\033[0m"
 def _generate():
     """Run generate_mkdocs to produce docs/ content."""
     from scripts import generate_mkdocs
-    print(_cyan("Generating MkDocs content from db/..."))
+    print(_cyan("Generating MkDocs content from db/..."), flush=True)
     generate_mkdocs.generate()
-    print(_green("Done."))
+    print(_green("Done."), flush=True)
 
 
 def cmd_site(args):
     """Build the full MkDocs site."""
     _generate()
     site_dir = ROOT / "mkdocs-site"
-    print(_cyan("Building MkDocs site..."))
+    print(_cyan("Building MkDocs site..."), flush=True)
     subprocess.run(["mkdocs", "build"], cwd=site_dir, check=True)
-    print(_green(f"Site built → {site_dir}/site/"))
+    print(_green(f"Site built → {site_dir}/site/"), flush=True)
 
 
 def cmd_serve(args):
