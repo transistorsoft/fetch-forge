@@ -1,5 +1,8 @@
 # SPM local override symlink (created by forge link-ios)
 transistor-background-fetch-local
 
+# Claude Code
+.claude/
+
 # macOS
 .DS_Store
