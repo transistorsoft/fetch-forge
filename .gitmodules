@@ -20,3 +20,6 @@
 [submodule "types/background-fetch"]
 	path = types/background-fetch
 	url = https://github.com/transistorsoft/background-fetch-types.git
+[submodule "assets"]
+	path = assets
+	url = https://github.com/transistorsoft/assets.git

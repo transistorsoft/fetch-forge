@@ -373,7 +373,7 @@ def _write_mkdocs_yml(nav: list):
     """Write mkdocs.yml from the nav structure."""
     config = {
         "site_name": "Background Fetch — SDK Reference",
-        "site_url":  "https://fetch.transistorsoft.com/",
+        "site_url":  "https://transistorsoft.github.io/transistor-background-fetch/",
         "docs_dir":  "docs",
         "site_dir":  "site",
         "copyright": "Transistor Software",
@@ -391,6 +391,13 @@ def _write_mkdocs_yml(nav: list):
                 "content.code.copy",
                 "content.tabs.link",
             ],
+        },
+
+        "extra": {
+            "analytics": {
+                "provider": "google",
+                "property": "G-4NNZKTE395",
+            },
         },
 
         "extra_css": ["assets/css/site.css"],
@@ -542,6 +549,9 @@ def generate():
 
     # ── Assets (CSS + images) ────────────────────────────────────────
     _copy_assets()
+
+    # ── CNAME (for GitHub Pages custom domain) ─────────────────────
+    (DOCS_DIR / "CNAME").write_text("fetch.transistorsoft.com\n")
 
     # ── mkdocs.yml ───────────────────────────────────────────────────
     nav = _build_nav()

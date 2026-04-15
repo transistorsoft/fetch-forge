@@ -111,15 +111,23 @@ check_no_ios_links() {
   local found=()
   local native_pkg="$DIR_NATIVE/Package.swift"
   local cap_pkg="$DIR_CAPACITOR/Package.swift"
-  local rn_pods="$DIR_RN/example/ios/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework"
-  local flutter_pods="$DIR_FLUTTER/example/ios/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework"
-  local cordova_pods="$DIR_CORDOVA/example/ios/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework"
 
   [[ -f "$native_pkg" ]] && grep -q 'LOCAL OVERRIDE' "$native_pkg" 2>/dev/null && found+=("native/background-fetch/Package.swift")
   [[ -f "$cap_pkg" ]] && grep -q 'LOCAL OVERRIDE' "$cap_pkg" 2>/dev/null && found+=("capacitor/background-fetch/Package.swift")
-  [[ -L "$rn_pods" ]] && found+=("react-native Pods/TSBackgroundFetch (symlink)")
-  [[ -L "$flutter_pods" ]] && found+=("flutter Pods/TSBackgroundFetch (symlink)")
-  [[ -L "$cordova_pods" ]] && found+=("cordova Pods/TSBackgroundFetch (symlink)")
+
+  # Scan all example apps for symlinked xcframeworks.
+  local label dir
+  for label in react-native flutter capacitor cordova; do
+    case "$label" in
+      react-native) dir="$DIR_RN" ;;
+      flutter)      dir="$DIR_FLUTTER" ;;
+      capacitor)    dir="$DIR_CAPACITOR" ;;
+      cordova)      dir="$DIR_CORDOVA" ;;
+    esac
+    while IFS= read -r link; do
+      found+=("$label ${link#$dir/} (symlink)")
+    done < <(find "$dir/example" -path "*/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework" -type l 2>/dev/null)
+  done
 
   if [[ ${#found[@]} -gt 0 ]]; then
     echo -e "${RED}error:${RESET} Local iOS links detected — cannot publish:" >&2
@@ -149,14 +157,8 @@ run_publish() {
           ;;
         android)
           require_dir "$DIR_NATIVE" "native/background-fetch"
-          echo -e "${CYAN}Publishing Android...${RESET}"
-          cd "$DIR_NATIVE/android"
-          if [[ "$*" == *--snapshot* ]]; then
-            ./gradlew :tsbackgroundfetch:publishSnapshotToSonatype
-          else
-            ./gradlew :tsbackgroundfetch:publishToSonatype \
-                      :tsbackgroundfetch:closeAndReleaseSonatypeStagingRepository
-          fi
+          echo -e "${CYAN}Publishing Android (Maven Central)...${RESET}"
+          "$DIR_NATIVE/scripts/publish-android.sh" "$@"
           ;;
         ""|--help|-h)
           echo "forge publish native <ios|android> [args...]"
@@ -211,6 +213,44 @@ clear_spm_cache() {
   fi
 }
 
+# ── Resolve platform label → plugin directory ────────────────────────
+resolve_plugin_dir() {
+  case "$1" in
+    react-native|rn)  echo "$DIR_RN" ;;
+    flutter)          echo "$DIR_FLUTTER" ;;
+    capacitor|cap)    echo "$DIR_CAPACITOR" ;;
+    cordova)          echo "$DIR_CORDOVA" ;;
+    *) return 1 ;;
+  esac
+}
+
+# ── Find all example app iOS directories ─────────────────────────────
+# Searches plugin_dir/example/ for ios directories that depend on
+# TSBackgroundFetch via CocoaPods or SPM. Prints one path per line.
+# Multiple example apps (e.g. react-native + expo) are all returned.
+find_example_ios_all() {
+  local plugin_dir="$1"
+  local example_dir="$plugin_dir/example"
+
+  {
+    # CocoaPods: ios dirs with TSBackgroundFetch already in Pods.
+    find "$example_dir" -path "*/ios/Pods/TSBackgroundFetch" -maxdepth 5 2>/dev/null \
+      | while IFS= read -r match; do echo "${match%/Pods/TSBackgroundFetch}"; done
+
+    # CocoaPods: ios dirs with a Podfile.
+    find "$example_dir" -path "*/ios/Podfile" -maxdepth 5 2>/dev/null \
+      | while IFS= read -r match; do echo "${match%/Podfile}"; done
+
+    # SPM: Package.resolved referencing transistor-background-fetch.
+    find "$example_dir" -name "Package.resolved" -path "*/ios/*" -maxdepth 8 2>/dev/null \
+      | while IFS= read -r resolved; do
+          if grep -q 'transistor-background-fetch' "$resolved" 2>/dev/null; then
+            echo "$resolved" | sed 's|/[^/]*\.xc[^/]*/.*||'
+          fi
+        done
+  } | sort -u
+}
+
 # ── link-ios domain ──────────────────────────────────────────────────
 run_link_ios() {
   local target="${1:-}"
@@ -240,23 +280,15 @@ run_link_ios() {
   echo -e "${CYAN}Linking TSBackgroundFetch ${BOLD}${version}${RESET}${CYAN} → ${RESET}${DIM}${xcfw}${RESET}"
   echo
 
-  # ── Resolve target → plugin dir + example ios dir ──
-  resolve_target() {
-    case "$1" in
-      react-native|rn)  echo "$DIR_RN"        "$DIR_RN/example/ios" ;;
-      flutter)          echo "$DIR_FLUTTER"    "$DIR_FLUTTER/example/ios" ;;
-      capacitor|cap)    echo "$DIR_CAPACITOR"  "$DIR_CAPACITOR/example/ios" ;;
-      cordova)          echo "$DIR_CORDOVA"    "$DIR_CORDOVA/example/ios" ;;
-      *) return 1 ;;
-    esac
-  }
-
-  # ── Detect CocoaPods vs SPM for a given plugin ──
+  # ── Detect CocoaPods vs SPM for a given ios dir ──
   detect_ios_deps() {
     local plugin_dir="$1" ios_dir="$2"
     if [[ -d "$ios_dir/Pods/TSBackgroundFetch" ]] || [[ -L "$ios_dir/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework" ]]; then
       echo "pods"
     elif [[ -f "$plugin_dir/Package.swift" ]] && grep -q 'transistor-background-fetch' "$plugin_dir/Package.swift" 2>/dev/null; then
+      echo "spm"
+    elif find "$ios_dir" -name "Package.resolved" -path "*/swiftpm/*" -maxdepth 5 2>/dev/null \
+         | xargs grep -l 'transistor-background-fetch' 2>/dev/null | grep -q .; then
       echo "spm"
     elif [[ -f "$ios_dir/Podfile" ]]; then
       echo "pods"
@@ -289,7 +321,11 @@ run_link_ios() {
   link_spm() {
     local label="$1" plugin_dir="$2"
     local native_pkg="$DIR_NATIVE/Package.swift"
-    local plugin_pkg="$plugin_dir/Package.swift"
+    # Find the plugin's Package.swift that references transistor-background-fetch.
+    local plugin_pkg
+    plugin_pkg=$(find "$plugin_dir" -name "Package.swift" -not -path "*/example/*" -maxdepth 4 2>/dev/null \
+      | xargs grep -l 'transistor-background-fetch' 2>/dev/null | head -1 || true)
+    plugin_pkg="${plugin_pkg:-$plugin_dir/Package.swift}"
 
     # 1) Native: .binaryTarget(url:...,checksum:...) → .binaryTarget(path:...)
     local rel_xcfw
@@ -315,7 +351,9 @@ run_link_ios() {
       local link_path="$ROOT/$link_name"
       ln -sfn native/background-fetch "$link_path"
       local rel_link
-      rel_link=$(python3 -c "import os.path; print(os.path.relpath('$link_path', '$plugin_dir'))")
+      local pkg_dir
+      pkg_dir=$(dirname "$plugin_pkg")
+      rel_link=$(python3 -c "import os.path; print(os.path.relpath('$link_path', '$pkg_dir'))")
       sed -i '' \
         's|\.package(url: "https://github.com/transistorsoft/transistor-background-fetch.git", from: "[^"]*")|// LOCAL OVERRIDE (forge link-ios)\
         .package(name: "transistor-background-fetch", path: "'"$rel_link"'")|' \
@@ -325,22 +363,28 @@ run_link_ios() {
     clear_spm_cache
   }
 
-  # ── Link a single target (auto-detect deps system) ──
+  # ── Link a single target — discovers all example apps automatically ──
   link_target() {
     local label="$1"
-    local resolved
-    resolved=$(resolve_target "$label") || die "Unknown target: $label"
-    local plugin_dir ios_dir
-    read -r plugin_dir ios_dir <<< "$resolved"
+    local plugin_dir
+    plugin_dir=$(resolve_plugin_dir "$label") || die "Unknown target: $label"
 
-    local deps_type
-    deps_type=$(detect_ios_deps "$plugin_dir" "$ios_dir")
+    local linked=0
+    # Find all example ios dirs that have Pods/TSBackgroundFetch or a Podfile.
+    while IFS= read -r ios_dir; do
+      local app_name
+      app_name=$(echo "$ios_dir" | sed "s|$plugin_dir/example/||;s|/ios.*||")
+      local deps_type
+      deps_type=$(detect_ios_deps "$plugin_dir" "$ios_dir")
+      case "$deps_type" in
+        pods) link_pods "$label/$app_name" "$ios_dir"; linked=1 ;;
+        spm)  link_spm "$label/$app_name" "$plugin_dir"; linked=1 ;;
+      esac
+    done < <(find_example_ios_all "$plugin_dir")
 
-    case "$deps_type" in
-      pods) link_pods "$label" "$ios_dir" ;;
-      spm)  link_spm "$label" "$plugin_dir" ;;
-      *)    echo -e "  ${DIM}${label} — no CocoaPods or SPM dependency detected, skipping${RESET}" ;;
-    esac
+    if [[ $linked -eq 0 ]]; then
+      echo -e "  ${DIM}${label} — no example apps with CocoaPods or SPM dependency found${RESET}"
+    fi
   }
 
   case "$target" in
@@ -372,18 +416,7 @@ run_unlink_ios() {
       ;;
   esac
 
-  # ── Resolve target → plugin dir + example ios dir ──
-  resolve_target() {
-    case "$1" in
-      react-native|rn)  echo "$DIR_RN"        "$DIR_RN/example/ios" ;;
-      flutter)          echo "$DIR_FLUTTER"    "$DIR_FLUTTER/example/ios" ;;
-      capacitor|cap)    echo "$DIR_CAPACITOR"  "$DIR_CAPACITOR/example/ios" ;;
-      cordova)          echo "$DIR_CORDOVA"    "$DIR_CORDOVA/example/ios" ;;
-      *) return 1 ;;
-    esac
-  }
-
-  # ── Detect: check for active link type ──
+  # ── Detect: check for active link type in an ios dir ──
   detect_link_type() {
     local plugin_dir="$1" ios_dir="$2"
     local pods_dir="$ios_dir/Pods/TSBackgroundFetch/TSBackgroundFetch.xcframework"
@@ -415,7 +448,11 @@ run_unlink_ios() {
   unlink_spm() {
     local label="$1" plugin_dir="$2"
     local native_pkg="$DIR_NATIVE/Package.swift"
-    local plugin_pkg="$plugin_dir/Package.swift"
+    # Find the plugin's Package.swift that was overridden.
+    local plugin_pkg
+    plugin_pkg=$(find "$plugin_dir" -name "Package.swift" -not -path "*/example/*" -maxdepth 4 2>/dev/null \
+      | xargs grep -l 'LOCAL OVERRIDE' 2>/dev/null | head -1 || true)
+    plugin_pkg="${plugin_pkg:-$plugin_dir/Package.swift}"
 
     if grep -q 'LOCAL OVERRIDE' "$native_pkg" 2>/dev/null; then
       git -C "$DIR_NATIVE" checkout Package.swift
@@ -423,8 +460,8 @@ run_unlink_ios() {
     fi
 
     if [[ -f "$plugin_pkg" ]] && grep -q 'LOCAL OVERRIDE' "$plugin_pkg" 2>/dev/null; then
-      git -C "$plugin_dir" checkout Package.swift
-      echo -e "  ${GREEN}${label}/Package.swift → restored${RESET}"
+      git -C "$(dirname "$plugin_pkg")" checkout "$(basename "$plugin_pkg")"
+      echo -e "  ${GREEN}${plugin_pkg#$ROOT/} → restored${RESET}"
     fi
 
     local link_path="$ROOT/transistor-background-fetch-local"
@@ -435,22 +472,27 @@ run_unlink_ios() {
     clear_spm_cache
   }
 
-  # ── Unlink a single target (auto-detect link type) ──
+  # ── Unlink a single target — discovers all example apps automatically ──
   unlink_target() {
     local label="$1"
-    local resolved
-    resolved=$(resolve_target "$label") || die "Unknown target: $label"
-    local plugin_dir ios_dir
-    read -r plugin_dir ios_dir <<< "$resolved"
+    local plugin_dir
+    plugin_dir=$(resolve_plugin_dir "$label") || die "Unknown target: $label"
 
-    local link_type
-    link_type=$(detect_link_type "$plugin_dir" "$ios_dir")
+    local unlinked=0
+    while IFS= read -r ios_dir; do
+      local app_name
+      app_name=$(echo "$ios_dir" | sed "s|$plugin_dir/example/||;s|/ios.*||")
+      local link_type
+      link_type=$(detect_link_type "$plugin_dir" "$ios_dir")
+      case "$link_type" in
+        pods) unlink_pods "$label/$app_name" "$ios_dir"; unlinked=1 ;;
+        spm)  unlink_spm "$label/$app_name" "$plugin_dir"; unlinked=1 ;;
+      esac
+    done < <(find_example_ios_all "$plugin_dir")
 
-    case "$link_type" in
-      pods) unlink_pods "$label" "$ios_dir" ;;
-      spm)  unlink_spm "$label" "$plugin_dir" ;;
-      *)    echo -e "  ${DIM}${label} → not linked, nothing to do${RESET}" ;;
-    esac
+    if [[ $unlinked -eq 0 ]]; then
+      echo -e "  ${DIM}${label} → not linked, nothing to do${RESET}"
+    fi
   }
 
   case "$target" in
@@ -466,6 +508,27 @@ run_unlink_ios() {
       ;;
     *)
       die "Unknown unlink-ios target: $target\nRun 'forge unlink-ios --help' for available targets."
+      ;;
+  esac
+}
+
+# ── verify domain ────────────────────────────────────────────────────
+run_verify() {
+  local target="${1:-}"
+  shift || true
+
+  case "$target" in
+    android)
+      require_dir "$DIR_NATIVE" "native/background-fetch"
+      echo -e "${CYAN}Running Android tests...${RESET}"
+      cd "$DIR_NATIVE/android"
+      ./gradlew :tsbackgroundfetch:testReleaseUnitTest "$@"
+      ;;
+    ""|--help|-h)
+      show_help verify
+      ;;
+    *)
+      die "Unknown verify target: $target\nRun 'forge verify --help' for available targets."
       ;;
   esac
 }
@@ -621,13 +684,25 @@ EOF
 forge publish <target> [args...]
 
 Targets:
-  native ios           Publish XCFramework (CocoaPods + SPM)
-  native android       Publish AAR to Maven Central (Sonatype)
-  native android --snapshot  Publish SNAPSHOT to Sonatype snapshots
-  react-native         npm publish
-  capacitor            npm publish
-  cordova              npm publish
-  flutter              dart pub publish
+  native ios [args...]       Publish XCFramework (CocoaPods + SPM)
+    --version X.Y.Z          Explicit version
+    --bump patch|minor|major  Bump from latest tag
+    --push-cocoapods          Push to CocoaPods trunk
+    --dry-run                 Preview without publishing
+    --create-branch --create-pr  Release branch + PR workflow
+
+  native android [args...]   Publish AAR to Maven Central (Sonatype)
+    --bump patch|minor|major  Bump version, stamp changelog, publish
+    --snapshot                Publish SNAPSHOT (auto-bumps patch)
+    --dry-run                 Preview without publishing
+    --skip-tests              Skip unit tests
+    --local                   Publish to mavenLocal (testing)
+
+  types              npm publish (@transistorsoft/background-fetch-types)
+  react-native       npm publish
+  capacitor          npm publish
+  cordova            npm publish
+  flutter            dart pub publish
 
 Aliases: rn → react-native, cap → capacitor
 
@@ -670,6 +745,14 @@ Auto-detects the active link type:
 Targets: react-native (rn), flutter, capacitor (cap), cordova, all
 EOF
       ;;
+    verify)
+      cat <<EOF
+forge verify <target> [args...]
+
+Targets:
+  android       gradlew :tsbackgroundfetch:testReleaseUnitTest
+EOF
+      ;;
     setup)
       cat <<EOF
 forge setup [target]
@@ -706,9 +789,13 @@ ${BOLD}Build${RESET}
   forge build all            Build everything
 
 ${BOLD}Publish${RESET}
-  forge publish native ios         Publish iOS (CocoaPods + SPM)
-  forge publish native android     Publish Android to Maven Central
-  forge publish <platform>         Publish platform SDK
+  forge publish native ios           Publish iOS (CocoaPods + SPM)
+  forge publish native android      Publish Android to Maven Central
+  forge publish native android --snapshot  Publish SNAPSHOT
+  forge publish <platform>          Publish platform SDK
+
+${BOLD}Verify${RESET}
+  forge verify android       Run Android unit tests
 
 ${BOLD}Link${RESET} (local iOS development)
   forge link-ios <target>    Use local XCFramework in example app (Pods/SPM)
@@ -743,6 +830,7 @@ case "$cmd" in
     if [[ "${1:-}" == "docs" ]]; then shift; publish_docs "$@"
     else run_publish "$@"; fi
     ;;
+  verify)     run_verify "$@" ;;
   link-ios)   run_link_ios "$@" ;;
   unlink-ios) run_unlink_ios "$@" ;;
   setup)      run_setup "$@" ;;
