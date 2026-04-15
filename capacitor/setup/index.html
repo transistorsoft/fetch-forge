@@ -2355,36 +2355,6 @@ Enable:</p>
 <p class="admonition-title">Warning</p>
 <p>A task identifier can be any string you wish, but it <strong>must</strong> be prefixed with <code>com.transistorsoft.</code>.</p>
 </div>
-<h3 id="appdelegateswift">AppDelegate.swift<a class="headerlink" href="#appdelegateswift" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kd">import</span><span class="w"> </span><span class="nc">UIKit</span>
-<span class="kd">import</span><span class="w"> </span><span class="nc">Capacitor</span>
-<span class="hll"><span class="kd">import</span><span class="w"> </span><span class="nc">TSBackgroundFetch</span>
-</span>
-<span class="kr">@UIApplicationMain</span>
-<span class="kd">class</span><span class="w"> </span><span class="nc">AppDelegate</span><span class="p">:</span><span class="w"> </span><span class="bp">UIResponder</span><span class="p">,</span><span class="w"> </span><span class="bp">UIApplicationDelegate</span><span class="w"> </span><span class="p">{</span>
-
-<span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="nv">window</span><span class="p">:</span><span class="w"> </span><span class="bp">UIWindow</span><span class="p">?</span>
-
-<span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="nf">application</span><span class="p">(</span><span class="kc">_</span><span class="w"> </span><span class="n">application</span><span class="p">:</span><span class="w"> </span><span class="bp">UIApplication</span><span class="p">,</span>
-<span class="w">                     </span><span class="n">didFinishLaunchingWithOptions</span><span class="w"> </span><span class="n">launchOptions</span><span class="p">:</span>
-<span class="w">                       </span><span class="p">[</span><span class="bp">UIApplication</span><span class="p">.</span><span class="n">LaunchOptionsKey</span><span class="p">:</span><span class="w"> </span><span class="nb">Any</span><span class="p">]?)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Bool</span><span class="w"> </span><span class="p">{</span>
-<span class="hll"><span class="w">        </span><span class="c1">// [REQUIRED] Register BackgroundFetch</span>
-</span><span class="hll"><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="nv">fetchManager</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">TSBackgroundFetch</span><span class="p">.</span><span class="n">sharedInstance</span><span class="p">()</span>
-</span><span class="hll"><span class="w">        </span><span class="n">fetchManager</span><span class="p">?.</span><span class="n">didFinishLaunching</span><span class="p">()</span>
-</span><span class="hll">
-</span><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">    </span><span class="p">}</span>
-
-<span class="w">    </span><span class="c1">// [REQUIRED] Background fetch delegate</span>
-<span class="hll"><span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="nf">application</span><span class="p">(</span><span class="kc">_</span><span class="w"> </span><span class="n">application</span><span class="p">:</span><span class="w"> </span><span class="bp">UIApplication</span><span class="p">,</span>
-</span><span class="hll"><span class="w">                     </span><span class="n">performFetchWithCompletionHandler</span><span class="w"> </span><span class="n">completionHandler</span><span class="p">:</span>
-</span><span class="hll"><span class="w">                       </span><span class="p">@</span><span class="n">escaping</span><span class="w"> </span><span class="p">(</span><span class="n">UIBackgroundFetchResult</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span class="hll"><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="nv">fetchManager</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">TSBackgroundFetch</span><span class="p">.</span><span class="n">sharedInstance</span><span class="p">()</span>
-</span><span class="hll"><span class="w">        </span><span class="n">fetchManager</span><span class="p">?.</span><span class="n">perform</span><span class="p">(</span><span class="n">completionHandler</span><span class="p">:</span><span class="w"> </span><span class="n">completionHandler</span><span class="p">,</span>
-</span><span class="hll"><span class="w">                              </span><span class="n">applicationState</span><span class="p">:</span><span class="w"> </span><span class="n">application</span><span class="p">.</span><span class="n">applicationState</span><span class="p">)</span>
-</span><span class="hll"><span class="w">    </span><span class="p">}</span>
-</span><span class="p">}</span>
-</code></pre></div>
 <h2 id="android-setup">Android Setup<a class="headerlink" href="#android-setup" title="Permanent link">&para;</a></h2>
 <p>No additional Android setup is required.</p>
 

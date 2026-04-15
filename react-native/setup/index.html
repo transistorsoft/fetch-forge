@@ -2248,50 +2248,6 @@ Enable:</p>
 <p class="admonition-title">Warning</p>
 <p>A task identifier can be any string you wish, but it <strong>must</strong> be prefixed with <code>com.transistorsoft.</code>.</p>
 </div>
-<h4 id="appdelegate">AppDelegate<a class="headerlink" href="#appdelegate" title="Permanent link">&para;</a></h4>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Objective-C</label><label for="__tabbed_3_2">Swift</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="cp">#import &quot;AppDelegate.h&quot;</span>
-<span class="cp">#import &lt;React/RCTBridge.h&gt;</span>
-<span class="cp">#import &lt;React/RCTBundleURLProvider.h&gt;</span>
-<span class="cp">#import &lt;React/RCTRootView.h&gt;</span>
-
-<span class="hll"><span class="c1">// IMPORTANT: Paste import ABOVE any DEBUG macros</span>
-</span><span class="hll"><span class="cp">#import &lt;TSBackgroundFetch/TSBackgroundFetch.h&gt;</span>
-</span>
-<span class="k">@implementation</span> <span class="nc">AppDelegate</span>
-
-<span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">application:</span><span class="p">(</span><span class="bp">UIApplication</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="nv">application</span>
-<span class="w">    </span><span class="nl">didFinishLaunchingWithOptions</span><span class="p">:(</span><span class="bp">NSDictionary</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="nv">launchOptions</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="c1">// ...</span>
-<span class="hll"><span class="w">    </span><span class="c1">// [REQUIRED] Register BackgroundFetch</span>
-</span><span class="hll"><span class="w">    </span><span class="p">[[</span><span class="n">TSBackgroundFetch</span><span class="w"> </span><span class="n">sharedInstance</span><span class="p">]</span><span class="w"> </span><span class="n">didFinishLaunching</span><span class="p">];</span>
-</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">YES</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="kd">import</span><span class="w"> </span><span class="nc">UIKit</span>
-<span class="hll"><span class="kd">import</span><span class="w"> </span><span class="nc">TSBackgroundFetch</span>
-</span>
-<span class="kr">@UIApplicationMain</span>
-<span class="kd">class</span><span class="w"> </span><span class="nc">AppDelegate</span><span class="p">:</span><span class="w"> </span><span class="bp">UIResponder</span><span class="p">,</span><span class="w"> </span><span class="bp">UIApplicationDelegate</span><span class="w"> </span><span class="p">{</span>
-
-<span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="nf">application</span><span class="p">(</span><span class="kc">_</span><span class="w"> </span><span class="n">application</span><span class="p">:</span><span class="w"> </span><span class="bp">UIApplication</span><span class="p">,</span>
-<span class="w">                     </span><span class="n">didFinishLaunchingWithOptions</span><span class="w"> </span><span class="n">launchOptions</span><span class="p">:</span>
-<span class="w">                       </span><span class="p">[</span><span class="bp">UIApplication</span><span class="p">.</span><span class="n">LaunchOptionsKey</span><span class="p">:</span><span class="w"> </span><span class="nb">Any</span><span class="p">]?)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Bool</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="c1">// ...</span>
-<span class="hll"><span class="w">        </span><span class="c1">// [REQUIRED] Register BackgroundFetch</span>
-</span><span class="hll"><span class="w">        </span><span class="n">TSBackgroundFetch</span><span class="p">.</span><span class="n">sharedInstance</span><span class="p">().</span><span class="n">didFinishLaunching</span><span class="p">()</span>
-</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">true</span>
-<span class="w">    </span><span class="p">}</span>
-</code></pre></div>
-</div>
-</div>
-</div>
 <h3 id="android-setup">Android Setup<a class="headerlink" href="#android-setup" title="Permanent link">&para;</a></h3>
 <div class="admonition success">
 <p class="admonition-title">No Gradle configuration required</p>
