@@ -17,6 +17,14 @@ examples:
       dart: |-
         int status = await BackgroundFetch.start();
         print('[BackgroundFetch] started, status: $status');
+      swift: |-
+        // Resume after a previous stop().
+        try BackgroundFetch.shared.start()
+      kotlin: |-
+        // Resume after a previous stop().
+        BackgroundFetch.getInstance(context).start("com.transistorsoft.fetch")
 signatures:
   ts: "static start(): Promise<BackgroundFetchStatus>;"
   dart: "static Future<int> start()"
+  swift: "func start(identifier: String? = nil) throws"
+  kotlin: "fun start(taskId: String)"

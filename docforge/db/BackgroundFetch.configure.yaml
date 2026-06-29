@@ -48,6 +48,38 @@ examples:
         });
 
         print('[BackgroundFetch] status: $status');
+      swift: |-
+        let status = await BackgroundFetch.shared.configure(minimumFetchInterval: 15 * 60)  // seconds
+
+        BackgroundFetch.shared.onFetch(identifier: "MyApp") { event in
+            if event.timeout {
+                // The OS is about to suspend the app — finish immediately.
+                print("[BackgroundFetch] TIMEOUT: \(event.taskId)")
+                BackgroundFetch.shared.finish(taskId: event.taskId)
+                return
+            }
+            print("[BackgroundFetch] Event received: \(event.taskId)")
+            // Perform your work here...
+            BackgroundFetch.shared.finish(taskId: event.taskId)
+        }
+
+        print("[BackgroundFetch] status: \(status)")
+      kotlin: |-
+        val config = BackgroundFetchConfig.Builder()
+            .setMinimumFetchInterval(15)   // minutes
+            .build()
+
+        BackgroundFetch.getInstance(context).configure(config, object : BackgroundFetch.Callback {
+            override fun onFetch(taskId: String) {
+                Log.d(TAG, "[BackgroundFetch] Event received: $taskId")
+                // Perform your work here...
+                BackgroundFetch.getInstance(context).finish(taskId)
+            }
+            override fun onTimeout(taskId: String) {
+                Log.d(TAG, "[BackgroundFetch] TIMEOUT: $taskId")
+                BackgroundFetch.getInstance(context).finish(taskId)
+            }
+        })
   example-android:
     title: Android configuration
     code:
@@ -81,3 +113,5 @@ examples:
 signatures:
   ts: "static configure(config: BackgroundFetchConfig, onEvent: (taskId: string) => void, onTimeout?: (taskId: string) => void): Promise<BackgroundFetchStatus>;"
   dart: "static Future<int> configure(BackgroundFetchConfig config, Function(String) onFetch, [Function(String)? onTimeout])"
+  swift: "func configure(minimumFetchInterval: TimeInterval = 0) async -> UIBackgroundRefreshStatus"
+  kotlin: "fun configure(config: BackgroundFetchConfig, callback: BackgroundFetch.Callback)"

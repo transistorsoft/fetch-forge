@@ -40,6 +40,26 @@ examples:
           delay: 5000,
           stopOnTerminate: false,
         ));
+      swift: |-
+        // The task identifier must be listed in Info.plist BGTaskSchedulerPermittedIdentifiers.
+        try BackgroundFetch.shared.scheduleTask(
+            identifier: "com.transistorsoft.customtask",
+            delay: 5,          // seconds
+            periodic: false
+        ) { event in
+            print("[BackgroundFetch] Event received: \(event.taskId)")
+            // Perform your work here...
+            BackgroundFetch.shared.finish(taskId: event.taskId)
+        }
+      kotlin: |-
+        val task = BackgroundFetchConfig.Builder()
+            .setTaskId("com.transistorsoft.customtask")
+            .setDelay(5000L)   // milliseconds
+            .setPeriodic(false)
+            .build()
+
+        // Custom tasks fire the same Callback registered in configure().
+        BackgroundFetch.getInstance(context).scheduleTask(task)
   example-periodic:
     title: Periodic task
     code:
@@ -62,3 +82,5 @@ examples:
 signatures:
   ts: "static scheduleTask(config: TaskConfig): Promise<boolean>;"
   dart: "static Future<bool> scheduleTask(TaskConfig config)"
+  swift: "func scheduleTask(identifier: String, delay: TimeInterval, periodic: Bool = false, requiresExternalPower: Bool = false, requiresNetworkConnectivity: Bool = false, callback: @escaping (FetchEvent) -> Void) throws -> EventSubscription"
+  kotlin: "fun scheduleTask(config: BackgroundFetchConfig)"
