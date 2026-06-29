@@ -24,6 +24,14 @@ examples:
           taskId: 'com.foo.task',
           delay: 30000,
         ));
+      kotlin: |-
+        // Fire at least 30 seconds from now.
+        val config = BackgroundFetchConfig.Builder()
+            .setTaskId("com.foo.task")
+            .setDelay(30000L)
+            .build()
+        BackgroundFetch.getInstance(context).scheduleTask(config)
 signatures:
   ts: "delay: number;"
   dart: "int delay"
+  kotlin: "fun setDelay(milliseconds: Long): Builder"

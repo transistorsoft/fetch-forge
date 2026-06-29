@@ -5,3 +5,4 @@ description: |-
 signatures:
   ts: "static NETWORK_TYPE_UNMETERED: NetworkType = 2;"
   dart: "NetworkType.UNMETERED"
+  kotlin: "JobInfo.NETWORK_TYPE_UNMETERED"

@@ -5,3 +5,4 @@ description: |-
 signatures:
   ts: "static STATUS_DENIED: BackgroundFetchStatus = 1;"
   dart: "static const int STATUS_DENIED = 1;"
+  swift: "case denied  // UIBackgroundRefreshStatus.denied"

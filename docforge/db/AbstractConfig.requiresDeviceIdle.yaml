@@ -11,3 +11,4 @@ description: |-
 signatures:
   ts: "requiresDeviceIdle?: boolean;"
   dart: "bool? requiresDeviceIdle"
+  kotlin: "fun setRequiresDeviceIdle(value: Boolean): Builder"

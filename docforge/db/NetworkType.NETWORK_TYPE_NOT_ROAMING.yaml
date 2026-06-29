@@ -5,3 +5,4 @@ description: |-
 signatures:
   ts: "static NETWORK_TYPE_NOT_ROAMING: NetworkType = 3;"
   dart: "NetworkType.NOT_ROAMING"
+  kotlin: "JobInfo.NETWORK_TYPE_NOT_ROAMING"

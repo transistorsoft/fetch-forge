@@ -8,3 +8,4 @@ description: |-
 signatures:
   ts: "requiresBatteryNotLow?: boolean;"
   dart: "bool? requiresBatteryNotLow"
+  kotlin: "fun setRequiresBatteryNotLow(value: Boolean): Builder"

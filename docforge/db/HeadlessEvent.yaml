@@ -198,6 +198,22 @@ examples:
           print('[BackgroundFetch] headless taskId: ${task.taskId}');
           BackgroundFetch.finish(task.taskId);
         }
+      kotlin: |-
+        // Reflected by TSBackgroundFetch when the app is terminated.
+        // MUST be named "BackgroundFetchHeadlessTask".
+        class BackgroundFetchHeadlessTask {
+            fun onFetch(context: Context, task: BGTask) {
+                val taskId = task.taskId
+                if (task.timedOut) {
+                    BackgroundFetch.getInstance(context).finish(taskId)
+                    return
+                }
+                Log.d("MyHeadlessTask", "[BackgroundFetch] headless taskId: $taskId")
+                // Perform your work here...
+                BackgroundFetch.getInstance(context).finish(taskId)
+            }
+        }
 signatures:
   ts: "interface HeadlessEvent"
   dart: "class HeadlessEvent"
+  kotlin: "class BGTask"

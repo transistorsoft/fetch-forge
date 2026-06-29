@@ -5,3 +5,4 @@ description: |-
 signatures:
   ts: "static NETWORK_TYPE_CELLULAR: NetworkType = 4;"
   dart: "NetworkType.CELLULAR"
+  kotlin: "JobInfo.NETWORK_TYPE_CELLULAR"

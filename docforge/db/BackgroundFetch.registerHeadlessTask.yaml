@@ -70,6 +70,31 @@ examples:
           BackgroundFetch.registerHeadlessTask(backgroundFetchHeadlessTask);
           runApp(MyApp());
         }
+      kotlin: |-
+        // 1. Register your headless class on the config Builder (by fully-qualified name).
+        val config = BackgroundFetchConfig.Builder()
+            .setMinimumFetchInterval(15)
+            .setStopOnTerminate(false)     // <-- Continue after app termination
+            .setStartOnBoot(true)          // <-- Restart on device reboot
+            .setJobService(MyHeadlessTask::class.java.name)
+            .build()
+
+        // 2. The named class is instantiated by reflection as HeadlessTask(Context, BGTask).
+        class MyHeadlessTask(context: Context, task: BGTask) {
+            init {
+                val taskId = task.taskId
+                if (task.timedOut) {
+                    // OS is about to kill the context — finish immediately.
+                    Log.d(TAG, "[BackgroundFetch] TIMEOUT: $taskId")
+                    BackgroundFetch.getInstance(context).finish(taskId)
+                } else {
+                    Log.d(TAG, "[BackgroundFetch] Headless event, taskId: $taskId")
+                    // ... perform lightweight work ...
+                    BackgroundFetch.getInstance(context).finish(taskId)
+                }
+            }
+        }
 signatures:
   ts: "static registerHeadlessTask(task: (event: HeadlessEvent) => Promise<void>): void;"
   dart: "static Future<bool> registerHeadlessTask(Function(HeadlessEvent) callback)"
+  kotlin: "fun setJobService(className: String): Builder"

@@ -5,3 +5,5 @@ description: |-
 signatures:
   ts: "type BackgroundFetchStatus = 0 | 1 | 2;"
   dart: "int"
+  swift: "UIBackgroundRefreshStatus"
+  kotlin: "Int (BackgroundFetch.STATUS_* constants)"

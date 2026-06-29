@@ -28,6 +28,11 @@ examples:
         ), (String taskId) async {
           BackgroundFetch.finish(taskId);
         });
+      kotlin: |-
+        val config = BackgroundFetchConfig.Builder()
+            .setMinimumFetchInterval(15)   // minutes
+            .build()
 signatures:
   ts: "minimumFetchInterval?: number;"
   dart: "int? minimumFetchInterval"
+  kotlin: "fun setMinimumFetchInterval(minutes: Int): Builder"

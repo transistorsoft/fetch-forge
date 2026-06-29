@@ -36,6 +36,13 @@ examples:
           delay: 60000,
           requiredNetworkType: BackgroundFetch.NETWORK_TYPE_UNMETERED,
         ));
+      kotlin: |-
+        val config = BackgroundFetchConfig.Builder()
+            .setTaskId("com.foo.sync")
+            .setDelay(60000)
+            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
+            .build()
 signatures:
   ts: "requiredNetworkType?: NetworkType;"
   dart: "int? requiredNetworkType"
+  kotlin: "fun setRequiredNetworkType(networkType: Int): Builder"

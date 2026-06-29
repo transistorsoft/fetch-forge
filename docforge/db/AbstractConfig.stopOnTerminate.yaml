@@ -30,6 +30,12 @@ examples:
         ), (String taskId) async {
           BackgroundFetch.finish(taskId);
         });
+      kotlin: |-
+        val config = BackgroundFetchConfig.Builder()
+            .setStopOnTerminate(false)
+            .setStartOnBoot(true)
+            .build()
 signatures:
   ts: "stopOnTerminate?: boolean;"
   dart: "bool? stopOnTerminate"
+  kotlin: "fun setStopOnTerminate(value: Boolean): Builder"
