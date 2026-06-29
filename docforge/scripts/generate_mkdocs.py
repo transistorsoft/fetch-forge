@@ -37,7 +37,19 @@ PLATFORMS = [
     {"id": "cordova",      "label": "Cordova",       "code_lang": "ts",   "code_label": "JavaScript"},
     {"id": "capacitor",    "label": "Capacitor",     "code_lang": "ts",   "code_label": "TypeScript"},
     {"id": "flutter",      "label": "Flutter",       "code_lang": "dart", "code_label": "Dart"},
+    # Native platforms — grouped under a single "Native" tab via parent="native".
+    # Native pages render single-language and only include entries that actually have
+    # signatures.<swift|kotlin> (so Swift omits Android-only types, and unauthored
+    # entries don't silently fall back to TypeScript).
+    {"id": "ios",     "label": "iOS",     "code_lang": "swift",  "code_label": "Swift",  "native": True, "parent": "native", "nav_label": "Swift / iOS"},
+    {"id": "android", "label": "Android", "code_lang": "kotlin", "code_label": "Kotlin", "native": True, "parent": "native", "nav_label": "Kotlin / Android"},
 ]
+
+# The parent "Native" tab that groups the iOS/Android native platforms in the nav.
+NATIVE_PARENT = {"id": "native", "label": "Native"}
+
+# id → platform dict, for quick lookup (e.g. during link conversion).
+PLATFORM_BY_ID = {p["id"]: p for p in PLATFORMS}
 
 # ── Page definitions: which db/ classes appear on each page ──────────────────
 #
@@ -89,6 +101,26 @@ ENUM_PAGES = [
 # Combined list for link resolution
 ALL_PAGES = PAGES + ENUM_PAGES
 
+
+# ── Native platform helpers ──────────────────────────────────────────────────
+#
+# Native (Swift/Kotlin) pages render single-language and ONLY include entries that
+# carry a signature for that language. This both omits Android-only entities from
+# the Swift nav and prevents the TypeScript fallback from rendering on entries whose
+# native content has not been authored yet.
+
+def _entry_has_native_sig(entry: dict, code_lang: str) -> bool:
+    sigs = entry.get("signatures", {}) or {}
+    return bool(sigs.get(code_lang))
+
+
+def _page_has_native_content(page_def: dict, entries_by_class: dict, code_lang: str) -> bool:
+    for cls in page_def["classes"]:
+        for entry in entries_by_class.get(cls, []):
+            if "." in entry["id"] and _entry_has_native_sig(entry, code_lang):
+                return True
+    return False
+
 # ── Regex helpers ─────────────────────────────────────────────────────────────
 
 EXAMPLE_REF_RE = re.compile(r"^\s*@example\s+(\S+)$", re.MULTILINE)
@@ -135,8 +167,22 @@ def _expand_includes(text: str) -> str:
 # Populated by generate() before any rendering occurs.
 KNOWN_ENTRY_IDS: set[str] = set()
 
+# Per native language (swift/kotlin): the set of page ids that actually have native
+# content. Used to downgrade cross-references to omitted pages (Android-only types not
+# shown in Swift, or entries whose native content isn't authored yet) into inline code
+# on native pages — instead of emitting broken links.
+_NATIVE_PAGES_WITH_CONTENT: dict[str, set] = {}
+
 def _convert_links(text: str, platform_id: str, current_page_id: str = "") -> str:
     """Convert [[ClassName.member]] cross-references to Markdown links."""
+    plat = PLATFORM_BY_ID.get(platform_id, {})
+    native_pages = _NATIVE_PAGES_WITH_CONTENT.get(plat.get("code_lang")) if plat.get("native") else None
+
+    def _unavailable_on_native(page_id):
+        # On a native page, a reference to a page not rendered for this platform
+        # (omitted Android-only type, or not-yet-authored) becomes inline code.
+        return native_pages is not None and page_id != current_page_id and page_id not in native_pages
+
     def _replace(m):
         target  = m.group(1).strip().rstrip("\\")
         explicit_display = m.group(2)
@@ -154,6 +200,8 @@ def _convert_links(text: str, platform_id: str, current_page_id: str = "") -> st
                 (p["id"] for p in ALL_PAGES if cls in p["classes"]),
                 cls,
             )
+            if _unavailable_on_native(page_id):
+                return f"`{display}`"
             if page_id == current_page_id:
                 return f"[{display}](#{member.lower()})"
             return f"[{display}]({page_id}.md#{member.lower()})"
@@ -163,6 +211,8 @@ def _convert_links(text: str, platform_id: str, current_page_id: str = "") -> st
                 (p["id"] for p in ALL_PAGES if target == p["id"] or target in p["classes"]),
                 target,
             )
+            if _unavailable_on_native(page_id):
+                return f"`{display}`"
             if page_id == current_page_id:
                 return f"[{display}](#)"
             return f"[{display}]({page_id}.md)"
@@ -171,32 +221,33 @@ def _convert_links(text: str, platform_id: str, current_page_id: str = "") -> st
 
 # ── Code example rendering ────────────────────────────────────────────────────
 
-def _render_example(example: dict, code_lang: str, code_label: str) -> str:
-    """Render a single example as a fenced code block (or tabbed if multiple langs)."""
+def _render_example(example: dict, code_lang: str, code_label: str, native: bool = False) -> str:
+    """Render a single example as a fenced code block."""
     code = example.get("code", {})
     if not code:
         return ""
 
-    title = example.get("title", "")
+    # If the example has the target language, render it.
+    if code_lang in code:
+        body = code[code_lang]
+    elif not native and "ts" in code:
+        # Fallback to ts for Cordova/Capacitor if no separate entry.
+        # Never fall back on native pages — a Swift/Kotlin page must not show TypeScript.
+        code_lang, body = "ts", code["ts"]
+    else:
+        return ""
+
     lines = []
+    title = example.get("title", "")
     if title:
         lines.append(f"**{title}**\n")
-
-    # If the example has the target language, just render it.
-    if code_lang in code:
-        lines.append(f"```{code_lang}")
-        lines.append(code[code_lang])
-        lines.append("```")
-    elif "ts" in code:
-        # Fallback to ts for Cordova/Capacitor if no separate entry.
-        lines.append(f"```ts")
-        lines.append(code["ts"])
-        lines.append("```")
-
+    lines.append(f"```{code_lang}")
+    lines.append(body)
+    lines.append("```")
     return "\n".join(lines)
 
 
-def _render_description(desc: str, examples: dict, code_lang: str, code_label: str, platform_id: str, current_page_id: str = "") -> str:
+def _render_description(desc: str, examples: dict, code_lang: str, code_label: str, platform_id: str, current_page_id: str = "", native: bool = False) -> str:
     """Expand @example references and convert links in a description string."""
     if not desc:
         return ""
@@ -204,7 +255,7 @@ def _render_description(desc: str, examples: dict, code_lang: str, code_label: s
     def _replace_example(m):
         key = m.group(1)
         ex  = examples.get(key, {})
-        return _render_example(ex, code_lang, code_label) if ex else ""
+        return _render_example(ex, code_lang, code_label, native) if ex else ""
 
     text = EXAMPLE_REF_RE.sub(_replace_example, desc)
     text = _convert_links(text, platform_id, current_page_id)
@@ -216,14 +267,21 @@ def _render_description(desc: str, examples: dict, code_lang: str, code_label: s
 
 # ── Member section ────────────────────────────────────────────────────────────
 
-def _member_section(entry: dict, code_lang: str, code_label: str, platform_id: str, current_page_id: str = "") -> str:
-    """Render one API member as a ## Markdown section."""
+def _member_section(entry: dict, code_lang: str, code_label: str, platform_id: str, current_page_id: str = "", native: bool = False) -> str:
+    """Render one API member as a ## Markdown section.
+
+    On native (Swift/Kotlin) pages, members without a signature for that language are
+    skipped entirely (returns "") — never falling back to TypeScript."""
     eid   = entry["id"]
     name  = eid.split(".", 1)[-1] if "." in eid else eid
     kind  = entry.get("kind", "property")
     desc  = entry.get("description", "")
     examples = entry.get("examples", {}) or {}
     sigs  = entry.get("signatures", {}) or {}
+
+    # Native pages only show entries that actually have native signatures.
+    if native and not sigs.get(code_lang):
+        return ""
 
     # Use platform-specific description if available, fall back to shared description
     platform_descs = entry.get("platform_description", {}) or {}
@@ -239,8 +297,8 @@ def _member_section(entry: dict, code_lang: str, code_label: str, platform_id: s
     else:
         lines = [f"## {name}\n"]
 
-    # Signature
-    sig = sigs.get(code_lang) or sigs.get("ts", "")
+    # Signature — native never falls back to TypeScript.
+    sig = sigs.get(code_lang) if native else (sigs.get(code_lang) or sigs.get("ts", ""))
     if sig:
         lines.append(f"```{code_lang}")
         lines.append(sig)
@@ -248,7 +306,7 @@ def _member_section(entry: dict, code_lang: str, code_label: str, platform_id: s
 
     # Description with embedded examples
     if desc:
-        lines.append(_render_description(desc, examples, code_lang, code_label, platform_id, current_page_id))
+        lines.append(_render_description(desc, examples, code_lang, code_label, platform_id, current_page_id, native))
         lines.append("")
 
     return "\n".join(lines)
@@ -261,6 +319,7 @@ def _build_page(page_def: dict, entries_by_class: dict, platform: dict) -> str:
     code_lang  = platform["code_lang"]
     code_label = platform["code_label"]
     platform_id = platform["id"]
+    native      = platform.get("native", False)
     title      = page_def["title"]
     intro      = page_def.get("intro", "")
 
@@ -277,7 +336,7 @@ def _build_page(page_def: dict, entries_by_class: dict, platform: dict) -> str:
                 desc = platform_descs.get(platform_id, entry.get("description", ""))
                 examples = entry.get("examples", {}) or {}
                 if desc:
-                    lines.append(_render_description(desc, examples, code_lang, code_label, platform_id, page_id))
+                    lines.append(_render_description(desc, examples, code_lang, code_label, platform_id, page_id, native))
                     lines.append("")
                     intro_rendered = True
                 break
@@ -291,29 +350,44 @@ def _build_page(page_def: dict, entries_by_class: dict, platform: dict) -> str:
         members = entries_by_class.get(cls, [])
         if not members:
             continue
-        # For multi-class pages, add a section header for the secondary class
-        if cls == "AbstractConfig" and len(page_def["classes"]) > 1:
-            lines.append("\n---\n")
-            lines.append("## Android-only constraints\n")
-            lines.append("*The following options apply to Android only.*\n")
+        # Render member sections first so empty classes can be skipped (e.g. a native
+        # page where no member in this class has native content).
+        rendered = []
         for entry in members:
             # Skip class-level entries (e.g. enum parent like "NetworkType") —
             # they provide the page intro, not a member section.
             if "." not in entry["id"]:
                 continue
-            lines.append(_member_section(entry, code_lang, code_label, platform_id, page_id))
+            section = _member_section(entry, code_lang, code_label, platform_id, page_id, native)
+            if section.strip():
+                rendered.append(section)
+        if not rendered:
+            continue
+        # The "Android-only constraints" banner only makes sense on the cross-platform
+        # (TS/Dart) pages — a native Kotlin page is already entirely Android.
+        if cls == "AbstractConfig" and len(page_def["classes"]) > 1 and not native:
+            lines.append("\n---\n")
+            lines.append("## Android-only constraints\n")
+            lines.append("*The following options apply to Android only.*\n")
+        lines.extend(rendered)
 
     return "\n".join(lines)
 
 
 # ── Landing page ─────────────────────────────────────────────────────────────
 
-# Map platform id → panel SVG filename (from transistorsoft/assets submodule)
+# Map platform id → panel SVG filename.
+# react-native/flutter/ios/android use the shared transistorsoft/assets panels;
+# cordova/capacitor/native use per-SDK panels in src/assets/images/ (single-SDK icons
+# instead of the multi-icon -ts / -all composites).
 PLATFORM_PANELS = {
     "react-native": "transistor-logo-panel-react-native.svg",
-    "cordova":      "transistor-logo-panel-ts.svg",
-    "capacitor":    "transistor-logo-panel-ts.svg",
+    "cordova":      "transistor-logo-panel-cordova.svg",
+    "capacitor":    "transistor-logo-panel-capacitor.svg",
     "flutter":      "transistor-logo-panel-dart.svg",
+    "ios":          "transistor-logo-panel-swift.svg",
+    "android":      "transistor-logo-panel-kotlin.svg",
+    "native":       "transistor-logo-panel-native.svg",
 }
 
 def _build_landing_page() -> str:
@@ -327,16 +401,26 @@ def _build_landing_page() -> str:
         '</div>\n',
         '<div class="fetch-platform-cards" markdown>\n',
     ]
-    for plat in PLATFORMS:
-        pid = plat["id"]
-        label = plat["label"]
-        panel = PLATFORM_PANELS.get(pid, "transistor-logo-panel-all.svg")
-        lines.append(
-            f'<a class="fetch-platform-card" href="{pid}/">\n'
+    def _card(href, panel, label):
+        return (
+            f'<a class="fetch-platform-card" href="{href}">\n'
             f'  <img src="assets/images/{panel}" alt="{label}">\n'
             f'  <span class="fetch-platform-card__label">{label}</span>\n'
             f'</a>\n'
         )
+
+    for plat in PLATFORMS:
+        # Native sub-platforms (iOS/Android) are reached via the single "Native" card.
+        if plat.get("parent"):
+            continue
+        pid = plat["id"]
+        panel = PLATFORM_PANELS.get(pid, "transistor-logo-panel-all.svg")
+        lines.append(_card(f"{pid}/", panel, plat["label"]))
+
+    # Single "Native" card → the Native hub (Swift / Kotlin).
+    if any(p.get("parent") == "native" for p in PLATFORMS):
+        lines.append(_card("native/", PLATFORM_PANELS.get("native", "transistor-logo-panel-all.svg"), "Native"))
+
     lines.append('</div>\n')
     lines.append('</div>\n')
     return "\n".join(lines)
@@ -344,28 +428,44 @@ def _build_landing_page() -> str:
 
 # ── MkDocs nav + yml ──────────────────────────────────────────────────────────
 
-def _build_nav() -> list:
-    """Build the MkDocs nav list for all platforms."""
+def _build_nav(entries_by_class: dict) -> list:
+    """Build the MkDocs nav list. Native platforms are grouped under a single
+    "Native" tab, and only their pages that have native content are listed."""
     nav = [{"Home": "index.md"}]
+    native_children = []
     for plat in PLATFORMS:
         pid = plat["id"]
-        label = plat["label"]
-        entries = [{"Home": f"{pid}/index.md"}]
-        entries.append({"Setup": f"{pid}/setup.md"})
-        entries.append({"Examples": f"{pid}/examples.md"})
-        entries.append({"Debugging": f"{pid}/debugging.md"})
-        api = [
-            {page["title"]: f"{pid}/{page['id']}.md"}
-            for page in PAGES
+        native = plat.get("native", False)
+        code_lang = plat["code_lang"]
+        label = plat.get("nav_label", plat["label"])
+
+        entries = [
+            {"Home": f"{pid}/index.md"},
+            {"Setup": f"{pid}/setup.md"},
+            {"Examples": f"{pid}/examples.md"},
+            {"Debugging": f"{pid}/debugging.md"},
         ]
-        types = [
-            {page["title"]: f"{pid}/{page['id']}.md"}
-            for page in ENUM_PAGES
-        ]
-        entries.append({"API Reference": api})
+        if native:
+            api = [{p["title"]: f"{pid}/{p['id']}.md"} for p in PAGES
+                   if _page_has_native_content(p, entries_by_class, code_lang)]
+            types = [{p["title"]: f"{pid}/{p['id']}.md"} for p in ENUM_PAGES
+                     if _page_has_native_content(p, entries_by_class, code_lang)]
+        else:
+            api = [{p["title"]: f"{pid}/{p['id']}.md"} for p in PAGES]
+            types = [{p["title"]: f"{pid}/{p['id']}.md"} for p in ENUM_PAGES]
+        if api:
+            entries.append({"API Reference": api})
         if types:
             entries.append({"Types": types})
-        nav.append({label: entries})
+
+        nav_item = {label: entries}
+        if plat.get("parent") == "native":
+            native_children.append(nav_item)
+        else:
+            nav.append(nav_item)
+
+    if native_children:
+        nav.append({NATIVE_PARENT["label"]: [{"Home": "native/index.md"}] + native_children})
     return nav
 
 
@@ -460,6 +560,17 @@ def _copy_static_pages():
                     f"# {plat['label']} — Setup\n\n"
                     f"*Setup guide coming soon.*\n")
 
+    # Native hub page (the "Native" parent tab landing).
+    native_src = STATIC / "native"
+    native_dst = DOCS_DIR / "native"
+    native_dst.mkdir(parents=True, exist_ok=True)
+    if native_src.is_dir():
+        for md in native_src.glob("*.md"):
+            content = _expand_includes(md.read_text(encoding="utf-8"))
+            (native_dst / md.name).write_text(content, encoding="utf-8")
+            print(f"  copied {md.relative_to(ROOT)} → docs/native/{md.name}")
+    _write_stub(native_dst / "index.md", "# Native\n\nSelect a language from the navigation.\n")
+
 
 def _write_stub(path: Path, content: str):
     if not path.exists():
@@ -527,13 +638,27 @@ def generate():
         for entry in cls_entries:
             KNOWN_ENTRY_IDS.add(entry["id"])
 
+    # ── Per-native-language: which pages actually have native content ─
+    _NATIVE_PAGES_WITH_CONTENT.clear()
+    for plat in PLATFORMS:
+        if plat.get("native"):
+            cl = plat["code_lang"]
+            _NATIVE_PAGES_WITH_CONTENT[cl] = {
+                p["id"] for p in ALL_PAGES if _page_has_native_content(p, entries_by_class, cl)
+            }
+
     # ── Generate per-platform pages ──────────────────────────────────
     for plat in PLATFORMS:
         pid = plat["id"]
+        native = plat.get("native", False)
+        code_lang = plat["code_lang"]
         plat_dir = DOCS_DIR / pid
         plat_dir.mkdir(parents=True, exist_ok=True)
 
         for page_def in ALL_PAGES:
+            # Native pages with no native content are omitted (and excluded from nav).
+            if native and not _page_has_native_content(page_def, entries_by_class, code_lang):
+                continue
             content = _build_page(page_def, entries_by_class, plat)
             out = plat_dir / f"{page_def['id']}.md"
             out.write_text(content)
@@ -554,7 +679,7 @@ def generate():
     (DOCS_DIR / "CNAME").write_text("fetch.transistorsoft.com\n")
 
     # ── mkdocs.yml ───────────────────────────────────────────────────
-    nav = _build_nav()
+    nav = _build_nav(entries_by_class)
     _write_mkdocs_yml(nav)
 
 

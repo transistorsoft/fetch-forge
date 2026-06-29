@@ -16,3 +16,4 @@ description: |-
 signatures:
   ts: "forceAlarmManager?: boolean;"
   dart: "bool? forceAlarmManager"
+  kotlin: "fun setForceAlarmManager(value: Boolean): Builder"

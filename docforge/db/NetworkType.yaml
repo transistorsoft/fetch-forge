@@ -6,3 +6,4 @@ description: |-
 signatures:
   ts: "type NetworkType = 0 | 1 | 2 | 3 | 4;"
   dart: "enum NetworkType"
+  kotlin: "Int (android.app.job.JobInfo.NETWORK_TYPE_* constants)"

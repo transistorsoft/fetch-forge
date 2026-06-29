@@ -25,6 +25,14 @@ examples:
           delay: 900000,
           periodic: true,
         ));
+      kotlin: |-
+        val config = BackgroundFetchConfig.Builder()
+            .setTaskId("com.foo.periodic")
+            .setDelay(900000L)    // 15 minutes in ms
+            .setPeriodic(true)
+            .build()
+        BackgroundFetch.getInstance(context).scheduleTask(config)
 signatures:
   ts: "periodic?: boolean;"
   dart: "bool? periodic"
+  kotlin: "fun setPeriodic(value: Boolean): Builder"

@@ -8,3 +8,4 @@ description: |-
 signatures:
   ts: "taskId: string;"
   dart: "String taskId"
+  kotlin: "fun getTaskId(): String"

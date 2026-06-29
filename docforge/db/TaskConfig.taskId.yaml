@@ -34,6 +34,21 @@ examples:
           taskId: 'com.myapp.sync',
           delay: 60000,
         ));
+      kotlin: |-
+        val config = BackgroundFetchConfig.Builder()
+            .setTaskId("com.myapp.sync")
+            .setDelay(60000L)
+            .build()
+        BackgroundFetch.getInstance(context).scheduleTask(config)
+
+        // In your configure() callback:
+        override fun onFetch(taskId: String) {
+            if (taskId == "com.myapp.sync") {
+                performSync()
+            }
+            BackgroundFetch.getInstance(context).finish(taskId)
+        }
 signatures:
   ts: "taskId: string;"
   dart: "String taskId"
+  kotlin: "fun setTaskId(taskId: String): Builder"

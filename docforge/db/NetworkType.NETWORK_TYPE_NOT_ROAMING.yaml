@@ -3,5 +3,6 @@ kind: constant
 description: |-
   Requires a non-roaming network connection.
 signatures:
-  ts: "static NETWORK_TYPE_NOT_ROAMING: NetworkType = 4;"
+  ts: "static NETWORK_TYPE_NOT_ROAMING: NetworkType = 3;"
   dart: "NetworkType.NOT_ROAMING"
+  kotlin: "JobInfo.NETWORK_TYPE_NOT_ROAMING"

@@ -5,3 +5,5 @@ description: |-
 signatures:
   ts: "static STATUS_AVAILABLE: BackgroundFetchStatus = 2;"
   dart: "static const int STATUS_AVAILABLE = 2;"
+  swift: "case available  // UIBackgroundRefreshStatus.available"
+  kotlin: "BackgroundFetch.STATUS_AVAILABLE"

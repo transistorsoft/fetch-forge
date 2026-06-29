@@ -11,3 +11,4 @@ description: |-
 signatures:
   ts: "startOnBoot?: boolean;"
   dart: "bool? startOnBoot"
+  kotlin: "fun setStartOnBoot(value: Boolean): Builder"

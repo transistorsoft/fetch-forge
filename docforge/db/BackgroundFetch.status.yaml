@@ -40,6 +40,23 @@ examples:
             print('Background fetch available');
             break;
         }
+      swift: |-
+        // iOS returns the real UIBackgroundRefreshStatus.
+        let status = await BackgroundFetch.shared.refreshStatus
+        switch status {
+        case .available:  print("Background fetch available")
+        case .denied:     print("Background fetch denied by user")
+        case .restricted: print("Background fetch restricted")
+        @unknown default: break
+        }
+      kotlin: |-
+        // Android has no per-app switch — status() is always STATUS_AVAILABLE (2).
+        val status = BackgroundFetch.getInstance(context).status()
+        if (status == BackgroundFetch.STATUS_AVAILABLE) {
+            Log.d(TAG, "Background fetch available")
+        }
 signatures:
   ts: "static status(callback?: (status: BackgroundFetchStatus) => void): Promise<BackgroundFetchStatus>;"
   dart: "static Future<int> get status"
+  swift: "var refreshStatus: UIBackgroundRefreshStatus { get async }"
+  kotlin: "fun status(): Int"

@@ -45,6 +45,34 @@ examples:
         }, (String taskId) {
           BackgroundFetch.finish(taskId);
         });
+      swift: |-
+        // Always finish — including on timeout. For timeout events, finish immediately.
+        BackgroundFetch.shared.onFetch(identifier: "MyApp") { event in
+            if event.timeout {
+                print("[BackgroundFetch] TIMEOUT: \(event.taskId)")
+                BackgroundFetch.shared.finish(taskId: event.taskId)
+                return
+            }
+            print("[BackgroundFetch] Event received: \(event.taskId)")
+            defer { BackgroundFetch.shared.finish(taskId: event.taskId) }
+            // Perform your work here...
+        }
+      kotlin: |-
+        override fun onFetch(taskId: String) {
+            Log.d(TAG, "[BackgroundFetch] Event received: $taskId")
+            try {
+                // Perform your work here...
+            } finally {
+                // Always finish, even on error.
+                BackgroundFetch.getInstance(context).finish(taskId)
+            }
+        }
+        override fun onTimeout(taskId: String) {
+            Log.d(TAG, "[BackgroundFetch] TIMEOUT: $taskId")
+            BackgroundFetch.getInstance(context).finish(taskId)
+        }
 signatures:
   ts: "static finish(taskId?: string): void;"
   dart: "static Future<void> finish(String taskId)"
+  swift: "func finish(taskId: String)"
+  kotlin: "fun finish(taskId: String)"

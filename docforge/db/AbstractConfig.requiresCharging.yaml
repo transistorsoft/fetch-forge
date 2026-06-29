@@ -8,3 +8,4 @@ description: |-
 signatures:
   ts: "requiresCharging?: boolean;"
   dart: "bool? requiresCharging"
+  kotlin: "fun setRequiresCharging(value: Boolean): Builder"

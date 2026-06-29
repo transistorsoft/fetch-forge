@@ -8,3 +8,4 @@ description: |-
 signatures:
   ts: "requiresStorageNotLow?: boolean;"
   dart: "bool? requiresStorageNotLow"
+  kotlin: "fun setRequiresStorageNotLow(value: Boolean): Builder"

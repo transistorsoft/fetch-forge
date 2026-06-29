@@ -3,5 +3,6 @@ kind: constant
 description: |-
   Requires an unmetered network connection (e.g. Wi-Fi).
 signatures:
-  ts: "static NETWORK_TYPE_UNMETERED: NetworkType = 3;"
+  ts: "static NETWORK_TYPE_UNMETERED: NetworkType = 2;"
   dart: "NetworkType.UNMETERED"
+  kotlin: "JobInfo.NETWORK_TYPE_UNMETERED"

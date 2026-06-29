@@ -5,3 +5,4 @@ description: |-
 signatures:
   ts: "static NETWORK_TYPE_NONE: NetworkType = 0;"
   dart: "NetworkType.NONE"
+  kotlin: "JobInfo.NETWORK_TYPE_NONE"

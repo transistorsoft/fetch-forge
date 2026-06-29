@@ -10,3 +10,4 @@ description: |-
 signatures:
   ts: "timeout: boolean;"
   dart: "bool timeout"
+  kotlin: "fun getTimedOut(): Boolean"

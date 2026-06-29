@@ -6,3 +6,4 @@ description: |-
 signatures:
   ts: "static STATUS_RESTRICTED: BackgroundFetchStatus = 0;"
   dart: "static const int STATUS_RESTRICTED = 0;"
+  swift: "case restricted  // UIBackgroundRefreshStatus.restricted"

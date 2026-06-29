@@ -25,6 +25,20 @@ examples:
 
         // Stop a single scheduled task by taskId.
         await BackgroundFetch.stop('com.foo.customtask');
+      swift: |-
+        // Stop all background-fetch scheduling.
+        BackgroundFetch.shared.stop()
+
+        // Stop a single scheduled task by identifier.
+        BackgroundFetch.shared.stop(identifier: "com.transistorsoft.customtask")
+      kotlin: |-
+        // Stop all background-fetch + scheduled tasks (null = all).
+        BackgroundFetch.getInstance(context).stop(null)
+
+        // Stop a single scheduled task by taskId.
+        BackgroundFetch.getInstance(context).stop("com.transistorsoft.customtask")
 signatures:
   ts: "static stop(taskId?: string): Promise<boolean>;"
   dart: "static Future<int> stop([String? taskId])"
+  swift: "func stop(identifier: String? = nil)"
+  kotlin: "fun stop(taskId: String?)"
