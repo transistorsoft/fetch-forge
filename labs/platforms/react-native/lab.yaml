@@ -1,0 +1,47 @@
+# React Native platform manifest — fetch lab (WO-002).  Modelled on bg-forge's
+# labs/platforms/react-native (bg-forge 49d38d47f): the same RN 0.88.0 skeleton reduced to a scenario
+# driver, here driving react-native-background-fetch.  Android only in this slice: there is no `ios:`
+# block, so labkit.hosts() lists android alone and labkit.platform(name, "ios") refuses with
+# "no lab host for that OS".
+name: react-native
+# (WO-143 in bg-forge) Its column on a board, and its place in a sweep's queue and build pass.
+column: 2
+short: rn                        # its name in a board's eight-character column (labkit.board_name)
+# Distinct from bg-forge's com.transistorsoft.labs.* (WO-002 "Distinct package ids"): the two labs
+# share the Lab devices and their claims.  Each evicts only its own platforms() today (run.py:708-714);
+# evicting every Transistor lab app by prefix is a bg-forge work order, not done yet.
+package: com.transistorsoft.fetchlab.react
+activity: .MainActivity
+
+build:
+  cwd: platforms/react-native
+  cmd: ["./build.sh", "{native}", "{plugin}"]
+  apk: platforms/react-native/app/android/app/build/outputs/apk/debug/app-debug.apk
+
+plugins:
+  worktree: default          # the checkout default_checkout names (build.sh stages a copy of it)
+
+# The checkout `default` builds.  run.py hashes its HEAD and working tree into the source stamp, so a
+# plugin commit invalidates the installed app instead of passing for it.
+default_checkout: "{repo}/react-native/background-fetch"
+
+supports:
+  # The template's android:configChanges omits fontScale and fontWeightAdjustment, so bold and
+  # fontscale recreate the Activity; `finish` is the second `am start --ez finishNow true`.
+  triggers: [bold, fontscale, finish, none]
+  calls: []                  # no legacy tick-counted `call` hooks: fetch scenarios use `api` hooks
+
+notes:
+  - "(WO-002) Launch extras honoured, besides bg-forge's configB64/hooksB64/eventsB64/scenario/nativeLabel/view/stopOnTerminate/finishNow: noConfigure (bool: the driver never calls configure() itself), finishDelayMs (int, default 1000: how long after a fetch the driver calls finish(taskId)), withholdFinish (bool: a fetch is never finished — the SDK's own timeout must fire), finishOnTimeout (bool, default true: a timeout delivery calls finish(taskId) at once). watch, persistGcp and noStart are tolerated and ignored (there is no location, and configure() is what starts fetch). The boot line's args= lists what was honoured."
+  - "(WO-002) The three finish knobs are also written to SharedPreferences `lab-knobs` by MainActivity.onCreate, because the headless task has no launch intent: it reads the LAST launch's knobs through Lab.knobs() (defaults when the app has never been launched since install)."
+  - "(WO-002) configB64 is FLAT (BackgroundFetchConfig has no groups) and is merged over the driver's defaults {minimumFetchInterval: 15, stopOnTerminate: <the stopOnTerminate extra>, startOnBoot: false, enableHeadless: true} before the boot configure(). The driver echoes `LAB app=config json={…}` before every configure() it makes (configDropped reads the last one)."
+  - "(WO-002) configure() is made ONCE per JavaScript context — at the first mount, not again when a recreation re-mounts the root (React Native keeps the JS context). A scenario that wants a second configure() declares one with `at_s`."
+  - "(WO-002) Fetch events arrive through configure()'s two callbacks, not an on* member. The driver's own callbacks log `LAB app=event=fetch n=<k> taskId=<id>` / `LAB app=event=timeout n=<k> taskId=<id>`, hand the taskId to every armed `events:` declaration of `configure` (a timeout only to one armed with `errors: true`), then finish per the knobs (`LAB app=finish taskId=… timeout=… after_ms=… outcome=ok|withheld|threw`)."
+  - "(WO-002) An `events:` declaration on `configure` (id configure@<i>) goes through the driver's event facade, never the bare export: labevents.js arm() calls facade.configure(args, delivered[, failed]), which subscribes delivered (and failed, when `errors: true`) to the driver's deliveries and, when the declaration carries `args`, makes the REAL configure(args, <driver callbacks>) with them as given (no lab defaults merged); a declaration without `args` only subscribes. A boot-armed configure declaration with args IS the boot configure: the driver then skips its own. Each delivery is `LAB app=event id=configure@<i> n=<k>` plus one `ret id=configure@<i> path=$ type=string value=<taskId>` per declared path: the payload is the bare taskId string, as the bridge hands a customer's onEvent/onTimeout (react-native-background-fetch index.js configure) and as the vocabulary's `emits: string` says. A timeout goes to `failed` (logged `event-error id=configure@<i>`) when the declaration passed `errors: true`, and to no declaration otherwise (the bridge's default onTimeout takes it; onEvent never sees one). (2026-11-05, agent S: was {taskId, timeout}, which the vocabulary refuses.)"
+  - "(WO-002) `api` hooks run against the plugin's default export itself (labapi.js runBatch(BackgroundFetch, …)): configure as an api hook is called with the hook's args alone and THROWS (the bridge requires onEvent: index.js configure) — reach configure's callbacks through `events:` instead. Never call registerHeadlessTask as a non-probe api hook: it would replace the lab's headless task."
+  - "(WO-002) The anchor line's tickGcp= is labapi.js's derived flag (labkit.tick_gcp), reported so schedule_report agrees; fetch has no per-tick cause to switch. Every tick reads status() and the native probe, as bg-forge's tick reads getState()."
+  - "(WO-002) The headless task (AppRegistry 'BackgroundFetch', registered at module load) logs `LAB point=headless event=fetch|timeout taskId=<id> timeout=<bool>` (`timeout` when the HeadlessEvent's timeout is true: the vocabulary's enums.Event convention), then `LAB point=task-probe <probe>`, then finishes per the persisted knobs: `LAB point=task-api api=finish args=<taskId> outcome=ok|withheld|threw`. Nothing it logs starts with `point=headless-`, which a headless counter would read as a delivery. React Native's own HeadlessJsTaskConfig timeout is 30 s (the plugin's HeadlessTask.java), the SDK's BGTask timeout 60 s."
+  - "(WO-002) The probe (`Lab.probe()`, every tick and at onCreate/resume/onDestroy, and `point=appCreate` in Application.onCreate) is reflective and never builds an SDK singleton: LifecycleManager's and BackgroundFetch's own static instance fields, read BY TYPE (`headless=`, `background=`, `adapter=`; `-` before the SDK made one), and the SDK's persisted task ids from SharedPreferences TSBackgroundFetch `tasks`."
+  - "(WO-002) Native pin: build.sh <label> resolves com.transistorsoft:tsbackgroundfetch:<label> ONLY from labs/m2 (an exclusiveContent repository in android/build.gradle; the label is required — no fallback to the plugin's own `4.1.+`), then refuses an APK whose resolved version is not the label or whose resolved AAR is not byte-identical to labs/m2's."
+  - "(WO-002) The plugin is STAGED, not linked: build.sh copies the checkout's working-tree files (git ls-files -co --exclude-standard, minus example/) into labs/platforms/react-native/.stage/react-native-background-fetch (gitignored) and app/package.json links that, so the Gradle build's android/build/ lands in the stage and never in the plugin checkout. The stage's .lab-source records the checkout, its HEAD, dirty flag and a content hash, and build.sh refuses a node_modules link that does not resolve to the stage of the checkout it was given."
+  - "Debug build with a pre-made `--dev false` JS bundle; MainApplication passes useDevSupport = false so no Metro server is needed. JS lines reach logcat under the tag ReactNativeJS. ABIs arm64-v8a and x86_64 only (the Lab AVDs are arm64-v8a)."

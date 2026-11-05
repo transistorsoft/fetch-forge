@@ -1,0 +1,23 @@
+{
+  "name": "fetch-rn-lab",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "react-native start"
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-background-fetch": "file:../.stage/react-native-background-fetch"
+  },
+  "devDependencies": {
+    "@react-native/babel-preset": "0.88.0",
+    "@react-native/gradle-plugin": "0.88.0",
+    "@react-native/metro-config": "0.88.0",
+    "@react-native-community/cli": "20.2.0",
+    "@react-native-community/cli-platform-android": "20.2.0"
+  },
+  "engines": {
+    "node": ">= 22.11.0"
+  }
+}

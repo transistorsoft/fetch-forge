@@ -1,0 +1,315 @@
+{
+ "label": "react-native.events-fetch-android.FIX.run",
+ "platform": "react-native",
+ "os": "android",
+ "scenario": "events-fetch-android",
+ "variant": "FIX",
+ "step": "run",
+ "serial": "emulator-5580",
+ "native": "4.1.1-master-5de5242",
+ "native_source": {
+  "branch": "",
+  "commit": "5de52423e1c5388afffa3d520f97dcb9b287ed29",
+  "dirty": "no"
+ },
+ "native_resolved": null,
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "react-native/background-fetch",
+  "commit": "2acdc21f49d3b549203195b42ea4e97183826087",
+  "dirty": "no"
+ },
+ "device": {
+  "avd": "Lab1",
+  "model": "sdk_gphone64_arm64",
+  "os": "Android 16",
+  "sdk": "36",
+  "data_free_mb": 2506,
+  "display": "awake",
+  "fgs_timeout_ms": null,
+  "play_services": 263635035
+ },
+ "activity": ".MainActivity",
+ "process": null,
+ "settle": 10,
+ "after": 32,
+ "end": {
+  "policy": "window",
+  "ended": "window"
+ },
+ "timings": {
+  "install_s": 0.1,
+  "step_s": 43.5,
+  "t0": 1793906420.442,
+  "phases": {
+   "terminated": 0.02,
+   "others_stopped": 0.022,
+   "reset": 0.046,
+   "swept": 0.071,
+   "neutral_pre": 0.13,
+   "accuracy": 0.17,
+   "permissions": 0.17,
+   "sleep_end": 0.17,
+   "log_begun": 0.287,
+   "launch_mark": 0.304,
+   "verdict_cleared": 0.324,
+   "launch": 0.66,
+   "settle_end": 10.67,
+   "trigger": 10.707,
+   "end": 43.423,
+   "runner_joined": 43.423,
+   "capture_mark": 43.456,
+   "pusher_joined": 43.456,
+   "log_ended": 43.498,
+   "log_written": 43.498,
+   "db_pulled": 43.499,
+   "run_json": 43.537,
+   "judged": 43.56,
+   "verdict_pushed": 43.583,
+   "settled": 44.091,
+   "neutral_post": 44.164,
+   "terminated_post": 44.189
+  },
+  "calls": {
+   "_adb": {
+    "n": 18,
+    "s": 0.612,
+    "bg_n": 2,
+    "bg_s": 0.069
+   },
+   "_stop_stream": {
+    "n": 2,
+    "s": 0.002,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.117,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.025,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.042,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "job": {
+    "n": 2,
+    "s": 0.067,
+    "bg_n": 2,
+    "bg_s": 0.067
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.336,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "location_accuracy": {
+    "n": 2,
+    "s": 0.04,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 5,
+    "s": 0.125,
+    "bg_n": 2,
+    "bg_s": 0.039
+   },
+   "native_resolved": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "network_default": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.132,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 82,
+    "s": 0.047,
+    "bg_n": 82,
+    "bg_s": 0.047
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 4,
+    "s": 0.112,
+    "bg_n": 2,
+    "bg_s": 0.069
+   },
+   "reset_app": {
+    "n": 1,
+    "s": 0.024,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.706,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 2,
+    "s": 0.045,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": 0.209,
+  "clock_offset_rtt_s": 0.017,
+  "log_phases": {
+   "boot": 0.883
+  }
+ },
+ "measure_from": "launch",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": true,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": [
+  {
+   "after": [
+    {
+     "api": "status#0"
+    }
+   ],
+   "delay_s": 3,
+   "job": 999
+  },
+  {
+   "after": [
+    {
+     "event": "configure@0"
+    }
+   ],
+   "delay_s": 6,
+   "job": 999
+  }
+ ],
+ "host": {
+  "error": null,
+  "held_s": {
+   "action0": 0.504,
+   "action1": 3.913
+  },
+  "sent_s": {
+   "action0": 3.592,
+   "action1": 10.049
+  }
+ },
+ "network": {
+  "read": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "default": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "differs": [],
+  "put": false
+ },
+ "privacy": null,
+ "location_accuracy": {
+  "want": true,
+  "was": true,
+  "now": true
+ },
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [
+  {
+   "subscribe": "configure",
+   "args": {
+    "minimumFetchInterval": 15,
+    "stopOnTerminate": true,
+    "enableHeadless": false,
+    "startOnBoot": false
+   },
+   "min": 2,
+   "max": 2,
+   "returns": {
+    "$": {
+     "type": "string",
+     "equals": "react-native-background-fetch"
+    }
+   }
+  }
+ ],
+ "hooks": [
+  {
+   "api": "status",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-05 14:21:03"
+}

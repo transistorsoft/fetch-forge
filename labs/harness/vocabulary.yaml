@@ -1,0 +1,124 @@
+# The background-fetch SDK surface a scenario may assert (WO-002).  CURATED — fetch's own, never bg-forge's.
+#
+# Seeded by hand on 2026-11-05 from types/background-fetch at 5c9685d2 (src/BackgroundFetch.ts, src/interfaces.ts,
+# src/types.ts) and cross-checked against docforge/db's `signatures.ts` (34 entries).  Fetch has no seed_vocabulary.py
+# (bg-forge's is bg-geo data and is not vendored), so a change to the types is copied here by hand; the fetch
+# selftest (labs/harness/fetch_selftest.py) holds every name below to the types checkout when it is present.
+#
+# The format is the one the vendored labkit.py reads (labkit.vocabulary(), labs/VENDORED.md): `api:` members with
+# `args` / `returns` / `wire` / `emits` / `property`, `config:` the tree a step's `config:` is held to, `enums:` the
+# closed types with their wire type and values, `scope:` the one-OS keys, and `types.interfaces` the argument and
+# payload shapes.  Read on the host only; nothing here reaches a device.
+#
+# What differs from bg-forge's vocabulary, on purpose (WO-002 "Not an acceptable shortcut": no State typing copied):
+#   * no `state:` — fetch has no State object, so no member returns one and nothing is walked as a State tree;
+#   * no `members:` — no property of the default export returns an interface;
+#   * no roundtrip.yaml / invalid.yaml tables beside it — none until a scenario needs one;
+#   * `config:` is flat: BackgroundFetchConfig's ten keys (AbstractConfig's nine, Android-only, plus
+#     minimumFetchInterval), the object `configure` is handed.
+#
+# Known divergences (each one a work order when a scenario confirms it, never a union here):
+#   finish   types: `finish(taskId: string)`; docforge/db BackgroundFetch.finish.yaml: `finish(taskId?: string)`.
+#            The types win here (this file is seeded from them).
+
+api:
+  # The static constants of the default export (BackgroundFetch.ts).  Each is a number at runtime; its value is in
+  # `enums:` below (members), which is what api-constants asserts — the NETWORK_TYPE_* transposition that shipped
+  # once (types 7be684d, docforge 37af5f2) is the regression it pins.
+  NETWORK_TYPE_ANY:        {property: true, returns: NetworkType, wire: number}
+  NETWORK_TYPE_CELLULAR:   {property: true, returns: NetworkType, wire: number}
+  NETWORK_TYPE_NONE:       {property: true, returns: NetworkType, wire: number}
+  NETWORK_TYPE_NOT_ROAMING: {property: true, returns: NetworkType, wire: number}
+  NETWORK_TYPE_UNMETERED:  {property: true, returns: NetworkType, wire: number}
+  STATUS_AVAILABLE:        {property: true, returns: BackgroundFetchStatus, wire: number}
+  STATUS_DENIED:           {property: true, returns: BackgroundFetchStatus, wire: number}
+  STATUS_RESTRICTED:       {property: true, returns: BackgroundFetchStatus, wire: number}
+  # configure(config, onEvent, onTimeout?) — two callbacks after one value: an `events:` declaration
+  # (`subscribe: configure`, `args:` the config, `errors: true` to pass onTimeout as the second callback), never an
+  # `api:` hook, which carries one argument (labkit._validate_hooks).  `emits` is what onEvent is handed: the taskId.
+  # The fetch pack widens labkit.CALLBACK_ARG so `onEvent`/`onTimeout` count as callbacks (labs/harness/fetch_pack.py).
+  configure:               {args: ["config: BackgroundFetchConfig", "onEvent: (taskId: string) => void", "onTimeout?: (taskId: string) => void"], returns: BackgroundFetchStatus, wire: number, emits: string}
+  finish:                  {args: ["taskId: string"], returns: void}
+  registerHeadlessTask:    {args: ["task: (event: HeadlessEvent) => Promise<void>"], returns: void}
+  scheduleTask:            {args: ["config: TaskConfig"], returns: boolean}
+  start:                   {returns: BackgroundFetchStatus, wire: number}
+  status:                  {args: ["callback?: (status: BackgroundFetchStatus) => void"], returns: BackgroundFetchStatus, wire: number}
+  stop:                    {args: ["taskId?: string"], returns: boolean}
+
+# A step's `config:` — the BackgroundFetchConfig a lab app hands configure() — held key by key (labkit._validate_config).
+# Flat: fetch's config has no groups.
+config:
+  enableHeadless:        boolean
+  forceAlarmManager:     boolean
+  minimumFetchInterval:  number
+  requiredNetworkType:   NetworkType
+  requiresBatteryNotLow: boolean
+  requiresCharging:      boolean
+  requiresDeviceIdle:    boolean
+  requiresStorageNotLow: boolean
+  startOnBoot:           boolean
+  stopOnTerminate:       boolean
+
+# Every closed type a member returns or a field is declared as: its wire type and values (types.ts), and `members`,
+# the constant of the default export that carries each value (BackgroundFetch.ts's statics, types.ts's tables,
+# docforge/db `<Type>.<CONSTANT>.yaml` — all three agree on 2026-11-05).
+enums:
+  BackgroundFetchStatus: {wire: number, values: [0, 1, 2], members: {STATUS_RESTRICTED: 0, STATUS_DENIED: 1, STATUS_AVAILABLE: 2}}
+  NetworkType: {wire: number, values: [0, 1, 2, 3, 4], members: {NETWORK_TYPE_NONE: 0, NETWORK_TYPE_ANY: 1, NETWORK_TYPE_UNMETERED: 2, NETWORK_TYPE_NOT_ROAMING: 3, NETWORK_TYPE_CELLULAR: 4}}
+  # NOT A FETCH TYPE.  The vendored labkit.py reads `enums.Event.values` at import (headless_names(), :3383-3386,
+  # called by _headless_metrics() at :3412) as the names a headless task's `LAB point=headless event=<name>` line can
+  # carry, and generates a `headlessEvents.<name>` metric per name.  Fetch's HeadlessEvent has no name — it is
+  # {taskId, timeout} — so the lab's convention is: a fetch lab driver writes `event=fetch` for a HeadlessEvent whose
+  # `timeout` is false and `event=timeout` for one whose `timeout` is true.  Upstream seam (Phase B): a pack hook for
+  # headless_names(), so this entry can go.
+  Event: {wire: string, values: [fetch, timeout], members: {Fetch: fetch, Timeout: timeout}}
+
+# Keys only one OS declares ([Android only] / [iOS only] in the types).  Every AbstractConfig key is [Android only];
+# minimumFetchInterval is both.  TaskConfig.requiresNetworkConnectivity is [iOS only] (a TaskConfig field, so not in
+# `config:`; recorded here for the reader — labkit reads `scope:` for State paths, and fetch has no State).
+scope:
+  android:
+    - enableHeadless
+    - forceAlarmManager
+    - requiredNetworkType
+    - requiresBatteryNotLow
+    - requiresCharging
+    - requiresDeviceIdle
+    - requiresStorageNotLow
+    - startOnBoot
+    - stopOnTerminate
+  ios: []
+
+# The argument and payload shapes, field by field as interfaces.ts spells them (`field?` optional), AbstractConfig's
+# fields flattened into the two interfaces that extend it.  configure's and scheduleTask's argument is held to these
+# (labkit._conform); a HeadlessEvent is what a headless task is handed.
+types:
+  interfaces:
+    BackgroundFetchConfig:
+      "enableHeadless?":        boolean
+      "forceAlarmManager?":     boolean
+      "minimumFetchInterval?":  number
+      "requiredNetworkType?":   NetworkType
+      "requiresBatteryNotLow?": boolean
+      "requiresCharging?":      boolean
+      "requiresDeviceIdle?":    boolean
+      "requiresStorageNotLow?": boolean
+      "startOnBoot?":           boolean
+      "stopOnTerminate?":       boolean
+    HeadlessEvent:
+      taskId:  string
+      timeout: boolean
+    TaskConfig:
+      delay:                          number
+      "enableHeadless?":              boolean
+      "forceAlarmManager?":           boolean
+      "periodic?":                    boolean
+      "requiredNetworkType?":         NetworkType
+      "requiresBatteryNotLow?":       boolean
+      "requiresCharging?":            boolean
+      "requiresDeviceIdle?":          boolean
+      "requiresNetworkConnectivity?": boolean
+      "requiresStorageNotLow?":       boolean
+      "startOnBoot?":                 boolean
+      "stopOnTerminate?":             boolean
+      taskId:                         string

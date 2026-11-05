@@ -1,0 +1,17 @@
+   crashes                          0                      expected 0            ok
+   jobsRegistered                   999                    expected 999          ok
+   fetchReceived                    2                      expected 2            ok
+   fetchFinished                    2                      expected 2            ok
+   jobFinished                      2                      expected 2            ok
+   duplicateJobs                    0                      expected 0            ok
+   fetchTally                       react-native-background-fetch=2 expected any          ok
+   jobIds                           999                    expected 999          ok
+   headlessEvents.fetch             0                      expected 0            ok
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   eventAssertions                  ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => PASS

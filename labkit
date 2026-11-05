@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# ──────────────────────────────────────────────────────────────────────
+# labkit — the background-fetch device lab's one command (WO-002; labs/README.md)
+#
+# Modelled on bg-forge's ./labkit: the same commands over the same harness, vendored from bg-forge byte-identical
+# (labs/VENDORED.md), with fetch's differences in one pack (labs/harness/fetch_pack.py).
+#
+#   ./labkit doctor                     check the tools and the repo; changes nothing
+#   ./labkit status                     one line per shared Lab device; changes nothing
+#   ./labkit up / down                  start / stop the Lab devices, and only those
+#   ./labkit sweep / run                the suite, or one scenario
+#
+# Every Python process the harness starts runs with the fetch pack: this script puts labs/harness/pack first on
+# PYTHONPATH (its sitecustomize.py activates the pack) and sets FETCH_LABKIT_PACK=1; children inherit both.
+# The Lab devices and their claims are bg-forge's (~/Library/Caches/transistorsoft-lab/claims): the two labs
+# queue on them, never run beside each other.  LAB_CLAIMS_DIR is never set here.
+# ──────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+HARNESS="$ROOT/labs/harness"
+# (Fresh clone) The harness needs PyYAML; `./labkit setup` puts it in labs/.venv when python3 has none, and every
+# command then runs under that interpreter (on PATH first, so the scripts it starts get the same one).
+VENV="$ROOT/labs/.venv"
+PY=python3
+if [[ -x "$VENV/bin/python3" ]]; then PY="$VENV/bin/python3"; export PATH="$VENV/bin:$PATH"; fi
+# CocoaPods refuses to run outside a UTF-8 locale, and every iOS build runs pod install.
+case "${LANG:-}" in *UTF-8*|*utf8*) ;; *) export LANG=en_US.UTF-8 ;; esac
+# The fetch pack, in this process tree only.
+export PYTHONPATH="$HARNESS/pack${PYTHONPATH:+:$PYTHONPATH}"
+export FETCH_LABKIT_PACK=1
+
+usage() {
+  cat <<'EOF'
+labkit — the background-fetch device lab (labs/README.md; the protocol is bg-forge's labs/README.md)
+
+A fresh clone:
+  ./labkit setup [--os …]        check the tools (prints what to install), then everything in the repo:
+                                 submodules, the native SDK pin, the Lab devices, the lab apps
+  ./labkit doctor [--os …]       the same checks; changes nothing
+
+Devices (shared with bg-forge's lab: Android emulators Lab1/Lab2 on emulator-5580/5582, iOS Simulators Lab1/Lab2):
+  ./labkit up [--os android,ios] [--timeout S]   create what is missing, start it, wait until ready
+  ./labkit status [--os …]                       one line per Lab device; changes nothing
+  ./labkit down [--os …]                         stop the Lab devices, and only those
+
+Tests:
+  ./labkit sweep [switches]      the suite on the Lab devices that are up (sweep.py)
+                                 e.g. --platforms react-native --os android --scenarios api-smoke
+  ./labkit run [switches]        one scenario on one device (run.py), e.g.
+                                 --platform react-native --os android --scenario events-fetch-android
+
+Reading results:
+  ./labkit board <stamp> [--vs <stamp>]   a sweep's timing board (summarize.py --board)
+  ./labkit summarize [switches]           scores, traces, replays of captures (summarize.py)
+
+The lab itself:
+  ./labkit selftest               the fetch selftest, the vendored slots selftest, and the vendor check
+  ./labkit vendor-check           the vendored files against bg-forge at the recorded commit (labs/VENDORED.md)
+  ./labkit pack                   every override in the fetch pack, with the vendored line it stands in for
+  ./labkit env                    the exports that give a shell the pack:  eval "$(./labkit env)"
+
+`./labkit <command> --help` lists that command's switches.
+EOF
+}
+
+cmd="${1:-help}"
+[[ $# -gt 0 ]] && shift
+case "$cmd" in
+  setup|doctor)   exec "$PY" "$HARNESS/lab_setup.py" "$cmd" "$@" ;;
+  up|down|status) exec "$PY" "$HARNESS/lab_devices.py" "$cmd" "$@" ;;
+  sweep)          exec "$PY" "$HARNESS/sweep.py" "$@" ;;
+  run)            exec "$PY" "$HARNESS/run.py" "$@" ;;
+  board)          exec "$PY" "$HARNESS/summarize.py" --board "$@" ;;
+  summarize)      exec "$PY" "$HARNESS/summarize.py" "$@" ;;
+  selftest)       rc=0
+                  "$PY" -B "$HARNESS/fetch_selftest.py" | grep -v '^ok ' || rc=1   # the failures, and the verdict
+                  node "$HARNESS/slots_selftest.js" | grep -v '^ok ' || rc=1
+                  "$HARNESS/vendor_check.sh" || rc=1
+                  exit $rc ;;
+  vendor-check)   exec "$HARNESS/vendor_check.sh" "$@" ;;
+  pack)           exec "$PY" -B "$HARNESS/fetch_pack.py" --seams ;;
+  env)            printf 'export PYTHONPATH=%q\nexport FETCH_LABKIT_PACK=1\n' "$PYTHONPATH" ;;
+  help|-h|--help) usage ;;
+  *)              echo "labkit: unknown command '$cmd'" >&2; echo >&2; usage >&2; exit 2 ;;
+esac

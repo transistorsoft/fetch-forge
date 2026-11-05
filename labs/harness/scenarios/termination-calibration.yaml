@@ -1,0 +1,99 @@
+name: termination-calibration
+description: >
+  (WO-002, Tier 1, run FIRST) How the lab may terminate an app in a headless scenario.  Two ways to end a process
+  from the host: `kill: true` (bg-forge's Adb.kill, `run-as <pkg> kill -9 <pid>`: what the low-memory killer does —
+  a death, no callback in the app) and `force_stop: true` (`am force-stop <pkg>`: the user's Force stop, which may
+  cancel the app's jobs — it does: MEASURED below).  Each step configures a headless-capable fetch
+  (stopOnTerminate false, enableHeadless true) — the SDK asks JobScheduler for the fetch job (jobsRegistered 999, its
+  `- registerTask: … (jobId: 999)` line, logged before the schedule() call whose result it discards) — terminates
+  the app one way, then fires the fetch job (`job: 999`, `cmd jobscheduler run -f <pkg> 999`).
+
+  A `job:` says what it expects of the job: `present` (the default: it runs) or `expect: absent` (JobScheduler holds
+  no such job).  The other answer is a scored miss — `actionsDone: action1=missed(no-job)` or `missed(present)` — and
+  JobScheduler's answer rides in the mark as `said=`.  `jobIds` records what the app holds at the step's end (the
+  host's `dumpsys jobscheduler <pkg>`, after everything).
+
+  kill: the termination every headless scenario uses until this scenario says otherwise (WO-002 "Not an acceptable
+    shortcut").  Asserted: the job survives the kill (actionsDone), the SDK receives the fetch in a new process
+    (fetchReceived 1), hands it to the RN headless task (headlessEvents.fetch 1, its `point=headless event=fetch`
+    line), the task finishes it (headlessCalls finish:ok=1, the SDK's `- finish:` line, fetchFinished 1) and the job
+    is finished (jobFinished 1); no `- Stopping on terminate`, no headless task error.
+
+  force-stop: the same job fired after `am force-stop`, with `expect: absent` — the measurement run 1 made (below),
+    kept, and scored green for what it found.  JobScheduler held job 999 just before the force-stop (jobsAtForceStop
+    999: the host reads `dumpsys jobscheduler <pkg>` as part of the action, its mark's `held=`), answers `Could not
+    find job` after it (the mark's `said=`), nothing is delivered, and the app holds no job at the step's end (jobIds
+    `-`).  The step goes red (`action1=missed(present)`) the day Android keeps a force-stopped app's jobs.  (WO-002
+    Log 2026-11-05: Chris chose this shape over dropping the `job:` action, or leaving the step red by design.)
+
+  MEASURED 2026-11-05, run 1 (react-native/android, emulator-5580 Lab1, Android 16 / API 36, Play services 263635035;
+  native 4.1.1-master-5de5242, plugin react-native/background-fetch 2acdc21; capture kept in
+  labs/baselines/2026-11-05-termination-calibration-run1, gitignored):
+    * kill: green.  `run-as kill -9` of pid 4350 at 13:04:16.3; JobScheduler still held job 999, and `run -f` 3.3 s
+      later started a new process (pid 4412): the SDK logged `- Background Fetch event received:
+      react-native-background-fetch` 0.2 s after the run, `☯️ HeadlessMode? true`, `[HeadlessTask] initializing
+      ReactContext` (bridgeless), and the RN headless task logged `point=headless event=fetch` 69 ms after the SDK
+      received it; finish(taskId) 1.0 s later, then `- jobFinished`.  Job 999 was still registered at the step's end.
+    * force-stop: `am force-stop` of pid 4596 (ActivityManager `Force stopping com.transistorsoft.fetchlab.react`), then
+      `run -f <pkg> 999` 3.4 s later: JobScheduler `executeRunCommand(): …/null/0 999 s=false f=true`, and the
+      pack scored it `missed=no-job` (actionsDone `action1=missed(no-job)`, the step red as written; the answer's
+      text was not kept then — the `said=` of every later run shows `Could not find job 999 in package …`); no
+      process started, no SDK line, no headless line; jobIds `-` at the step's end.
+  THE FINDING: `am force-stop` cancels the app's JobScheduler jobs (measured on job 999, the fetch job; a custom
+  task's job is not yet measured); `run-as kill -9` keeps them.  So every headless scenario terminates with `kill: true`, never `force_stop`: after a force-stop there is
+  no job left to fire, and a headless scenario would test nothing.  It also means the harness's own step boundary —
+  run.py force-stops the app before and after every step (backends.Adb.terminate, `am force-stop`) — wipes the
+  app's jobs between steps: every step must configure() again (the RN driver does at boot), and a job can never be
+  carried from one step to the next except across a `process: live` step.
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-05 — iOS has no headless mode and `stopOnTerminate` is a no-op there (TSBackgroundFetch.m:388-393);
+    `actions:` (kill, force_stop, job) are Android's."
+stopOnTerminate: false
+config: {stopOnTerminate: false, enableHeadless: true, minimumFetchInterval: 15, startOnBoot: false}
+measure_from: launch
+steps:
+  - name: kill
+    settle: 10
+    after: 35
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 3, kill: true}
+      # `point: host` matches ANY host mark: here the kill's, the only one before it.
+      - {after: {point: host}, delay_s: 3, job: 999}
+    expect:
+      crashes: 0
+      jobsRegistered: "999"
+      fetchReceived: 1
+      headlessEvents.fetch: 1
+      headlessEvents.timeout: 0
+      headlessCalls: "finish:ok=1"
+      fetchFinished: 1
+      jobFinished: 1
+      stoppingOnTerminate: 0
+      headlessTaskErrors: 0
+      fetchTally: any
+      headlessTally: any
+      jobIds: any
+      bootBroadcasts: any
+  - name: force-stop
+    settle: 10
+    after: 35
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 3, force_stop: true}
+      # `point: host` matches ANY host mark: here the force-stop's, the only one before it.
+      - {after: {point: host}, delay_s: 3, job: 999, expect: absent}
+    expect:
+      crashes: 0
+      jobsRegistered: "999"
+      jobsAtForceStop: "999"
+      jobIds: "-"
+      fetchReceived: 0
+      headlessEvents.fetch: 0
+      headlessTally: any
+      bootBroadcasts: any

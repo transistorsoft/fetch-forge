@@ -1,0 +1,11 @@
+// (Fresh clone) Passed by publish_native.sh to every lab publish (`gradlew -I`).  tslocationmanager/build.gradle signs
+// every publication for Maven Central (`sign publishing.publications`), so a machine without Transistor's GPG key
+// (`signingKey` in ~/.gradle/gradle.properties) fails at signTslocationmanagerPublication — though its own warning says
+// "signing will be skipped".  The lab publishes to labs/m2 only, so signing is made optional: with a key it signs as
+// before; without one the signature task is skipped and no .asc is published.  Gradle's own documented switch
+// (SigningExtension.required); nothing in the build's source changes, so a label still names an exact commit.
+gradle.allprojects { project ->
+    project.plugins.withId('signing') {
+        project.extensions.getByName('signing').required = false
+    }
+}

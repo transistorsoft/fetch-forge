@@ -1,0 +1,68 @@
+name: api-smoke
+description: >
+  (WO-002, Tier 1) Every member of the default export, called through the surface a customer calls, settles with the
+  shape the types declare.  One step, one first batch, after the driver's own boot configure() has resolved (the RN
+  driver awaits it before queueing the batch: labs/platforms/react-native/app/index.js main()).
+
+  WHAT EACH HOOK ASSERTS (types/background-fetch 5c9685d2 src/BackgroundFetch.ts; labs/harness/vocabulary.yaml):
+    * configure — a probe: the member is there and is a function.  configure(config, onEvent, onTimeout?) needs a
+      callback, which an api hook cannot carry (labkit._validate_hooks refuses a hook short of a required parameter),
+      so it is never CALLED as a hook; its calls and deliveries are `events:` declarations (events-fetch-android).
+      Here the driver's boot configure() is what start/stop/status act on; its echo is configDropped's.
+    * registerHeadlessTask — a probe, never a call: calling it would replace the lab's headless task.
+    * status() and start() — resolve a BackgroundFetchStatus: a number, one of 0/1/2 (STATUS_RESTRICTED, _DENIED,
+      _AVAILABLE).  Android's SDK answers STATUS_AVAILABLE always (BackgroundFetch.java status()); the shape is what is
+      asserted, the value is recorded on the line.
+    * scheduleTask(TaskConfig) — resolves a boolean, true.  A one-shot task 10 minutes out, stopped by the next hook so
+      nothing fires after the step (or in the next scenario).
+    * stop(taskId) and stop() — resolve a boolean, true.  stop(taskId) stops the custom task; stop() with no argument
+      stops the fetch task (the bridge passes null, the native module reads it as its own fetch taskId).
+    * finish(taskId) — void: the bridge returns nothing (undefined).  Called with the fetch taskId while no fetch is
+      running: the SDK logs `- finish: react-native-background-fetch` and finds no BGTask, which is not an error.
+
+  WHAT ELSE IT READS (WO-002 review: the hooks alone pass with a broken SDK — status/start answer 2 on Android
+  whatever happens, and stop() answers true):
+    * configureOutcome ok (implicit, the pack's): the boot configure() the rest acts on resolved.
+    * jobsRegistered `-592898938,999`: the SDK asked JobScheduler for the fetch job (999) and the smoke task's job
+      (the String hashCode of com.transistorsoft.fetchlab.smoke) — `- registerTask: … (jobId: N)`, measured from the
+      launch; logged before schedule(), whose result the SDK discards, so it shows the SDK asked, not that
+      JobScheduler took them.
+    * jobIds `-`: after stop(<smoke>) and stop() the app holds no job (the host's `dumpsys jobscheduler <pkg>` at
+      the step's end, read before run.py's own end-of-step force-stop).  MEASURED 2026-11-05, sweep
+      20261105-134121 (Lab1 emulator-5580, Android 16; native 4.1.1-master-5de5242, plugin 2acdc21).
+    * bootBroadcasts: recorded (a launch after run.py's pre-step force-stop delivers BOOT_COMPLETED on Android 16).
+  jobIds is read at the step's end, so the step keeps its full window rather than ending on its evidence.
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-05 — no platform in the first slice has an iOS host yet (labs/platforms/react-native/lab.yaml has no
+    `ios:` block); the iOS half of this scenario arrives with the fetch iOS pin (WO-002 phase 2)."
+measure_from: launch
+settle: 10
+after: 30
+hooks:
+  - api: configure
+    probe: true
+    returns: {$: {type: function}}
+  - api: registerHeadlessTask
+    probe: true
+    returns: {$: {type: function}}
+  - api: status
+    returns: {$: {type: number, in: [0, 1, 2]}}
+  - api: start
+    returns: {$: {type: number, in: [0, 1, 2]}}
+  - api: scheduleTask
+    args: {taskId: com.transistorsoft.fetchlab.smoke, delay: 600000, periodic: false}
+    returns: {$: {type: boolean, equals: true}}
+  - api: stop
+    args: com.transistorsoft.fetchlab.smoke
+    returns: {$: {type: boolean, equals: true}}
+  - api: finish
+    args: react-native-background-fetch
+    returns: {$: {type: undefined}}
+  - api: stop
+    returns: {$: {type: boolean, equals: true}}
+expect:
+  crashes: 0
+  jobsRegistered: "-592898938,999"
+  jobIds: "-"
+  bootBroadcasts: any
