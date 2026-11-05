@@ -1,7 +1,7 @@
 ---
 id: WO-001
 title: iOS distribution moves to SwiftPM-first. CocoaPods Trunk freezes on 2026-12-02, and every CocoaPods consumer is pinned below TSBackgroundFetch 4.2.0
-status: draft
+status: in-progress
 created: 2026-11-05
 platforms: [ios, tooling]
 submodules: [native/background-fetch, react-native/background-fetch, cordova/background-fetch, capacitor/background-fetch, flutter/background_fetch]
@@ -153,7 +153,7 @@ This is the transition hazard. Picture an app that combines a fetch plugin on Sw
 
 **React Native background-fetch.** Both modes are needed through 0.88, because SwiftPM mode is experimental there and 0.89 is planned to make it the default.
 - **SwiftPM app mode: ship `ios/Package.swift` (PROVEN in experiment A).** Debug and Release built, the app launched, and `configure()` resolved to 2. Use the manifest in Appendix A. Required with it:
-  - **Delete the vendored `ios/RNBackgroundFetch/TSBackgroundFetch.xcframework`.** It is tracked in git and ships in the npm 4.4.2 tarball. While it is present, SwiftPM fails with "invalid header layout", and `exclude:` doesn't help. The podspec never used it.
+  - **Delete the vendored `ios/RNBackgroundFetch/TSBackgroundFetch.xcframework`.** It is tracked in git and ships in the npm 4.4.2 tarball. While it is present, SwiftPM fails with "invalid header layout", and `exclude:` doesn't help. The podspec stopped using it in 4.4.0 (`cd4fc41`, the TurboModule rewrite, which switched to the TSBackgroundFetch pod); before that it was `s.vendored_frameworks`.
   - **Add `"swiftpmConfig": { "name": "RNBackgroundFetch" }`** to `package.json`.
   - **Keep the `RCT_NEW_ARCH_ENABLED` defines.** Without them the module falls back to the legacy interop path.
 - **CocoaPods mode: keep the Trunk dependency, `s.dependency 'TSBackgroundFetch', '~> 4.2'` (DECISION D2, recommended).**
@@ -212,6 +212,10 @@ This is the transition hazard. Picture an app that combines a fetch plugin on Sw
 2. TSBackgroundFetch 4.2.0 to Trunk (from 2026-11-06 12:00pm ET).
 3. TSLocationManager release to Trunk: widened range and iOS 15 (bg-forge; before 2026-12-01).
 4. Fetch-plugin releases (Phase 1 pins plus Phase 2 manifests), then geolocation-plugin releases, both channels per platform together.
+   - **Pre-publish gate for every fetch plugin:** `pod trunk info TSBackgroundFetch` lists 4.2.0, *and* the TSLocationManager release with a widened range is out. Until both are true, `~> 4.2` cannot resolve for CocoaPods apps, and apps that also use geolocation cannot resolve at all.
+   - **Cordova fetch release is also gated on `cordova-background-geolocation-lt` gaining SwiftPM support.**
+     - cordova-ios 8 builds a `package="swift"` plugin through SwiftPM automatically; there's no opt-in.
+     - So an app with both plugins would get TSBackgroundFetch from SwiftPM (fetch) *and* CocoaPods (geolocation, through TSLocationManager), which is the Diagnosis §6 hazard.
 5. After 2026-12-02: Phase 3 tooling switch-off.
 
 ## Scope check
@@ -334,6 +338,45 @@ This is the transition hazard. Picture an app that combines a fetch plugin on Sw
   - Trunk push rejected because of the test week.
   - Chris: "abandon cocoapods and go all-in on SPM", then "we don't need to abandon cocoapods immediately", so the plan is SPM-first with CocoaPods frozen.
   - Experiments A–D and the Flutter/Capacitor/React Native status research ran in scratch; a critic review produced the remaining test list.
+- 2026-11-05 — **approved** by Chris ("let's start the WO") and moved to in-progress.
+  - **D1:** plugin pin `~> 4.2`.
+  - **D2:** React Native CocoaPods mode keeps the Trunk pod; no `spm_dependency`.
+  - **D3:** Cordova keeps the `<pod nospm="true">` fallback.
+  - **D4** (Catalyst) and **D5** (podspec after the freeze) are deferred; they don't block Phase 2.
+  - Phase 2 started for all four fetch plugins, each on branch `fix/WO-001-spm-first` cut from `origin/master` in its own submodule.
+- 2026-11-05 — Phase 2 implemented on all four branches (uncommitted).
+  - **Verified in real apps** (scratch copies, simulator):
+    - **Flutter:** SwiftPM and CocoaPods modes; `configure` → 2.
+    - **Capacitor:** SwiftPM (the example, and a fresh 8.6.0 app) and CocoaPods; launched.
+    - **React Native 0.88.1:** SwiftPM app mode (Release; `configure` → 2) and CocoaPods default static linkage.
+    - **Cordova:** cordova-ios 8.1.1 SwiftPM mode. The `CDVAppDelegate` category was exercised at runtime through LLDB → TSBackgroundFetch → JS callback → completion handler. Plugin rm/re-add works.
+    - CocoaPods-mode checks used the 4.2.0 podspec from the `ios/4.2.0` tag, standing in for Trunk.
+  - **Independent review found two blockers that I had introduced. Both fixed:**
+    - **(a) SwiftPM lower bounds of `from: "4.2.0"`**, which the work order never asked for, made every SwiftPM app that also uses geolocation unresolvable. TSLocationManager 4.8.x is `upToNextMinor(4.1.0)`. Proven: "Dependencies could not be resolved because root depends on 'native-background-geolocation' 4.8.0..<4.9.0 and root depends on 'transistor-background-fetch' 4.2.0..<5.0.0".
+      - **Decision:** all four SwiftPM manifests keep `from: "4.1.0"` (standalone apps still resolve 4.2.x). The `~> 4.2` pin stays CocoaPods-only, per D1.
+    - **(b) The unguarded `#import <Cordova/CDVAppDelegate.h>`** would break the Cordova plugin inside Capacitor apps, whose Cordova layer has no `CDVAppDelegate`. It is now wrapped in `__has_include`. Under Capacitor the old category was on a stub `NSObject` `AppDelegate` and never ran.
+  - **Also from the review:**
+    - all four changelogs corrected (history, upgrade steps for older hosts, the one-channel rule and freeze notice);
+    - Cordova README requirement note;
+    - `deployment-target` 15 added to both Cordova example `config.xml`s;
+    - Flutter example `IPHONEOS_DEPLOYMENT_TARGET` raised from 13.0 to 15.0;
+    - pre-publish and Cordova release gates added to "Release order".
+  - **Re-verified after the review fixes:**
+    - **cordova-ios 8.1.1 SwiftPM:** resolves 4.2.0 from `from: "4.1.0"`. The category is compiled in and fires through to the JS callback.
+    - **Capacitor 8.6.0 hosting the Cordova plugin:** the guarded build succeeds in both SwiftPM and CocoaPods modes; the unguarded one fails both with "'Cordova/CDVAppDelegate.h' file not found".
+    - **Capacitor fetch (`from: "4.1.0"`) + capacitor-background-geolocation 9.7.2 in one SwiftPM app:** resolves to TSLocationManager 4.8.3 + TSBackgroundFetch 4.1.1, and builds.
+    - **Not rebuilt this round:** the React Native and Flutter manifests; only their floor changed.
+  - **Committed** on `fix/WO-001-spm-first`, not pushed and not released (release gates in "Release order"):
+    - flutter/background_fetch `5e60d70`
+    - capacitor/background-fetch `154fe10`
+    - react-native/background-fetch `2acdc21`
+    - cordova/background-fetch `9a12bea`
+  - **Adjacent pre-existing defects found during verification**, not folded into this change (offer separate work orders):
+    - **Flutter example:** `Runner.xcodeproj` local-package wrapper refs (`78DABEA22ED26510000E7860`, `784666492D4C4C64000A1A5F`, from `932131b`) make CocoaPods mode unbuildable. The generated Podfile also expects a missing `RunnerTests` target.
+    - **Capacitor and React Native (0.85) examples** crash at launch on the iOS 27 SDK (no UIScene adoption). The React Native example also needs the AsyncStorage resource-bundle pod target raised from 13.0, and it lives behind a gitlink with no `.gitmodules` entry.
+    - **Capacitor:** neither the plugin's `PrivacyInfo.xcprivacy` nor the CocoaPods TSBackgroundFetch pod's is bundled.
+    - **Cordova:** `.npmignore` still names `example-ionic`, so `example/` ships in the tarball, and cordova-ios 8 copies it into `platforms/ios/packages/`.
+    - **React Native:** `docs/INSTALL-MANUAL-IOS.md` is stale (it points at the removed framework; broken since 4.4.0), and `xcuserdata` ships in the npm tarball.
 
 ## Appendix A: React Native `ios/Package.swift` (PROVEN in experiment A on RN 0.88.1)
 
@@ -352,7 +395,8 @@ let package = Package(
     dependencies: [
         .package(name: "ReactNative", path: "../../../../xcframeworks"),
         .package(name: "React-GeneratedCode", path: "../../../ios"),
-        .package(url: "https://github.com/transistorsoft/transistor-background-fetch.git", from: "4.2.0"),
+        // 4.1.0, not 4.2.0: TSLocationManager 4.8.x allows only 4.1.x (see Log, 2026-11-05)
+        .package(url: "https://github.com/transistorsoft/transistor-background-fetch.git", from: "4.1.0"),
     ],
     targets: [
         .target(
@@ -401,7 +445,8 @@ let package = Package(
     dependencies: [
         // cordova-ios rewrites this line to a local path at `cordova plugin add` time; keep it on its own line.
         .package(url: "https://github.com/apache/cordova-ios.git", from: "8.0.0"),
-        .package(url: "https://github.com/transistorsoft/transistor-background-fetch.git", from: "4.2.0")
+        // 4.1.0, not 4.2.0: TSLocationManager 4.8.x allows only 4.1.x (see Log, 2026-11-05)
+        .package(url: "https://github.com/transistorsoft/transistor-background-fetch.git", from: "4.1.0")
     ],
     targets: [
         .target(
@@ -427,10 +472,16 @@ Source changes in `src/ios`:
 -#import "AppDelegate.h"
 --- CDVBackgroundFetch.m
 -#import "AppDelegate.h"
-+#import <Cordova/CDVAppDelegate.h>
 ...
 -@implementation AppDelegate(AppDelegate)
++#if __has_include(<Cordova/CDVAppDelegate.h>)   // Capacitor's Cordova layer has none
++#import <Cordova/CDVAppDelegate.h>
 +@implementation CDVAppDelegate(CDVBackgroundFetch)
+ ...
++#endif
 ```
 
-These same sources also compiled on cordova-ios 7.1.1 (PROVEN). As noted above, the category's runtime behaviour is NOT VERIFIED.
+**What's proven about the category:**
+- The unguarded sources compiled on cordova-ios 7.1.1 (experiment C).
+- At runtime on cordova-ios 8.1.1, LLDB-driven: category → TSBackgroundFetch → JS callback → completion handler (Phase 2 verification).
+- **Not run:** the real BGTask path, which needs a device.
