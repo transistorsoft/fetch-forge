@@ -1,0 +1,60 @@
+name: events-fetch-android
+description: >
+  (WO-002, Tier 1) A periodic fetch, forced through JobScheduler, reaches the foreground app's onEvent callback with
+  the bridge's own fetch taskId, is finished, and a second forced run — outside the SDK's 5 s duplicate guard — is a
+  second delivery, not a dropped duplicate.
+
+  HOW IT IS CAUSED (WO-002 "How events can be forced"): the OS schedules fetch events, no API call causes one, so the
+  host fires the fetch job itself: `job: 999` is `adb shell cmd jobscheduler run -f <pkg> 999`, the fetch task's
+  jobId (BackgroundFetchConfig.java:265).  Both runs keep outside the SDK's guards (FetchJobService.java:24-31 drops
+  a run < 1 s after `scheduled_at`; :38-51 drops a repeat of the same taskId within 5 s): the first waits 3 s after
+  status() settled, which is after configure() resolved (the RN driver queues its first batch only then), and the
+  second 6 s after the first delivery, by which time the driver has finished the first (finishDelayMs, 1000 ms).
+
+  THE DECLARATION IS THE CONFIGURE.  configure(config, onEvent, onTimeout?) is an `events:` declaration: its `args`
+  are the config, and the RN driver makes the real configure() with them, as given, subscribing the declaration to
+  configure()'s onEvent (labs/platforms/react-native/lab.yaml notes).  What a delivery hands the callback is the bare
+  taskId string (types: `onEvent: (taskId: string) => void`; vocabulary `emits: string`).  The RN bridge's fetch
+  taskId is `react-native-background-fetch` (RNBackgroundFetchModule.java FETCH_TASK_ID).
+
+  WHAT THE STEP READS (measured from the launch, the whole run):
+    * configure@0: exactly two deliveries, the first `react-native-background-fetch`; configureOutcome ok (implicit:
+      the event-arm configure() resolved) and jobsRegistered 999 (the SDK's `- registerTask:` line: it asked).
+    * bootBroadcasts: recorded (a launch after run.py's pre-step force-stop delivers BOOT_COMPLETED on Android 16).
+    * fetchReceived 2 (`- Background Fetch event received: <taskId>`), fetchFinished 2 (`- finish: <taskId>`, the
+      driver's finish), jobFinished 2 (FetchJobService's completion), duplicateJobs 0 (`- Caught duplicate Job`).
+    * jobIds 999: after two runs and two finishes the periodic fetch job is still the one job the app holds
+      (the host's `dumpsys jobscheduler <pkg>` at the step's end).
+    * headlessEvents.fetch 0: the app is in the foreground throughout.
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-05 — `job:` is JobScheduler's (`actions:` are Android's); an iOS fetch is fired by the lab hook (WO-002
+    D3), which is ios-fetch-sim's."
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 32
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 2
+        max: 2
+        returns: {$: {type: string, equals: react-native-background-fetch}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 3, job: 999}
+      - {after: {event: configure@0}, delay_s: 6, job: 999}
+    expect:
+      crashes: 0
+      jobsRegistered: "999"
+      fetchReceived: 2
+      fetchFinished: 2
+      jobFinished: 2
+      duplicateJobs: 0
+      fetchTally: any
+      jobIds: "999"
+      headlessEvents.fetch: 0
+      bootBroadcasts: any

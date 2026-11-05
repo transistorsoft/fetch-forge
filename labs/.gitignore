@@ -1,0 +1,48 @@
+# Modelled on bg-forge's labs/.gitignore (WO-002).
+
+# Raw capture evidence: large and regenerable (harness/run.py).  summary.txt and run.json are kept — they are the
+# scored result.  jobscheduler.txt is the host's `dumpsys jobscheduler <pkg>` read (fetch pack), raw like logcat.txt;
+# transistor_log.db is the empty file run.py still writes (fetch has no SDK database).
+captures/**/logcat.txt
+captures/**/transistor_log.db
+captures/**/top-activity.txt
+captures/**/jobscheduler.txt
+captures/**/*.png
+
+# Device claims and the live log streams (harness/devices.py, backends.py).  The machine-wide claims, shared with
+# bg-forge's lab, are in ~/Library/Caches/transistorsoft-lab/claims, never here.
+harness/.claims/
+
+# The harness's interpreter when python3 has no PyYAML (./labkit setup)
+.venv/
+
+# Build output and local machine state
+**/build/
+**/.gradle/
+**/.cxx/
+**/.dart_tool/
+**/node_modules/
+**/Pods/
+**/DerivedData/
+**/xcuserdata/
+**/local.properties
+**/.flutter-plugins-dependencies
+*.iml
+.idea/
+__pycache__/
+*.py[oc]
+
+# Native snapshots published by the harness — regenerable (harness/publish_native_fetch.sh)
+m2/
+# iOS twin of m2/: labelled xcframeworks + provenance
+xcframeworks/
+
+# Native and plugin checkouts a variant or `./labkit setup` makes ({labs}/checkouts/...): git worktrees, regenerable.
+checkouts/
+
+# Plugin checkouts a platform's build.sh stages (copies of a submodule's working tree; never committed from the parent
+# repo, CLAUDE.md), whatever the platform's own .gitignore says.
+platforms/*/.stage/
+
+# Full-window capture logs kept as replay baselines (summarize.py --replay-end --root …).
+baselines/

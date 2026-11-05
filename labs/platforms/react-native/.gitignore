@@ -1,0 +1,2 @@
+# (WO-002) build.sh's staged copy of the plugin checkout under test (app/package.json links it).
+/.stage/

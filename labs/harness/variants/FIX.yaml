@@ -1,0 +1,26 @@
+name: FIX
+description: everything under test, fixed — the native master and each bridge's own checkout
+# (WO-002, 2026-11-05) The first slice's variant.  Read by the vendored labkit.variant() (labkit.py:2874; bg-forge
+# 49d38d47f), whose schema this follows: `native` a label published to labs/m2 (and, once the iOS pin exists,
+# labs/xcframeworks), `native_source` the full commit it was built from, `plugin` the checkout each platform builds.
+#
+# native: com.transistorsoft:tsbackgroundfetch:4.1.1-master-5de5242 in labs/m2, published by
+#   labs/harness/publish_native_fetch.sh from a detached worktree of native/background-fetch at origin/master
+#   5de52423e ("chore: TSBackgroundFetch 4.2.0 (url + checksum)"); android/versioning/tsbackgroundfetch.properties
+#   still reads VERSION_NAME=4.1.1, so the label is 4.1.1-<branch>-<commit>.  The commit is in
+#   labs/m2/.provenance/4.1.1-master-5de5242.txt (dirty: no), which run.py's native_source() reads into every
+#   capture's run.json.  `./labkit setup` rebuilds the label from native_source.android when labs/m2 lacks it
+#   (labs/m2 is gitignored; fetch_pack.py's lab_setup.ensure_native).
+# native_source.ios: none yet — the fetch iOS pin (labs/xcframeworks) is WO-002 phase 2, and no platform in this
+#   slice has an `ios:` host.
+# plugin: `worktree`, which each platform's lab.yaml maps to its own checkout; react-native maps it to `default`,
+#   i.e. default_checkout {repo}/react-native/background-fetch (build.sh stages a copy of it).  run.json records the
+#   checkout's commit and dirty flag as plugin_source.  MEASURED with the react-native checkout on branch
+#   fix/WO-001-spm-first at 2acdc21, while the parent repo pins react-native/background-fetch at 75d3ed0 (4.4.2).
+#   75d3ed0..2acdc21 touches only CHANGELOG.md, the podspec, ios/Package.swift, the deleted iOS xcframework and
+#   package.json `swiftpmConfig` (read only by RN's Apple SwiftPM scripts): the Android plugin built is 4.4.2's
+#   either way, but a checkout at the parent's pin records plugin 75d3ed0 in run.json, not 2acdc21.
+native: 4.1.1-master-5de5242
+native_source:
+  android: 5de52423e1c5388afffa3d520f97dcb9b287ed29
+plugin: worktree

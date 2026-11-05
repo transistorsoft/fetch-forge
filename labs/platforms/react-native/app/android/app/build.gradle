@@ -1,0 +1,97 @@
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import java.security.MessageDigest
+
+apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "com.facebook.react"
+
+react {
+    /* Autolinking */
+    autolinkLibrariesWithApp()
+}
+
+def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+
+android {
+    ndkVersion rootProject.ext.ndkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    compileSdk rootProject.ext.compileSdkVersion
+
+    // (WO-002) Distinct from bg-forge's com.transistorsoft.labs.*: the labs share the Lab devices.
+    namespace "com.transistorsoft.fetchlab.react"
+    defaultConfig {
+        applicationId "com.transistorsoft.fetchlab.react"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "0.1.0"
+    }
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            signingConfig signingConfigs.debug
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+}
+
+dependencies {
+    // The version of react-native is set by the React Native Gradle Plugin
+    implementation("com.facebook.react:react-android")
+
+    if (hermesEnabled.toBoolean()) {
+        implementation("com.facebook.react:hermes-android")
+    } else {
+        implementation jscFlavor
+    }
+}
+
+// LAB (WO-002): which tsbackgroundfetch the debug APK actually links, read from the RESOLVED graph,
+// never from the label it was asked for.  build.sh runs it beside assembleDebug and refuses an APK
+// whose resolved version is not the label, or whose AAR is not byte-identical to labs/m2's.  The
+// configuration is captured here, at configuration time, so the action reads no `project`.
+tasks.register("labNativeResolved") {
+    def classpath = configurations.named("debugRuntimeClasspath")
+    notCompatibleWithConfigurationCache("reads the resolved dependency graph")
+    doLast {
+        def cfg = classpath.get()
+        def result = cfg.incoming.resolutionResult
+        def comps = result.allComponents.findAll {
+            it.moduleVersion?.group == "com.transistorsoft" && it.moduleVersion?.name == "tsbackgroundfetch"
+        }
+        if (comps.isEmpty()) {
+            println("[lab] tsbackgroundfetch resolved=NONE")
+            return
+        }
+        def requested = result.allDependencies.findAll {
+            it.requested instanceof org.gradle.api.artifacts.component.ModuleComponentSelector &&
+                it.requested.group == "com.transistorsoft" && it.requested.module == "tsbackgroundfetch"
+        }.collect { "${it.from.id.displayName}->${it.requested.version}" }.unique().join(",")
+        comps.each { c ->
+            def reasons = c.selectionReason.descriptions.collect { it.description }.join("|").replace(' ', '_')
+            println("[lab] tsbackgroundfetch resolved=${c.moduleVersion.version} requested=${requested} reason=${reasons}")
+        }
+        def aars = cfg.incoming.artifactView { view ->
+            view.attributes { it.attribute(Attribute.of("artifactType", String), "aar") }
+            view.componentFilter { id ->
+                id instanceof ModuleComponentIdentifier && id.group == "com.transistorsoft" && id.module == "tsbackgroundfetch"
+            }
+        }.files.files
+        aars.each { f ->
+            def md = MessageDigest.getInstance("SHA-256")
+            f.withInputStream { s -> byte[] buf = new byte[1 << 16]; int n; while ((n = s.read(buf)) > 0) md.update(buf, 0, n) }
+            println("[lab] tsbackgroundfetch aar=${f} sha256=${md.digest().encodeHex()}")
+        }
+    }
+}

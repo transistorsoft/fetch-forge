@@ -1,7 +1,7 @@
 ---
 id: WO-002
 title: background-fetch has no device lab. Nothing calls a bridge's API or fires a fetch or headless event on a real emulator or simulator. Build a LabKit for fetch on bg-forge's harness
-status: draft
+status: in-progress
 created: 2026-11-05
 platforms: [android, ios, tooling]
 submodules: [native/background-fetch, react-native/background-fetch, cordova/background-fetch, capacitor/background-fetch, flutter/background_fetch, types/background-fetch]
@@ -18,7 +18,7 @@ supersedes: []
 > - **NOT CHECKED:** not looked at.
 > - **SUSPECTED:** a defect inferred from source that no device run has reproduced.
 >
-> Nothing in this work order has been run on a device.
+> When it was written, nothing in this work order had been run on a device except WO-001's LLDB fetch on the iOS DemoApp. Device runs since are in the Log (from 2026-11-05: `termination-calibration` and the first slice on both Lab AVDs); a fact they settled is marked **MEASURED** where it is cited.
 
 ## Diagnosis
 
@@ -68,7 +68,7 @@ Each one that a scenario confirms becomes its own work order.
 8. **The Swift API's `@discardableResult` `onFetch`/`scheduleTask`** remove the listener or stop the task at once if the caller doesn't keep the result (`SwiftInterface/BackgroundFetch.swift:132,147-149,189,210-212`).
 9. **A `delay` above 2³¹−1 ms** breaks the `getInt`/`getInteger`/`Integer` casts in RN, Capacitor and Flutter.
 
-### How events can be forced (PROVEN from source; the device commands are INFERRED until a lab runs them)
+### How events can be forced (PROVEN from source; each device command is INFERRED until a lab has run it — those marked MEASURED have, see the Log)
 
 Fetch differs from background-geolocation in one fundamental way: **the OS schedules events; no API call causes them.** A lab therefore needs host actions that fire them.
 
@@ -76,10 +76,10 @@ Fetch differs from background-geolocation in one fundamental way: **the OS sched
 
 | Event | How to force it |
 |---|---|
-| Periodic fetch | `adb shell cmd jobscheduler run -f <pkg> 999`, the fetch job id (`BackgroundFetchConfig.java:265,302-308`). Wait ≥ 1.5 s after `configure`: runs < 1 s after `scheduled_at` are ignored (`FetchJobService.java:24-31`). Space repeats ≥ 5 s apart: duplicates are dropped (`:38-51`). |
+| Periodic fetch | `adb shell cmd jobscheduler run -f <pkg> 999`, the fetch job id (`BackgroundFetchConfig.java:265,302-308`). Wait ≥ 1.5 s after `configure`: runs < 1 s after `scheduled_at` are ignored (`FetchJobService.java:24-31`). Space repeats ≥ 5 s apart: duplicates are dropped (`:38-51`). **MEASURED** (RN, Android 16): two forced runs 6.4 s apart, two deliveries (`events-fetch-android`). |
 | Custom task | `run -f <pkg> <Java String.hashCode(taskId)>`. The log line `registerTask: <id> (jobId: N)` gives the id. |
 | Timeout | Withhold `finish` for the SDK's 60 s (`BGTask.java:28,80-85`), or `cmd jobscheduler timeout <pkg> <jobId>` (API 28+; NOT CHECKED on the lab image) → `onStopJob` (`FetchJobService.java:63-76`). |
-| Headless | `stopOnTerminate:false`, `enableHeadless:true`. Kill with `run-as <pkg> kill -9` (bg-forge's `AndroidBackend.kill`), then `run -f 999`. |
+| Headless | `stopOnTerminate:false`, `enableHeadless:true`. Kill with `run-as <pkg> kill -9` (bg-forge's `AndroidBackend.kill`), then `run -f 999`. **MEASURED** (RN, Android 16, both Lab AVDs): a new process, the RN headless task, finish, `jobFinished` (`termination-calibration`). `am force-stop` instead cancels job 999. |
 | Activity destroyed, process alive | `KEYCODE_BACK` or bg-forge's `finishNow`, then `run -f 999`. |
 | Boot | `adb reboot` with `startOnBoot:true, stopOnTerminate:false, enableHeadless:true`. Only that combination persists the JobInfo (`BGTask.java:147`). |
 | Package replaced | `adb install -r`, which triggers `BootReceiver` via `MY_PACKAGE_REPLACED`. |
@@ -120,7 +120,7 @@ Fetch differs from background-geolocation in one fundamental way: **the OS sched
 | Specific to background-geolocation | the vocabulary and its State/Config typing, roundtrip/`invalid_values`/declared, the 79 scenarios, platform apps and build scripts, and most of the selftest. |
 
 **Fetch is small by comparison:**
-- 7 methods, about 14 flat config keys, no State object.
+- 7 methods, 10 flat config keys (`BackgroundFetchConfig`, checked against the types by the lab's selftest), no State object.
 - 34 `docforge/db` entries, against background-geolocation's 518. All 34 carry `signatures:`.
 - The SDK logs with the `TSBackgroundFetch` tag (`Log.d` on Android, `NSLog "[TSBackgroundFetch]"` on iOS); it has no SQLite log.
 
@@ -148,8 +148,13 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 
 **Distinct package ids and evict by prefix (needs a bg-forge change).**
 - Fetch lab apps use package ids distinct from `com.transistorsoft.labs.<p>`, e.g. `com.transistorsoft.fetchlab.<p>`.
-- Both labs must evict *every* Transistor lab app by package prefix, not just their own `platforms()`.
-- Otherwise a fetch lab app left installed fires JobScheduler jobs during a background-geolocation capture, and that capture fails the contamination check (`run.py:708-714`; INFERRED).
+- Both labs must evict *every* Transistor lab app by package prefix, not just their own `platforms()` (the eviction loop, `run.py:708-714`).
+- Why, corrected 2026-11-05 (review of the first slice):
+  - A lab app left installed can deliver a fetch during the other lab's capture. Both labs' apps link TSBackgroundFetch.
+  - bg-forge's contamination check (`devices.contamination`, `devices.py:167`, called at `run.py:403`) would **not** see it: it reads foreign launch marks and `app=` lines, and a headless fetch process logs neither (only `point=headless` / `point=task-…`).
+  - It would show instead in bg-forge's headless metrics (`labkit.py:3171`, `:3378-3431`), which read `point=headless` / `point=task-api` lines from every process.
+  - The risk is smaller than first written: run.py force-stops the app before and after every step and at exit, and force-stop cancels the fetch job (MEASURED, `termination-calibration`). A job is left behind only by a run that died before its cleanup.
+  - Until eviction lands, the fetch pack scopes the SDK's lines to the app's own processes and scores every other process's SDK / headless / task lines as `foreignLines` (implicit 0) — fetch's side only; a bg-forge capture is not protected by it.
 - This requires a bg-forge work order.
 
 ### Pack contents (fetch-specific)
@@ -172,17 +177,18 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 - iOS `finish <id> (n of m)`;
 - `crashes` (generic).
 
-**4. Host actions.** Each is new unless marked reused:
+**4. Host actions.** Each is new unless marked reused. Built in the first slice: `job:`, `force_stop:`, and the reused `kill:`; the rest are for later slices.
 
-| Action | What it does |
-|---|---|
-| `job:` | `cmd jobscheduler run -f <pkg> <jobId>`, honouring the ≥ 1.5 s and ≥ 5 s guards |
-| `job_timeout:` | `cmd jobscheduler timeout` |
-| `kill:` | Reused from bg-forge: `run-as kill -9` |
-| `back` | `KEYCODE_BACK` |
-| `reboot` | `adb reboot`, then wait for boot |
-| `reinstall` | `adb install -r` |
-| iOS `fire:` | Sends the lab hook a command. **DECISION D3** picks the transport: `xcrun simctl openurl <udid> fetchlab://fire?...` handled by the app (INFERRED to work; unverified), or an `at_s` slot in the launch payload. |
+| Action | What it does | State |
+|---|---|---|
+| `job:` | `cmd jobscheduler run -f <pkg> <jobId>`, honouring the ≥ 1.5 s and ≥ 5 s guards; `expect: present \| absent` says whether JobScheduler should hold the job, and its answer rides in the mark (`said=`) | built |
+| `force_stop:` | `am force-stop <pkg>`, after reading the jobs JobScheduler holds (`held=`, the `jobsAtForceStop` metric) | built (added for `termination-calibration`) |
+| `kill:` | Reused from bg-forge: `run-as kill -9` | reused |
+| `job_timeout:` | `cmd jobscheduler timeout` | later |
+| `back` | `KEYCODE_BACK` | later |
+| `reboot` | `adb reboot`, then wait for boot | later |
+| `reinstall` | `adb install -r` | later |
+| iOS `fire:` | Sends the lab hook a command. **DECISION D3** picks the transport: `xcrun simctl openurl <udid> fetchlab://fire?...` handled by the app (INFERRED to work; unverified), or an `at_s` slot in the launch payload. | later (no iOS host yet) |
 
 **5. Platforms: five**
 - RN, Cordova, Capacitor, Flutter, and native Kotlin/Swift.
@@ -241,7 +247,7 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 | 0 | Decisions D1–D4; the bg-forge prefix-eviction work order filed |
 | 1 | Vendored core plus `labs/VENDORED.md`; the seam adapters; `./labkit doctor` / `up` / `status` / `down` working against the shared devices |
 | 2 | Native pinning for both OSes; the five platform apps building against a pinned label |
-| 3 | Tier 1 scenarios, `termination-calibration` first; first board; baselines; README |
+| 3 | Tier 1 scenarios, `termination-calibration` first; first board (its captures' `summary.txt` + `run.json` committed); replay baselines kept locally; README |
 | 4 | Tier 2; mutation variants; a work order filed for each confirmed suspected defect |
 | 5 (separate work orders) | Phase B shared-core extraction |
 
@@ -276,7 +282,7 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 
 - **Selftest:** the harness's offline selftest (vendored core checks plus fetch-pack checks) passes with no devices. Every scenario and variant loads.
 - **Termination calibration:** `termination-calibration` runs on both Lab AVDs, and its result is recorded in the Log before any headless scenario is trusted.
-- **First board:** tier 1 on 5 platforms × 2 OSes, with baselines committed. Each mutation variant fails as intended (`must_fail`).
+- **First board:** tier 1 on 5 platforms × 2 OSes, its captures' `summary.txt` and `run.json` committed (the scored result, as in bg-forge); the full-window capture set copied to `labs/baselines/<date>-<label>/` for `summarize.py --replay-end` / `--trace-diff` (gitignored and local, as in bg-forge). Each mutation variant fails as intended (`must_fail`).
 - **Device sharing:** a bg-forge sweep and a fetch sweep started back to back on the same machine queue on the shared claims and neither capture is contaminated. This needs the bg-forge eviction work order.
 - **Manual tier:** `ios-device-bgtask` on one physical iPhone, documented step by step.
 
@@ -300,21 +306,21 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 - **Waiting for the OS to schedule real fetches.** `minimumFetchInterval` is at least 15 minutes and timing is up to the OS. Force events with JobScheduler or the lab hook.
 - **Firing events inside the SDK's guards.** A `run -f` less than 1 s after scheduling, or a repeat within 5 s, is dropped on purpose (`FetchJobService.java:24-31,38-51`). A scenario that does this will show false failures.
 - **`_simulateLaunchForTaskWithIdentifier` on the simulator.** It works on a device only; `BGTaskScheduler` is unavailable on the simulator. An iOS `scheduleTask` rejection on the simulator is expected (`BGTaskSchedulerErrorDomain` code 1), not a defect.
-- **Using `am force-stop` to "terminate" before `termination-calibration` has run.** Force-stop may cancel the app's jobs (NOT CHECKED), which would make every headless scenario test the wrong thing. Use `run-as kill -9`, which is what bg-forge's `kill` does.
+- **Using `am force-stop` to "terminate" in a headless scenario.** Force-stop cancels the app's fetch job (MEASURED 2026-11-05 by `termination-calibration` on both Lab AVDs: `Could not find job 999` afterwards), so a headless scenario would test nothing. Use `run-as kill -9`, which is what bg-forge's `kill` does and which keeps the job. Not yet measured: a custom task's job, and AlarmManager tasks.
 - **A separate claims directory or sweep lock.** The two labs would then use Lab1/Lab2 at the same time and corrupt each other's captures.
 - **Firing the AlarmManager receiver via adb.** It isn't exported. Scenarios must wait for the alarm on time.
-- **Copying bg-forge's vocabulary typing** (State tree, roundtrip, `invalid_values`, declared). Fetch has no State object and 14 flat config keys. Seed from `types/background-fetch`.
+- **Copying bg-forge's vocabulary typing** (State tree, roundtrip, `invalid_values`, declared). Fetch has no State object and 10 flat config keys. Seed from `types/background-fetch`.
 - **Scoring from an SDK SQLite log.** Fetch has none. Use the `TSBackgroundFetch` logcat tag and the iOS `[TSBackgroundFetch]` messages.
 
 ## Verification
 
-- [ ] Decisions D1–D4 recorded in the Log
+- [x] Decisions D1–D4 recorded in the Log
 - [ ] bg-forge prefix-eviction work order filed and done
-- [ ] `labs/VENDORED.md` names the bg-forge commit, and the vendored files are byte-identical with it
+- [x] `labs/VENDORED.md` names the bg-forge commit, and the vendored files are byte-identical with it
 - [ ] `./labkit doctor` / `up` / `status` / `down` work against the shared Lab devices
-- [ ] Offline selftest passes
-- [ ] `termination-calibration` result recorded
-- [ ] Tier 1 board green, or each failure linked to a work order; baselines committed
+- [x] Offline selftest passes
+- [x] `termination-calibration` result recorded
+- [ ] Tier 1 board green, or each failure linked to a work order; board captures (`summary.txt` + `run.json`) committed; full-window replay set saved under `labs/baselines/`
 - [ ] Mutation variants fail as intended
 - [ ] Back-to-back bg-forge and fetch sweeps: no contamination
 - [ ] Manual iOS device tier run once and documented
@@ -326,3 +332,73 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   - Facts come from two read-only research agents (LabKit architecture with coupling classification; the fetch test surface, event triggers and regression history).
   - The only device evidence is from WO-001's session: an LLDB-driven `performFetchWithCompletionHandler:` on the iOS simulator DemoApp delivered fetch → finish.
   - Nothing else has been run.
+- 2026-11-05 — **approved** by Chris ("approved") with the recommended decisions, and moved to in-progress on branch `feat/WO-002-fetch-labkit`.
+  - **D1:** vendor bg-forge's harness core byte-identical, with the commit recorded (`49d38d47f`, bg-forge `master`), plus fetch packs; extract a shared core later.
+  - **D2:** `fetch-forge/labs/` plus a root `./labkit`.
+  - **D3:** iOS events through a lab hook triggered by `simctl openurl` (to be verified), with a launch-payload `at_s` slot as the fallback.
+  - **D4:** a `channel: pods | spm` variant axis.
+  - **First slice:**
+    - the vendored core with `./labkit doctor` / `up` / `status` / `down`;
+    - native pinning;
+    - React Native on Android;
+    - the scenarios `termination-calibration`, `api-smoke` and `events-fetch-android`.
+- 2026-11-05 — **first slice built** on `feat/WO-002-fetch-labkit` (not committed when this entry was written).
+  - **Vendored core (D1).** 16 files byte-identical with bg-forge `49d38d47f` (`labs/VENDORED.md`, sha256 and mode per file). `labs/harness/vendor_check.sh` re-extracts each from bg-forge and passes.
+  - **The pack.** Every fetch difference is in `labs/harness/fetch_pack.py`. It rebinds names in vendored modules after import, each with a seam row naming the vendored line (`./labkit pack`). `./labkit` activates it in every process the harness starts (`labs/harness/pack/sitecustomize.py`); a process that asked for it and cannot apply it exits 2.
+  - **Native pin.** `com.transistorsoft:tsbackgroundfetch:4.1.1-master-5de5242` in `labs/m2`, from a detached worktree of native at `5de52423e` (dirty no; AAR sha256 `74b20be4…`), by `labs/harness/publish_native_fetch.sh`. Android only; no iOS pin yet.
+  - **Platform.** React Native on Android: `labs/platforms/react-native`, package `com.transistorsoft.fetchlab.react`, RN 0.88.0. Its build resolves `tsbackgroundfetch` only from `labs/m2` and refuses an APK whose resolved version or AAR sha256 is not the label's. The plugin checkout is staged as a copy, so Gradle never writes into the submodule.
+  - **Plugin under test.** The react-native checkout was on `fix/WO-001-spm-first` at `2acdc21` while the parent pins `75d3ed0` (4.4.2). The difference touches only iOS, podspec, changelog and `package.json` `swiftpmConfig`, so the Android plugin built is 4.4.2's either way (`labs/harness/variants/FIX.yaml`).
+  - **Scenarios.** `termination-calibration`, `api-smoke`, `events-fetch-android`.
+  - **Selftest.** `./labkit selftest` runs `fetch_selftest.py` (132 offline checks: activation through sweep's own launcher, the vocabulary against `types/background-fetch`, the loader, the metrics, the host actions, the drift guard, every shipped scenario and variant), the vendored `slots_selftest.js`, and `vendor_check.sh`. bg-forge's 727-check `_selftest` is bg-geo data and is not run.
+  - **CLI.** `./labkit up --os android` and `down --os android` started and stopped both Lab AVDs twice (14:16 and 13:41 runs); `status` and `doctor` work. iOS Simulators: not exercised (no iOS host yet).
+- 2026-11-05 — **decisions by Chris** on the first review's two open questions:
+  - **The `run_host` copy is kept, with a drift guard.** bg-forge's host-action dispatch is closed (`run.py:581-601`), so the pack runs `job:` / `force_stop:` on a ~30-line copy of `run.run_host`'s wait-then-act loop. This is a deliberate exception to "never fork in place" (Approach) and "A plain fork" (Not an acceptable shortcut). Condition: `fetch_pack.PINNED` holds the source sha256 of `run.run_host` and of every other vendored function the pack copies or re-implements, and the pack refuses to run (exit 2) when a re-vendor changes one. A bg-forge work order for an `ACTION_HANDLERS` seam deletes the copy.
+  - **`termination-calibration`'s force-stop step keeps the measurement:** `job: 999` with `expect: absent`, scored green when JobScheduler no longer holds the job. Rejected: dropping the `job:` action (the step would no longer measure) and leaving the step red by design.
+- 2026-11-05 — **`termination-calibration` result (MEASURED), on both Lab AVDs.** React Native, Android 16 / API 36, Play services 263635035; native `4.1.1-master-5de5242`, plugin `2acdc21`.
+  - **`run-as kill -9` keeps the fetch job; `am force-stop` cancels it.** So every headless scenario terminates with `kill: true`, never `force_stop`.
+  - **Kill, Lab1** (sweep 20261105-141801): `registerTask … (jobId: 999)` 14:18:03.303 → pid 4103 died 06.466 → `run -f … 999` 09.725, mark `said=Running_job_FORCED` → `Start proc 4162 … for service … FetchJobService` → `- Background Fetch event received` 09.940 → RN `point=headless event=fetch` 10.010 → `- finish:` and `- jobFinished` 11.025 → job 999 still registered at the step's end.
+  - **Kill, Lab2** (14:16, kept in `labs/baselines/2026-11-05-termination-calibration-lab2-141801`, gitignored): the same sequence — pid 3223 died 14:16:30.535, run 33.833, received 34.043 (new pid 3939), headless 34.118, finish and jobFinished 35.123, job 999 still registered.
+  - **Force-stop, Lab1:** `registerTask` 14:18:50.779; JobScheduler held 999 just before (mark `held=999`, read from `dumpsys jobscheduler`); `Force stopping com.transistorsoft.fetchlab.react` 53.941; `run -f … 999` 57.317 answered `Could not find job 999 in package com.transistorsoft.fetchla…` (`said=`); no process started, no SDK or headless line; no job of the package at the step's end.
+  - **Force-stop, Lab2:** `registerTask` 14:17:14.657, `held=999`, force-stop 17.804, run 21.183 answered `Could not find job 999…`.
+  - **Run 1** (Lab1, 13:04-13:05, with the step as first specified, force-stop then a plain `job: 999`): kill green, force-stop red `actionsDone action1=missed(no-job)`. That is the same finding scored as a failure; its capture is `labs/baselines/2026-11-05-termination-calibration-run1` (gitignored).
+  - All green with the current file: sweeps 20261105-134121 and -141801 (Lab1) and the Lab2 runs at 13:44 and 14:16. Committed captures are sweep 141801's (Lab1). A capture path has no device in it, so a later run of the same cell overwrites the earlier one; Lab2's raw logs survive only in the gitignored baseline, and their decisive lines are quoted here.
+  - **Consequences.**
+    - run.py force-stops the app before and after every step (`backends.Adb.terminate`), which cancels its jobs. Every step configures again (the RN driver does at boot), and no job carries across a step boundary except through a `process: live` step.
+    - Not yet measured: whether force-stop also cancels a custom task's job or an AlarmManager task. The finding is worded for job 999 only.
+- 2026-11-05 — **other observations from the first slice (MEASURED unless marked)**.
+  - **`api-smoke`:** `stop(taskId)` then `stop()` leaves the app holding no job (jobIds `-` at the step's end, read before run.py's end-of-step force-stop). Android `status()` and `start()` answer 2 whatever happens, which is why the scenario also asserts jobs and configureOutcome.
+  - **`events-fetch-android`:** two forced runs 6.4 s apart give two deliveries to `configure@0` with the bare taskId `react-native-background-fetch`; no duplicate-job drop. At configure, JobScheduler starts the periodic job immediately and the SDK ignores it (`onStartJob returned false`, < 1 s after scheduling) — `events-initial-ignored` (tier 1) should pin this.
+  - **`- registerTask:` proves only that the SDK asked.** It is logged before `BGTask.schedule()`, whose result is discarded (`BackgroundFetch.java:259-261`, `BGTask.java:169`). JobScheduler's side is read from `dumpsys` (`jobIds`, `jobsAtForceStop`).
+  - **BOOT_COMPLETED at launch.** On Android 16, a launch after an `am force-stop` of an app already launched delivers BOOT_COMPLETED to the SDK's BootReceiver, and run.py force-stops before every step. It does not arrive after a fresh install: Lab1's kill step had none, Lab2's, where the install was skipped, had one.
+    - SUSPECTED, not reproduced: the SDK's `onBoot` clears a `startOnBoot:false` config off the UI thread about 0.3 s before configure() saves it (`BackgroundFetch.java:101-121`). If the clear lands after the save, a later headless start finds no config.
+    - The `bootBroadcasts` metric records it in every step.
+    - Boot scenarios (tier 2) must key on a real `adb reboot` mark, not on BootReceiver lines.
+  - **Foreign apps wake on the Lab devices.** In Lab2's kill step, `com.transistorsoft.backgroundgeolocation.react` (bg-geo's RN example, not a lab app) was started for a boot broadcast. It logged nothing of TSBackgroundFetch's (`foreignLines` 0).
+- 2026-11-05 — **two review rounds**, read-only, before commit. Round 1: one reviewer after the build. Round 2: three independent reviewers (pack code, device evidence, docs and this work order), each should-fix finding then checked by a refuter. Applied:
+  - The drift guard: `_rebind` refuses a vanished seam, `_extend` refuses a name the vendored side grew, and any patch-time failure exits 2. `CALLBACK_ARG` and `FGS_PROMOTED` are derived from the vendored patterns.
+  - `Capture.sdk` counts only processes tied to the capture's package (`point=appCreate process=<pkg>` or `Start proc <pid>:<pkg>/`; on a `process: live` step also the driver's `app=boot` pid). `foreignLines` (implicit 0) counts every other process's SDK, `point=headless` and `point=task-` lines, which bg-forge's headless metrics would otherwise count as the app's.
+  - New metrics:
+    - `configureOutcome` (implicit `ok`; `-` on a `process: live` step; `unsettled=<n>` for a configure() that never settled). It is an early metric, and the evidence end waits for a pending configure.
+    - `jobsRegistered`, `jobsAtForceStop`, `bootBroadcasts`.
+  - `job:` gained `expect: present | absent` and records JobScheduler's answer as `said=`. `force_stop:` records `held=`.
+  - `api-smoke` asserts jobs and `measure_from: launch`. The selftest now loads every shipped scenario and variant.
+  - Docs: `labs/README.md` (a Pinning section, the driver's configure lines, process scoping, the drift guard's limits); `labs/VENDORED.md` (the scan's scope); `labs/.gitignore` (`platforms/*/.stage/`). This work order's stale labels were corrected (the device-run note, "INFERRED" device commands, force-stop "NOT CHECKED", 14 → 10 config keys, the prefix-eviction reasoning, the host-action table, "baselines committed").
+  - **Declined:**
+    - `npm ci` in the RN build: bg-forge's RN lab runs `npm install`, and `npm ci` would wipe node_modules on every build.
+    - Recording the linked AAR's sha256 in each `run.json`: a follow-up. Today the build-time check plus the source stamp tie the APK to the label.
+- 2026-11-05 — **upstream seams the pack works around** (for bg-forge work orders; Phase 0's prefix eviction first):
+  - prefix eviction of every Transistor lab app (`run.py:708-714`), plus process scoping in bg-forge's headless metrics and `devices.contamination` for `point=headless` / `point=task-` lines;
+  - `ACTION_HANDLERS` for host actions (`run.py:581-601`, `labkit._validate_moves` `ACTION_DOES` `:1565`), which deletes the `run_host` copy;
+  - a pack hook imported by `labkit.py` itself (so a bare `python3 run.py` cannot run bg-geo's seams in this repo), plus hooks for headless names (`labkit.py:3383-3411`), implicit expectations, evidence, the SDK log adapter and per-capture extras;
+  - `lab_devices up/down --name Lab1|Lab2` (today both start together);
+  - a per-product native publish descriptor for `publish_native.sh` and `lab_setup` (`published`, `ensure_native`).
+- 2026-11-05 — **state.** Verification: D1–D4, VENDORED, the selftest and the calibration are ticked.
+  - Not ticked:
+    - `doctor` / `up` / `status` / `down` (Android only so far);
+    - the bg-forge prefix-eviction work order (not filed);
+    - the tier 1 board (3 of 15 scenarios, 1 of 10 cells);
+    - mutation variants;
+    - back-to-back sweeps;
+    - the manual iOS tier;
+    - suspected-defect work orders.
+  - Next slices: the remaining tier 1 scenarios on RN Android; the iOS pin and hook (D3, D4); the other four platforms.

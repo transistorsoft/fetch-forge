@@ -1,0 +1,52 @@
+buildscript {
+    ext {
+        buildToolsVersion = "37.0.0"
+        minSdkVersion = 24
+        compileSdkVersion = 37
+        targetSdkVersion = 36
+        ndkVersion = "27.1.12297006"
+        kotlinVersion = "2.2.0"
+        // LAB (WO-002): the native SDK under test, a label build.sh passes as -PlabNativeVersion.
+        // The plugin reads it as safeExtGet('backgroundFetchVersion', '4.1.+') (its
+        // android/build.gradle); there is NO fallback here, because the plugin's own 4.1.+ would
+        // build an APK against whatever labs/m2 happens to hold and no label would name it.
+        if (!project.hasProperty("labNativeVersion")) {
+            throw new GradleException("[lab] -PlabNativeVersion=<label> is required: the tsbackgroundfetch " +
+                "snapshot in labs/m2 this APK is built against (use ../../build.sh <label> <plugin>)")
+        }
+        backgroundFetchVersion = project.labNativeVersion
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+    }
+}
+
+apply plugin: "com.facebook.react.rootproject"
+
+// LAB (WO-002): com.transistorsoft:tsbackgroundfetch resolves from labs/m2 and NOWHERE else.
+// exclusiveContent makes labs/m2 the only repository searched for that module in every project —
+// the plugin's own `repositories { mavenCentral() }` included — so a label missing from labs/m2
+// fails the build instead of quietly resolving a released SDK.  Relative by default (from
+// platforms/react-native/app/android, ../../../../m2 = labs/m2); build.sh passes -PlabMavenRepo.
+allprojects {
+    repositories {
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "labM2"
+                    url = rootProject.hasProperty("labMavenRepo") ? rootProject.property("labMavenRepo")
+                                                                  : "${rootProject.projectDir}/../../../../m2"
+                }
+            }
+            filter {
+                includeModule("com.transistorsoft", "tsbackgroundfetch")
+            }
+        }
+    }
+}
