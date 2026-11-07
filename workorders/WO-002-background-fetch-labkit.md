@@ -402,3 +402,47 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - the manual iOS tier;
     - suspected-defect work orders.
   - Next slices: the remaining tier 1 scenarios on RN Android; the iOS pin and hook (D3, D4); the other four platforms.
+- 2026-11-07 — **Re-vendored onto bg-forge WO-191, and the pack moved onto its hooks** (uncommitted, awaiting Chris's diff review). Branch `feat/WO-002-revendor-wo191`, from `master` `05b5959`.
+  - **The upstream work order:** the seams listed on 2026-11-05 became bg-forge WO-191, Parts 1–5. Its status there is `verify`: the code is in, its device proof is Chris's.
+  - **Vendor commit:** `23f448c42`, the WO-191 branch tip. bg-forge `master` (`dc13cac37`) held Parts 1–4 then. `23f448c42` adds Part 5, and only Part 5's four files differ. The commit stays in `master`'s history once merged, so `vendor_check` holds either way.
+    - Eight of the 16 vendored files changed: `labkit`, `backends`, `run`, `devices`, `summarize`, `lab_devices`, `lab_setup`, `inventory`. `VENDORED.md` records every sha256, mode and line count.
+  - **The new `labs/harness/lab_product.py`:** fetch-owned, at a path bg-forge does not have. The vendored `labkit.py` loads it and calls `register(labkit)`, which calls `fetch_pack.register()`.
+    - It refuses (`labkit` exits 2) without `FETCH_LABKIT_PACK=1`, without the activation, or with another checkout's pack: WO-191 Part 3 was narrowed to labkit's seams, so a process without the activation would mix fetch's labkit seams with bg-geo's backends and run.
+  - **Moved onto hooks:**
+    - `Capture.sdk` replacement → `SDK_LOG`;
+    - the `IMPLICIT`/`EARLY_METRICS` rebinds → in-place additions;
+    - the `evidence_state` wrap → `EVIDENCE`;
+    - the `Adb.end_log` and `run_step` wraps → `CAPTURE_EXTRAS`;
+    - the vocabulary's `enums.Event` convention → `HEADLESS_NAMES`, and the entry is removed;
+    - the `_validate_moves` wrap (a `kill` stand-in) and the `run_host` companion runner → `ACTION_HANDLERS` `job` (`keys=("expect",)`; a repeat found by identity) and `force_stop`;
+    - the `lab_setup.published`/`ensure_native` copies and the `inventory` rebind → `NATIVE`. Fetch's own Android slot calls `publish_native_fetch.sh` in a worktree named `native`, as before; the iOS slot stops at "WO-002 phase 2".
+    - `CALLBACK_ARG`, `FGS_PROMOTED` and the `_validate_hooks` and `expectations` wraps moved into `register()` verbatim, so `labkit` gets no post-import patch.
+  - **Deleted:** those copies, their four PINNED rows, `_fetch_runner`, the `GRADLE_PLACEHOLDERS` rebind (no reader on fetch's slot) and `threading`.
+  - **Kept, for Phase B:** the activation and the `backends`/`run`/`sweep`/`lab_setup` rows, including `SUBMODULES` (WO-191 D4 option A).
+  - **Every seam row re-cited** against the new lines (`./labkit pack`).
+  - **Behaviour:**
+    - All 10 captured steps (4 board captures, 6 `termination-calibration` baselines, from the WO-002 worktree) re-score byte-identical: every metric row, every verdict.
+    - The review's old/new differential found no difference in what loads or refuses, the resolved steps, runner calls and marks, SDK lines, evidence, expectations, jobscheduler.txt or the native setup commands, beyond the ones below.
+  - **Intended differences** (each in README or here):
+    - The metric names `headlessEvents.locationerror` and `headlessFired.locationerror` are gone: a bg-geo name that fetch never used.
+    - A bare process (no `FETCH_LABKIT_PACK`) now exits 2, where it ran "inert" with bg-geo's seams.
+    - **Actions share one loop:** `job`/`force_stop` now share `run_host`'s single loop, so a slow one delays an action due at the same time, and a failing one stops the rest. No shipped scenario shows it: `termination-calibration`'s kill→job chain moves by one 0.25 s poll.
+    - **iOS stop:** it no longer makes a `native/background-fetch` worktree before stopping.
+    - **Capture timing:** `jobscheduler.txt` is written after `logcat.txt`, so a failed read keeps the log. run.json `timings` show a `capture_extras` phase and a shorter `end_log`.
+    - **Wording:** some refusal texts differ for the same inputs (vendored checks run first).
+    - **Key order:** a resolved item keeps its author's key order.
+  - **Fetch selftest:** 110 → 140 checks, all PASS with `types/background-fetch` checked out. `slots_selftest` and `vendor_check` pass.
+    - Checks that pinned the old rebinds now check the hooks.
+    - The runner test drives the vendored `run_host`.
+    - New: `test_hooks` (`CAPTURE_EXTRAS`; `NATIVE`'s `published()` and both slots through the real `ensure_native`; `inventory`; the `check_repo` exit-2 pass-through), the repeat budget with equal items, each half of the guard, a symlinked harness path, and another checkout's pack.
+  - **Mutants:** 17, each failing a named check.
+  - **Review:** read-only; a Sonnet-high behaviour differential, an Opus-max guard and activation lens, a Sonnet-medium docs/scope/tests lens, and verifiers on the other model. Fixed:
+    - **Medium, verified real:** the README still described the pinned `run_host` copy.
+    - **Medium, verified real:** the guard passed when the active pack's hook would not patch this harness (a symlinked path, which the pack compared by `abspath` while Python uses the realpath; or another checkout's pack). The pack now compares real paths, and the guard requires this harness's own pack.
+    - **Lows:**
+      - the pack's `check_repo` wrapper swallowed labkit's exit 2 as "missing variant";
+      - the selftest run on its own exited 2;
+      - stale citations in `VENDORED.md`, `FIX.yaml` and the selftest docstring;
+      - no `inventory` check.
+    - **Not fixed (pre-existing, out of scope):** two pack dirs on `PYTHONPATH` make the sitecustomize shims chain each other to `RecursionError`. It needs a realpath compare and a sentinel in `pack/sitecustomize.py`; worth its own small change.
+  - **Verification:** "bg-forge prefix-eviction work order filed and done" stays unticked. It was filed and its code is in (WO-191 Part 1), but its on-device proof is Chris's. "Back-to-back sweeps" still waits for those runs.
