@@ -323,7 +323,7 @@ This is the transition hazard. Picture an app that combines a fetch plugin on Sw
 ## Verification
 
 - [ ] Phase 0: `native/background-fetch` `master` pushed
-- [ ] Phase 1: TSBackgroundFetch 4.2.0 on Trunk (the CDN index `all_pods_versions_c_4_1.txt` lists 4.2.0)
+- [x] Phase 1: TSBackgroundFetch 4.2.0 on Trunk (the CDN index `all_pods_versions_c_4_1.txt` lists 4.2.0; 2026-11-07 16:57Z)
 - [ ] Phase 1: TSLocationManager on Trunk with the widened range and iOS 15 (bg-forge work order)
 - [ ] Decisions D1–D5 recorded in the Log
 - [ ] Test-plan items 1–9 done, or explicitly waived in the Log
@@ -377,6 +377,27 @@ This is the transition hazard. Picture an app that combines a fetch plugin on Sw
     - **Capacitor:** neither the plugin's `PrivacyInfo.xcprivacy` nor the CocoaPods TSBackgroundFetch pod's is bundled.
     - **Cordova:** `.npmignore` still names `example-ionic`, so `example/` ships in the tarball, and cordova-ios 8 copies it into `platforms/ios/packages/`.
     - **React Native:** `docs/INSTALL-MANUAL-IOS.md` is stale (it points at the removed framework; broken since 4.4.0), and `xcuserdata` ships in the npm tarball.
+- 2026-11-07 — **Phase 1 step 1 done: TSBackgroundFetch 4.2.0 is on Trunk.**
+  - **Pushed by Chris** with the Phase 1 command, from the main checkout's `native/background-fetch` (`master` = `5de5242` = tag `4.2.0`). Not from the worktree's submodule copy, whose podspec still says 4.1.1.
+  - **PROVEN published:**
+    - Specs commit `daafe6b19c` at 16:47:46Z, "[Add] TSBackgroundFetch 4.2.0", author Transistor Software, committer CocoaPodsBot.
+    - `trunk.cocoapods.org/api/v1/pods/TSBackgroundFetch/versions/4.2.0` returns 200.
+    - The published JSON has version 4.2.0, the `ios/4.2.0` release zip and iOS 15.0.
+    - The CDN index `all_pods_versions_c_4_1.txt` listed 4.2.0 at 16:57:46Z, 10 minutes after the commit. Verification box ticked.
+  - **Every push printed "Calling the GitHub commit API timed out", including the one that landed.** Trunk's push log for 4.2.0, public once the version is published:
+    - 2026-11-06 18:41:36Z: timeout (14.02 s).
+    - 2026-11-06 18:43:14Z: timeout (14.03 s).
+    - 2026-11-07 16:47:46Z: timeout (14.03 s), but the commit landed in that same second, and GitHub's post-receive hook published it.
+  - **What the 14 s means (INFERRED from source):** two 7 s read timeouts, because Ruby's Net::HTTP retries the PUT once. So GitHub received the write every time and stalled.
+  - **Not pod-specific (PROVEN from trunk source, master `4750251a`):**
+    - An Add push makes exactly one GitHub call, a Contents API PUT with a 3 s open and 7 s read timeout (`app/models/github.rb:101-112`).
+    - The 504 comes from `app/controllers/api/pods_controller.rb:41-43`.
+    - On 2026-11-06, 7 of 12 sampled pods needed a re-push after their first attempt failed at the GitHub step.
+  - **For the next Trunk push (TSLocationManager, bg-forge, before 2026-12-01), expect this error:**
+    - Before each retry, check the Specs path (`Specs/<shard>/<Pod>/<version>/`), not `pod trunk info`: it lists only published versions, and a timed-out push can land late.
+    - A re-push after a late landing returns 409 (trunk recorded it) or 500 (it landed in Specs but trunk never recorded it). Both mean stop pushing.
+    - Space retries at least 5 minutes apart. Escalate to info@cocoapods.org.
+  - **Correction to the 2026-11-05 entry:** that rejection did not prove the server-side checks passed, because the test-week check (`pods_controller.rb:184`) runs before the server lint. The 2026-11-06 timeouts did prove it, since the GitHub step (`:232`) runs only after all of the checks.
 
 ## Appendix A: React Native `ios/Package.swift` (PROVEN in experiment A on RN 0.88.1)
 
