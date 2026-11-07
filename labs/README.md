@@ -14,8 +14,9 @@ section do not: see [Pinning](#pinning) below. This file covers only where fetch
 
 `labs/harness/{labkit,backends,run,sweep,summarize,devices,lab_devices,lab_setup,inventory}.py`,
 `slots_selftest.js`, `avd/`, `lab-publish.init.gradle`, and `labs/platforms/_shared/{labapi,labevents,logo}.js`.
-They are copied **byte-identical** from bg-forge commit `49d38d47f` (decision D1). They are never edited
-here. A change goes into bg-forge first, and the file is then re-vendored.
+They are copied **byte-identical** from bg-forge commit `23f448c42` (decision D1; bg-forge WO-191 grew the
+seams this lab had worked around). They are never edited here. A change goes into bg-forge first, and the file
+is then re-vendored.
 [`VENDORED.md`](VENDORED.md) lists every file with its sha256, and `./labkit vendor-check` re-extracts
 each one from bg-forge to compare.
 
@@ -30,11 +31,17 @@ bg-geo data. `./labkit selftest` runs fetch's own instead.
 ## The pack
 
 `labs/harness/fetch_pack.py` is the one fetch-owned module that holds every difference. It never edits
-a vendored file. It rebinds names in a vendored module after that module is imported. Each override names
-the vendored line it stands in for, so in Phase B each one becomes a seam that bg-forge grows and the
-override is deleted. `./labkit pack` prints the table.
+a vendored file. Each override names the vendored line it stands in for; `./labkit pack` prints the table.
 
-**How it is active everywhere.** `./labkit` exports two variables:
+**labkit's seams are hooks (bg-forge WO-191).** The vendored `labkit.py` loads
+[`harness/lab_product.py`](harness/lab_product.py) itself, at the end of its own definitions, and that calls
+`fetch_pack.register(labkit)`. It sets labkit's hooks: `SDK_LOG`, `EVIDENCE`, `CAPTURE_EXTRAS` (jobscheduler.txt),
+`HEADLESS_NAMES`, `NATIVE`, the implicit expectations, `job:` and `force_stop:` as `ACTION_HANDLERS` kinds, and fetch's
+metrics. labkit.py gets no post-import patch at all. `lab_product.py` is fetch's own, at a path bg-forge does not have.
+
+**The other vendored modules are patched (until Phase B).** `backends`, `run`, `sweep` and `lab_setup` have no
+such hook yet, so the pack still rebinds names in them after they are imported. `./labkit` exports two
+variables:
 - `PYTHONPATH=labs/harness/pack`, whose `sitecustomize.py` first chains the interpreter's own
   sitecustomize, then loads the pack;
 - `FETCH_LABKIT_PACK=1`.
@@ -46,8 +53,10 @@ From there:
   pack through the modules it imports.
 - Children inherit the environment, so the pack is active in every process the harness starts.
   `./labkit selftest` proves this through `sweep.capped` (sweep's own launcher) and one level deeper.
-- A process that asked for the pack and cannot load or apply it exits 2 ("could not be judged"). Without
-  the flag the pack is inert.
+- A process that asked for the pack and cannot load or apply it exits 2 ("could not be judged").
+- A process WITHOUT the flag and the activation is refused too: `register()` runs while `backends.py` is still
+  loading (bg-forge WO-191 Part 3), so `lab_product.py` will not give fetch's labkit seams to a process whose
+  backends, run and sweep would be bg-geo's. labkit says "lab_product.py did not load" and exits 2.
 - To run a harness script by hand, first run `eval "$(./labkit env)"`.
 
 **Drift guard.** `vendor_check` pins the vendored files' bytes. The pack also refuses to run on a
@@ -56,12 +65,12 @@ re-vendor that moved what it depends on:
   longer has; every name the pack adds goes through `_extend`, which refuses one the vendored module
   already has. Any other failure while patching (a wrapper reading a renamed name) also exits 2.
 - `PINNED` holds the source sha256 of every vendored function the pack copies or re-implements rather
-  than wraps (`run.run_host`'s wait-then-act loop, `Capture.sdk`, `Simctl.native_resolved`,
-  `lab_setup.ensure_native`, …). If a re-vendor changes one, the pack refuses until its copy has been
-  reviewed against the new source and the hash updated. The `run_host` copy is approved on this
-  condition until bg-forge grows an `ACTION_HANDLERS` seam (WO-002 Log, 2026-11-05).
-- Wraps are not pinned. A wrapper that leans on vendored internals (`_validate_moves`' `kill: true`
-  stand-in, `to_logcat`'s line shape, the text `assert_native` and `Report.line` rewrite) still needs the
+  than wraps (`Simctl.native_resolved`, `Simctl.permissions`, the two `sdk_db`, `lab_setup`'s
+  `swift_api_published` and Capacitor pair). If a re-vendor changes one, the pack refuses until its copy has
+  been reviewed against the new source and the hash updated. WO-191's hooks deleted four copies: the
+  `run_host` companion runner, `Capture.sdk`, `lab_setup.published` and `ensure_native`.
+- Wraps are not pinned. A wrapper that leans on vendored internals (`to_logcat`'s line shape, the text
+  `assert_native` and `Report.line` rewrite, `_validate_hooks`' stand-in `$`) still needs the
   manual seam re-check in [`VENDORED.md`](VENDORED.md) at every re-vendor; the selftest catches most of
   it.
 
@@ -69,11 +78,11 @@ What it changes:
 
 | Area | Fetch |
 |---|---|
-| SDK log | Android: the logcat tag `TSBackgroundFetch`. iOS: `NSLog` lines starting `[TSB…` (no os_log subsystem), retagged to that tag. `Capture.sdk()` reads the log on both OSes, never a database, and only lines from the app under test's own processes |
+| SDK log | Android: the logcat tag `TSBackgroundFetch`. iOS: `NSLog` lines starting `[TSB…` (no os_log subsystem), retagged to that tag. `SDK_LOG` (what `Capture.sdk()` reads) reads the log on both OSes, never a database, and only lines from the app under test's own processes |
 | Native | `tsbackgroundfetch` in `labs/m2`; `TSBackgroundFetch.xcframework` and `PROJECT:TSBackgroundFetch-<build>` on iOS |
 | Permissions | None granted or revoked; there are no SDK dialogs |
 | Vocabulary | [`harness/vocabulary.yaml`](harness/vocabulary.yaml) is seeded from `types/background-fetch` and has no State tree. `configure(config, onEvent, onTimeout?)` is an `events:` declaration (`subscribe: configure`, `args:` the config, `errors: true` for onTimeout); it can never be an `api:` hook. The `STATUS_*` and `NETWORK_TYPE_*` constants are probed: `{api: STATUS_AVAILABLE, probe: true, returns: {$: {equals: 2}}}` |
-| Headless names | The vocabulary's `enums.Event` is `[fetch, timeout]`. A lab driver logs `LAB point=headless event=fetch` for a HeadlessEvent with `timeout: false`, and `event=timeout` otherwise. This is a lab convention, because labkit reads the names at import |
+| Headless names | `fetch` and `timeout` (`fetch_pack.HEADLESS_NAMES`, labkit's `HEADLESS_NAMES` hook). A lab driver logs `LAB point=headless event=fetch` for a HeadlessEvent with `timeout: false`, and `event=timeout` otherwise: fetch's HeadlessEvent has no name |
 | Implicit expectations | Every step that expects anything also expects `configureOutcome: ok` and `foreignLines: 0` (below). Both are early metrics, so a step can still end on its evidence |
 | Suite | `sweep.SUITE`: `termination-calibration`, `api-smoke`, `events-fetch-android` (the first slice) |
 | Setup / doctor | The fetch submodules, `capacitor/background-fetch`, the `tsbackgroundfetch` pin through `publish_native_fetch.sh`. The iOS pin is not built yet, so `./labkit setup` without `--os android` stops at the iOS native step even when doctor counts it as a to-do |
@@ -114,9 +123,12 @@ actions:
 - **`jobscheduler.txt`.** At the end of every Android step, before run.py's own end-of-step force-stop,
   the host reads `dumpsys jobscheduler <pkg>` into the capture. The `jobIds` metric lists the job ids
   registered there.
-- **How it is wired.** These actions run on a pack-side copy of the runner loop, because the vendored
-  dispatch is closed (run.py:581-601). That is the first seam bg-forge should grow. The copy is pinned:
-  see "Drift guard" above.
+- **How it is wired.** `job` and `force_stop` are two of labkit's own action kinds (`ACTION_HANDLERS`, bg-forge
+  WO-191), registered by the pack: the vendored `_validate_moves` checks them (fetch's rules in the kind's
+  `validate`) and the vendored `run_host` runs them. One loop runs every action and move of a step, so a slow
+  `job:` (a repeat waiting out the duplicate guard, up to 5.5 s) or `force_stop:` (up to 2 s) delays an action or
+  move due at the same time, and one that fails stops the step's remaining actions (unscored). Until WO-191 they
+  ran on a companion thread; no shipped scenario has a step where the difference shows.
 
 **Fetch metrics.** The Android SDK's own lines, counted in the window: `fetchReceived`, `fetchFinished`,
 `fetchTimeouts`, `jobFinished`, `jobStopped`, `duplicateJobs`, `stoppingOnTerminate`,

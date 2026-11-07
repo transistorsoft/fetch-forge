@@ -162,14 +162,24 @@ def pick(requested, owner, os_name="android"):
 
 
 LAUNCH_MARK = re.compile(r"LAB point=launch label=(\S+)")
+# (WO-191) ActivityManager's `Start proc <pid>:<process>/<uid> for …`: the one line in a capture that ties a pid to its
+# package (the process name is the package, or `<package>:<sub>`).  And any LAB line, a normalized one's `LAB key=`.
+START_PROC = re.compile(r"Start proc (\d+):([^/\s]+)/")
+LAB_LINE = re.compile(r"(?<![\w-])LAB \w+=")
 
 
-def contamination(lines, label, os_name="android"):
+def contamination(lines, label, os_name="android", package=None):
     """Launch marks in this capture that belong to another run, and processes that are not this
     run's app — the contamination signal.
 
     Lines are normalized first: logcat renders a native LAB line as `I/LAB( pid): point=…`,
     so the tag and the message are not adjacent in the raw text.
+
+    (WO-191) `package`, the app under test (run.json's, where recorded): a process that `Start proc` ties to another
+    package and that writes any LAB line is foreign too.  A headless one (`point=headless`, `point=task-`) never boots
+    a driver, so the `app=` check below cannot see it, and the headless metrics count every process's lines (D2: the
+    step is CONTAMINATED, not scored around it).  A pid with no `Start proc` line is not flagged, so a capture whose
+    log head was lost, an iOS one, or one without `package` keeps its verdict.
     """
     import labkit
     # (WO-027) And a lab APP this run never launched: one left running on the device logs its
@@ -191,6 +201,16 @@ def contamination(lines, label, os_name="android"):
                 boots.append(pid)
     stray = sorted((p for p, ls in written.items()
                     if p not in own and not all(" app=error" in l or " app=window " in l for l in ls)), key=int)
+    tied, started = {}, {}               # (WO-191) pid -> the other package it writes LAB lines for
+    for l in (lines if package else ()):
+        m = START_PROC.search(l)
+        if m:                            # in order: a pid reused later is tied to its latest start
+            started[m.group(1)] = m.group(2).split(":")[0]
+            continue
+        pid = labkit.line_pid(l)
+        if started.get(pid, package) != package and LAB_LINE.search(labkit.normalize(l)):
+            tied.setdefault(pid, started[pid])
+    stray = [p for p in stray if p not in tied]   # (WO-191) named below, with its package: not a lost log head
     lines = [labkit.normalize(l) for l in lines]
     marks = {m.group(1) for l in lines for m in [LAUNCH_MARK.search(l)] if m}
     foreign = marks - {label}
@@ -204,6 +224,7 @@ def contamination(lines, label, os_name="android"):
                 "is gone too" % ", ".join(stray)]
     else:
         out += ["foreign lab process pid %s" % p for p in stray]
+    out += ["foreign lab process pid %s (%s)" % (p, tied[p]) for p in sorted(tied, key=int)]   # (WO-191)
     if os_name == "ios":
         # One process per iOS step (no trigger relaunches it): a second boot is another lab app.
         out += ["lab process pid %s booted mid-step" % p for p in boots[1:]]

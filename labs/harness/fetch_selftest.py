@@ -3,7 +3,8 @@
 
 What it holds:
   * the pack is active here AND in a subprocess started the way sweep.py starts run.py (sweep.capped, sweep.py:644),
-    and one level further down; it is inert where FETCH_LABKIT_PACK is not set;
+    and one level further down; refused (exit 2, lab_product.py: bg-forge WO-191) where FETCH_LABKIT_PACK is not set,
+    where the activation is not installed, or where the active pack is another checkout's;
   * labs/harness/vocabulary.yaml against types/background-fetch (names, signatures, interfaces, closed types) and the
     constants' values against docforge/db;
   * the vendored loader on the fetch vocabulary: configs, arguments, and a scenario with fetch's events, hooks and
@@ -32,7 +33,8 @@ REPO = os.path.dirname(LABS)
 sys.path.insert(0, HARNESS)
 
 import fetch_pack                                     # noqa: E402  (activated by sitecustomize under ./labkit)
-fetch_pack.activate()                                 # and here when the selftest is run on its own
+os.environ.setdefault("FETCH_LABKIT_PACK", "1")       # and here when the selftest is run on its own: lab_product.py
+fetch_pack.activate()                                 # asks for both (the subprocess checks set their own env)
 import backends                                       # noqa: E402
 import labkit                                         # noqa: E402
 import run                                            # noqa: E402
@@ -65,8 +67,13 @@ def refused(fn):
 def test_activation(tmp):
     check("pack active in this process", fetch_pack.active(), True)
     check("backends.SDK_TAG", backends.SDK_TAG, "TSBackgroundFetch")
-    check("labkit.Capture.sdk is the pack's", labkit.Capture.sdk.__module__, "fetch_pack")
-    check("run.run_host is the pack's wrapper", getattr(run.run_host, "vendored", None) is not None, True)
+    # (bg-forge WO-191) labkit's seams are hooks labkit applies itself, from lab_product.py: no post-import patch.
+    check("labkit loaded lab_product.py, and SDK_LOG, EVIDENCE and CAPTURE_EXTRAS are the pack's",
+          (labkit.PRODUCT.__name__, labkit.SDK_LOG.__module__, labkit.EVIDENCE.__module__,
+           labkit.CAPTURE_EXTRAS.__module__), ("lab_product", "fetch_pack", "fetch_pack", "fetch_pack"))
+    check("job and force_stop are labkit action kinds, run by the vendored run_host (no companion runner)",
+          (list(labkit.ACTION_HANDLERS)[-2:], run.run_host.__module__ in ("run", "__main__")),
+          (["job", "force_stop"], True))
     check("sweep.SUITE is fetch's", sweep.SUITE, fetch_pack.SUITE)
     check("sweep.scenario_list('suite')", sweep.scenario_list("suite"), fetch_pack.SUITE)
 
@@ -85,11 +92,12 @@ def test_activation(tmp):
         nested = subprocess.run([sys.executable, "-c", "import subprocess, sys; sys.exit(subprocess.run("
                                  "[sys.executable, %r, '--help'], stdout=subprocess.DEVNULL).returncode)"
                                  % os.path.join(HARNESS, "run.py")], timeout=120).returncode
-        # (3) Inert without the flag: the same start, FETCH_LABKIT_PACK unset.
+        # (3) Refused without the flag (bg-forge WO-191): labkit loads lab_product.py, which will not give a process
+        # fetch's labkit seams beside bg-geo's backends, run and sweep.  Exit 2, the harness's "could not be judged".
         bare = dict(env)
         bare.pop("FETCH_LABKIT_PACK")
-        inert = subprocess.run([sys.executable, os.path.join(HARNESS, "run.py"), "--help"], env=bare,
-                               stdout=subprocess.DEVNULL, timeout=120).returncode
+        refusal = subprocess.run([sys.executable, os.path.join(HARNESS, "run.py"), "--help"], env=bare,
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, timeout=120)
     finally:
         os.environ.clear()
         os.environ.update(saved)
@@ -97,13 +105,50 @@ def test_activation(tmp):
     pids = sorted({r["pid"] for r in rows if r["pid"] != os.getpid()})
     check("run.py --help via sweep.capped exits 0", rc, 0)
     check("nested run.py --help exits 0", nested, 0)
-    check("bare run.py --help exits 0", inert, 0)
+    check("bare run.py --help (FETCH_LABKIT_PACK unset) exits 2: lab_product.py did not load, and says why",
+          (refusal.returncode, "fetch pack is not active" in refusal.stderr and "did not load" in refusal.stderr),
+          (2, True))
+    # Each half of lab_product's guard: the flag without the activation (fetch_pack imported by hand, never activated),
+    # and an activation without the flag (its subprocesses would not inherit it).
+    halves = []
+    for flag, code in (("1", "import fetch_pack, labkit"), (None, "import fetch_pack; fetch_pack.activate(); import labkit")):
+        env_ = {k: v for k, v in os.environ.items() if k not in ("FETCH_LABKIT_PACK", "PYTHONPATH")}
+        if flag:
+            env_["FETCH_LABKIT_PACK"] = flag
+        r = subprocess.run([sys.executable, "-B", "-c", "import sys; sys.path.insert(0, %r); %s" % (HARNESS, code)],
+                           env=env_, capture_output=True, text=True, timeout=120)
+        halves.append((r.returncode, "fetch pack is not active" in r.stderr))
+    check("lab_product refuses the flag without the activation, and the activation without the flag",
+          halves, [(2, True), (2, True)])
+    # Paths (review): the pack's import hook and lab_product compare REAL paths.  Through a symlink to labs/harness
+    # (macOS's /tmp is one), Python runs the script from its realpath; the hook must still patch backends and run.
+    # And a pack activated from another checkout (a shell that ran `./labkit env` there) is refused here: its hook
+    # patches only its own harness, so this one's backends would stay bg-geo's.
+    link = os.path.join(tmp, "harness-link")
+    os.symlink(HARNESS, link)
+    linked_report = os.path.join(tmp, "linked.jsonl")
+    r = subprocess.run([sys.executable, os.path.join(link, "run.py"), "--help"], stdout=subprocess.DEVNULL,
+                       stderr=subprocess.PIPE, text=True, timeout=120,     # the pack loaded through the link too, as
+                       env=dict(env, FETCH_PACK_REPORT=linked_report,      # `./labkit env` in a symlinked checkout does
+                                PYTHONPATH=os.path.join(link, "pack")))
+    linked = sorted({json.loads(l)["module"] for l in open(linked_report)}) if os.path.exists(linked_report) else []
+    other = os.path.join(tmp, "other", "harness")
+    os.makedirs(other)
+    for name in os.listdir(HARNESS):
+        if os.path.isfile(os.path.join(HARNESS, name)):
+            shutil.copy2(os.path.join(HARNESS, name), other)
+    r2 = subprocess.run([sys.executable, os.path.join(other, "run.py"), "--help"], stdout=subprocess.DEVNULL,
+                        stderr=subprocess.PIPE, text=True, timeout=120, env=env)
+    check("through a symlinked harness path run.py is patched whole (backends, labkit, run); a checkout given another "
+          "checkout's active pack is refused",
+          (r.returncode, linked, r2.returncode, "another checkout's" in r2.stderr),
+          (0, ["backends", "labkit", "run"], 2, True))
     check("two pack-activated child processes reported (sweep.capped's, the nested one's)", len(pids), 2)
     for pid in pids[:2]:
         mine = {r["module"]: r for r in rows if r["pid"] == pid}
-        check("child %d: run.py patched as __main__ (run_host, run_step, assert_native)" % pids.index(pid),
+        check("child %d: run.py patched as __main__ (assert_native)" % pids.index(pid),
               (mine.get("run") or {}).get("as_main"), True)
-        check("child %d: labkit and backends patched on import" % pids.index(pid),
+        check("child %d: labkit registered (lab_product.py) and backends patched on import" % pids.index(pid),
               sorted(k for k in mine if k in ("labkit", "backends")), ["backends", "labkit"])
     check("no report from the child run without FETCH_LABKIT_PACK", len(pids), 2)
 
@@ -200,8 +245,11 @@ def test_vocabulary():
     check("wire of configure / start / status", [sorted(labkit.wire_of(vocab["api"][n])) for n in
                                                 ("configure", "start", "status")], [["number"]] * 3)
     check("configure emits a string (the taskId)", labkit.wire_of(vocab["api"]["configure"], "emits"), {"string"})
-    check("headless names (vocabulary enums.Event + labkit's locationerror)", labkit.headless_names(),
-          ["fetch", "timeout", "locationerror"])
+    check("headless names: the pack's HEADLESS_NAMES (WO-191), and only their metrics generated",
+          (labkit.headless_names(), "Event" in vocab["enums"],
+           sorted(k for k in labkit.METRICS if k.startswith(("headlessEvents.", "headlessFired.")))),
+          (["fetch", "timeout"], False,
+           ["headlessEvents.fetch", "headlessEvents.timeout", "headlessFired.fetch", "headlessFired.timeout"]))
     cfg = {"minimumFetchInterval": 15, "stopOnTerminate": False, "enableHeadless": True, "requiredNetworkType": 2}
     check("a fetch config conforms", labkit._validate_config("t", cfg, vocab["config"]), None)
     check("a misspelt config key refuses", "is not in the SDK vocabulary" in (refused(
@@ -235,6 +283,25 @@ steps:
       - {after: {point: host}, delay_s: 2, job: 999, expect: absent}
       - {after: {point: host}, force_stop: true}
       - {after: {api: "scheduleTask#0"}, delay_s: 2, job: com.transistorsoft.fetchlab.task}
+"""
+
+
+# (bg-forge WO-191) The repeat budget on its own: two `job: 999` in one step, the second waiting out the SDK's 5 s
+# duplicate guard (JOB_REPEAT_S).  settle + after = 20 s holds two jobs 2 s after configure arms (12 + 2 + 4 = 18) but not
+# a repeat's 7.5 s (23.5).  The two items are written alike — equal, but not one object — so an equality lookup would
+# read the second as the first and drop its budget.
+REPEAT = """
+description: fetch selftest, the repeat budget (never run on a device)
+not_applicable: {ios: "2026-11-05 the host actions are Android's"}
+steps:
+  - name: one
+    settle: 5
+    after: 15
+    events:
+      - {subscribe: configure, args: {minimumFetchInterval: 15, stopOnTerminate: false, enableHeadless: true}, errors: true, returns: {"$": {type: string}}}
+    actions:
+      - {after: {armed: configure@0}, delay_s: 2, job: 999}
+      - {after: {armed: configure@0}, delay_s: 2, job: 999}
 """
 
 
@@ -284,6 +351,12 @@ def test_scenarios(tmp):
         "selftest-noios")) or ""), True)
     check("a too-short window still refuses (vendored budget, repeat guard included)", "raise them" in (refused(
         lambda: load_scenario(tmp, SCENARIO.replace("after: 40", "after: 12"), "selftest-short")) or ""), True)
+    repeated = refused(lambda: load_scenario(tmp, REPEAT, "selftest-repeat")) or ""
+    check("a repeated job budgets the duplicate guard (an equal item found by identity, not by equality): 20 s is short "
+          "for two job 999s and enough for job 999 and job 7",
+          ("need 7.5 s" in repeated and "raise them" in repeated,
+           refused(lambda: load_scenario(tmp, "job: 7}".join(REPEAT.rsplit("job: 999}", 1)), "selftest-norepeat"))),
+          (True, None))                                     # this selftest's refused(): None for one that loads
     check("configure as an api hook refuses (two required parameters)", "required parameters" in (refused(
         lambda: load_scenario(tmp, SCENARIO.replace("      - {api: status, ",
                                                     "      - {api: configure, args: {minimumFetchInterval: 15}, "),
@@ -537,8 +610,8 @@ def test_runner():
           True)
     check("runner: an action whose condition never came is not sent", "action3" in host["sent_s"], False)
     check("runner: no error", host["error"], None)
-    check("runner: a step with no fetch action goes straight to the vendored runner",
-          run.run_host.vendored.__module__ in ("run", "__main__"), True)
+    check("runner: one runner for every kind, the vendored run_host (ACTION_HANDLERS)",
+          run.run_host.__module__ in ("run", "__main__"), True)
 
 
 def test_primitives():
@@ -603,8 +676,8 @@ def test_seams():
     rows = fetch_pack.OVERRIDES
     check("every override names a vendored file:line", [o["symbol"] for o in rows
                                                        if not re.search(r"\w+\.(py|js):\d+", o["seam"])], [])
-    check("every patched module's patch is registered", sorted(fetch_pack.PATCHES),
-          ["backends", "inventory", "lab_setup", "labkit", "run", "sweep"])
+    check("every patched module's patch is registered (labkit registers itself: lab_product.py; inventory reads "
+          "labkit.NATIVE)", sorted(fetch_pack.PATCHES), ["backends", "lab_setup", "run", "sweep"])
     import types
     # A re-vendor that renames a seam: the pack refuses instead of writing a dead attribute (WO-002 review).
     renamed = types.ModuleType("sweep")
@@ -615,14 +688,18 @@ def test_seams():
     except fetch_pack.PackError as e:
         why = str(e)
     check("a vanished seam stops the patch (sweep without SUITE)", "has no `SUITE`" in (why or ""), True)
-    # Vendored logic the pack copies: pinned by source sha256 (the run_host copy's approval condition).
-    vendored = types.SimpleNamespace(run_host=run.run_host.vendored)
-    check("PINNED run.run_host matches the vendored source", fetch_pack.source_sha256(run.run_host.vendored),
-          fetch_pack.PINNED["run.run_host"])
+    # Vendored logic the pack copies: pinned by source sha256 (Simctl.native_resolved, its re-implementation).
+    resolved = backends.Simctl.native_resolved.vendored
+    vendored = types.SimpleNamespace(Simctl=types.SimpleNamespace(native_resolved=resolved))
+    check("PINNED backends.Simctl.native_resolved matches the vendored source", fetch_pack.source_sha256(resolved),
+          fetch_pack.PINNED["backends.Simctl.native_resolved"])
+    check("WO-191 unpinned the four copies its hooks replaced",
+          sorted(q for q in ("run.run_host", "labkit.Capture.sdk", "lab_setup.published", "lab_setup.ensure_native")
+                 if q in fetch_pack.PINNED), [])
     saved = dict(fetch_pack.PINNED)
-    fetch_pack.PINNED["run.run_host"] = "0" * 64
+    fetch_pack.PINNED["backends.Simctl.native_resolved"] = "0" * 64
     try:
-        fetch_pack._check_pinned("run", vendored)
+        fetch_pack._check_pinned("backends", vendored)
         why = None
     except fetch_pack.PackError as e:
         why = str(e)
@@ -635,8 +712,10 @@ def test_seams():
                        capture_output=True, text=True, timeout=60,
                        env={k: v for k, v in os.environ.items() if k not in ("FETCH_LABKIT_PACK", "PYTHONPATH")})
     check("activation over a vanished seam exits 2, saying why", (r.returncode, "refusing to run" in r.stderr), (2, True))
-    r = subprocess.run([sys.executable, "-B", "-c", "import sys; sys.path.insert(0, %r); import run, fetch_pack; "
-                        "del run.run_step; fetch_pack._apply('run', run, False)" % HARNESS],
+    # A stand-in `run` with no assert_native: importing the real one now loads labkit, whose lab_product.py refuses a
+    # process without the pack (exit 2 too, but for another reason than the one under test).
+    r = subprocess.run([sys.executable, "-B", "-c", "import sys, types; sys.path.insert(0, %r); import fetch_pack; "
+                        "fetch_pack._apply('run', types.ModuleType('run'), False)" % HARNESS],
                        capture_output=True, text=True, timeout=60,
                        env={k: v for k, v in os.environ.items() if k not in ("FETCH_LABKIT_PACK", "PYTHONPATH")})
     check("a wrapped seam that vanished (a bare read: AttributeError) also exits 2, saying why",
@@ -649,6 +728,87 @@ def test_seams():
         except fetch_pack.PackError as e:
             why = str(e)
         check("_extend refuses a name the vendored side already has (%s)" % name, "already has" in (why or ""), True)
+
+
+def test_hooks(tmp):
+    """(bg-forge WO-191) The hooks register() sets that no capture or scenario test reaches: CAPTURE_EXTRAS, and NATIVE
+    through lab_setup (published(), ensure_native's slots).  Every command is recorded, none run."""
+    import contextlib
+    import types
+    import lab_setup
+    calls, out_a, out_i = [], os.path.join(tmp, "extras-a"), os.path.join(tmp, "extras-i")
+    os.makedirs(out_a)
+    os.makedirs(out_i)
+    real_call = labkit.device_call
+    try:
+        labkit.device_call = lambda argv, **kw: (calls.append(argv),
+                                                 subprocess.CompletedProcess(argv, 0, "Registered 1 jobs:\n", ""))[1]
+        labkit.CAPTURE_EXTRAS(types.SimpleNamespace(os="android", serial="emulator-0"), {"package": "com.lab.p"}, out_a)
+        labkit.CAPTURE_EXTRAS(types.SimpleNamespace(os="ios", serial="UDID"), {"package": "com.lab.p"}, out_i)
+    finally:
+        labkit.device_call = real_call
+    head = open(os.path.join(out_a, fetch_pack.JOBSCHEDULER)).readline()
+    check("CAPTURE_EXTRAS: Android's `dumpsys jobscheduler <pkg>` into jobscheduler.txt, whose header names the package "
+          "own_pids reads; nothing on iOS",
+          (calls, head.startswith("# adb -s emulator-0 shell dumpsys jobscheduler com.lab.p  (exit 0"),
+           fetch_pack._package_of(types.SimpleNamespace(path=out_a)), os.listdir(out_i)),
+          ([["adb", "-s", "emulator-0", "shell", "dumpsys", "jobscheduler", "com.lab.p"]], True, "com.lab.p", []))
+
+    rec, runs = [], []
+    saved = (lab_setup.sh, lab_setup.native_checkout, lab_setup.LABS)
+    try:
+        lab_setup.sh = lambda cmd, cwd=None, env=None, log=None: rec.append(
+            [os.path.basename(cmd[0])] + cmd[1:] + ([os.path.basename(log)] if log else []))
+        lab_setup.native_checkout = lambda sub, sha, name: (rec.append(["checkout", sub, sha[:1], name]), "/wt")[1]
+        lab_setup.LABS = os.path.join(tmp, "labs")
+        for rel in (("m2", "com", "transistorsoft", "tsbackgroundfetch", "L"), ("m2", ".provenance"),
+                    ("xcframeworks", "L", "TSBackgroundFetch.xcframework"), ("xcframeworks", ".provenance")):
+            os.makedirs(os.path.join(lab_setup.LABS, *rel), exist_ok=True)
+        for store in ("m2", "xcframeworks"):
+            open(os.path.join(lab_setup.LABS, store, ".provenance", "L.txt"), "w").close()
+        pub = (lab_setup.published("L", "android"), lab_setup.published("L", "ios"), lab_setup.published("M", "android"))
+        for label, src, oses in (("M", {"android": "a" * 40}, ["android"]), ("L", {}, ["android", "ios"]),
+                                 ("M", {"ios": "b" * 40}, ["ios"]), ("M", {}, ["android"])):
+            del rec[:]
+            out = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(out):
+                    lab_setup.ensure_native({"name": "V", "native": label, "native_source": src}, oses, "/logs")
+                end = "ok"
+            except SystemExit as e:
+                end = str(e)
+            runs.append((list(rec), [l for l in out.getvalue().splitlines() if l.startswith("ok:")], end))
+    finally:
+        lab_setup.sh, lab_setup.native_checkout, lab_setup.LABS = saved
+    # The pack's check_repo wrapper reports a variant that does not load as a MISSING line; labkit's own exit 2 (its
+    # product did not load) must pass through it, never read as a missing variant (review).
+    outcomes, saved_lv = [], lab_setup.load_variant
+    try:
+        for exc in (SystemExit(2), SystemExit("variant FIX: no such label")):
+            lab_setup.load_variant = lambda name, exc=exc: (_ for _ in ()).throw(exc)
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    outcomes.append(("returned", lab_setup.check_repo(lab_setup.Report(), ["android"], "FIX")))
+            except SystemExit as e:
+                outcomes.append(("raised", e.code))
+    finally:
+        lab_setup.load_variant = saved_lv
+    check("doctor's check_repo: labkit's exit 2 passes through, a variant that does not load is a MISSING line",
+          outcomes, [("raised", 2), ("returned", None)])
+    import inventory
+    check("NATIVE: published() reads tsbackgroundfetch and TSBackgroundFetch.xcframework, and inventory prunes it",
+          (pub, inventory.ANDROID_ARTIFACTS), ((True, True, False), ("tsbackgroundfetch",)))
+    check("NATIVE: an unpublished Android label is built by fetch's slot (native/background-fetch as `native`, "
+          "publish_native_fetch.sh); a published one needs nothing; iOS stops at its pin with no checkout; no "
+          "native_source is the shared refusal",
+          runs,
+          [([["checkout", "native/background-fetch", "a", "native"], ["publish_native_fetch.sh", "M", "/wt",
+                                                                      "native-android.log"]], [], "ok"),
+           ([], ["ok: android L is published", "ok: ios L is published"], "ok"),
+           ([], [], "setup stopped: the iOS pin for fetch (xcframeworks/M/TSBackgroundFetch.xcframework) is not built "
+                    "yet — WO-002 phase 2"),
+           ([], [], "setup stopped: M is not published for android, and variant V records no native_source.android to "
+                    "build it from")])
 
 
 def test_live():
@@ -702,7 +862,7 @@ def main():
     tmp = tempfile.mkdtemp(prefix="fetch-selftest-")
     try:
         for test in (test_seams, test_vocabulary, lambda: test_scenarios(tmp), lambda: test_capture(tmp),
-                     test_ios_adapter, test_primitives, test_runner, test_live, test_shipped,
+                     test_ios_adapter, test_primitives, test_runner, lambda: test_hooks(tmp), test_live, test_shipped,
                      lambda: test_activation(tmp)):
             try:
                 test()

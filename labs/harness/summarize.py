@@ -43,7 +43,7 @@ def score_one(path):
     meta = cap.meta
     label = meta.get("label", "?")
     print("== %s" % os.path.relpath(path, labkit.LABS))
-    foreign = devices.contamination(cap.lines, label, meta.get("os", "android"))
+    foreign = devices.contamination(cap.lines, label, meta.get("os", "android"), meta.get("package"))   # (WO-191)
     if foreign:
         print("   CONTAMINATED by %s => FAIL" % ", ".join(foreign))
         return False
@@ -137,7 +137,7 @@ def replay_end(paths, grace_s, allow_cut=False):
             tally["already-cut"] += 1          # not a full-window baseline any more
             continue
         # (WO-027) A capture the harness fails as contaminated is no evidence about the rule either.
-        if devices.contamination(cap.lines, meta.get("label", "?"), meta.get("os", "android")):
+        if devices.contamination(cap.lines, meta.get("label", "?"), meta.get("os", "android"), meta.get("package")):
             tally["contaminated"] = tally.get("contaminated", 0) + 1
             continue
         t_e = t_end = None
@@ -271,7 +271,8 @@ def trace(path):
     batch — shows up here even when every metric row stays the same."""
     cap = labkit.Capture(path)
     own = labkit.app_pids(cap.lines)
-    foreign = devices.contamination(cap.lines, cap.meta.get("label", "?"), cap.meta.get("os", "android"))
+    foreign = devices.contamination(cap.lines, cap.meta.get("label", "?"), cap.meta.get("os", "android"),
+                                    cap.meta.get("package"))   # (WO-191)
     api, events, dialog, actions, last_api, last_app = [], {}, None, [], None, None
     # (Tier C, C5.0) The host's moves and actions are causes too, from the moment each send began, on the device's clock
     # (labkit.sent_on_device): the mark itself lands after the send returns, so a delivery can precede it in the log.
@@ -831,7 +832,7 @@ def divergence(variant_name="FIX", root=os.path.join(labkit.LABS, "captures")):
             continue
         cell = (meta.get("platform"), meta.get("os", "android"))
         cap = labkit.Capture(path)
-        if devices.contamination(cap.lines, meta.get("label", "?"), cell[1]):
+        if devices.contamination(cap.lines, meta.get("label", "?"), cell[1], meta.get("package")):   # (WO-191)
             skipped.append(os.path.relpath(path, labkit.LABS))
             continue
         hooks, rets, calls = meta.get("hooks") or [], labkit._rets(cap), {}
@@ -1000,7 +1001,8 @@ def pilot_one(path):
              "hooks": len(sent), "api-done": ran, "calls": "%d/%d" % (len(calls & set(asked)), len(asked)),
              "rets": "%d/%d" % (len(paths & set(rets)), len(paths)),
              "stopped": next((a for a in asked if a not in calls), "-")}
-    foreign = devices.contamination(cap.lines, meta.get("label", "?"), meta.get("os", "android"))
+    foreign = devices.contamination(cap.lines, meta.get("label", "?"), meta.get("os", "android"),
+                                    meta.get("package"))   # (WO-191)
     head = [f for f in foreign if f.startswith("log head lost")]
     reading = ("CONTAMINATED" if foreign and not head else "HEAD LOST" if head else
                "DIED" if labkit.METRICS["crashes"](cap) else "NOT CARRIED" if ran != str(len(sent)) else

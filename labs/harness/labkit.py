@@ -15,6 +15,7 @@ the log database survives `adb install -r` and would otherwise mix runs together
 
 import base64
 import glob
+import importlib.util
 import json
 import math
 import os
@@ -23,6 +24,7 @@ import sqlite3
 import subprocess
 import sys
 import time
+import traceback
 import urllib.parse
 
 import yaml
@@ -195,6 +197,92 @@ def vocabulary():
     if _VOCAB is None:
         _VOCAB = _load(os.path.join(HARNESS, "vocabulary.yaml"))
     return _VOCAB
+
+
+# (WO-191, D3) The product this harness tests, when it is not background-geolocation: `lab_product.py` beside this file,
+# never vendored (fetch-forge has one, bg-forge none).  labkit loads it itself, at the end of its own definitions, so
+# every process that imports labkit — run.py, sweep.py, summarize.py, a bare `python3 run.py` — runs the product's
+# labkit seams or does not run at all, with no environment variable (what it cannot reach: _load_product).
+PRODUCT_PATH = os.path.join(HARNESS, "lab_product.py")
+
+
+def _load_product(module):
+    """(WO-191, D3) Load PRODUCT_PATH, when present, call its register(module), then generate the headless metrics from
+    its names (with none, from background-geolocation's).  `module` is THIS labkit, by object (sys.modules[__name__]):
+    register is called once per labkit module a process holds — twice in the selftest, which runs as __main__ and
+    imports run.py's `labkit` too — and must change only the module it is handed.  The product must not import labkit
+    at module level (refused, naming the cycle): register is handed it.
+
+    It changes these, in place or by rebinding, each defaulting to background-geolocation's behaviour:
+        HEADLESS_NAMES()                   the names a headless task can be handed (headless_names); a product's own
+                                           metric under a generated name (headlessFired.<name>) is kept
+        IMPLICIT, EARLY_METRICS            keys every expecting step scores, and which of them read the whole log
+        EVIDENCE(lines, step, os_name)     a completeness predicate ANDed into evidence_state (None: none)
+        SDK_LOG(capture, like)             the SDK's own lines in the window (Capture.sdk)
+        CAPTURE_EXTRAS(dev, plat, out)     run.end_capture_log's per-capture extras, after logcat.txt (None: none)
+        METRICS, ACTION_HANDLERS           the metric registry, the host action kinds (Part 2)
+        NATIVE                             the native SDK each OS's label is built from and published as (Part 5)
+    Nothing outside labkit.  register runs inside labkit's import, and run.py and lab_devices.py import backends
+    first, which imports labkit: backends is then in sys.modules with its body unfinished, so a write to it is
+    overwritten, silently, when its body resumes.  And run.py and sweep.py run as __main__, so `import run` there
+    patches a second copy, not the code that runs.  A seam outside labkit.py is not this hook's.
+
+    A product present but not loadable — its import, a missing register, register raising (SystemExit too), or its
+    HEADLESS_NAMES failing as the metrics are generated — exits 2: running on with the wrong product's seams reads
+    every SDK count as 0, silently.  Returns the product or None."""
+    if not os.path.lexists(PRODUCT_PATH):        # a dangling symlink is a product that does not load, not none
+        _headless_metrics()
+        return None
+    path = os.path.realpath(PRODUCT_PATH)
+    try:
+        product = sys.modules.get("lab_product")
+        if product is not None and os.path.realpath(getattr(product, "__file__", "") or "") == path:
+            if getattr(product, "__labkit_loading__", False) or getattr(product.__spec__, "_initializing", False):
+                raise SystemExit("lab_product imports labkit at module level, so labkit is loading while lab_product "
+                                 "still is: use the module register() is handed")
+        else:
+            spec = importlib.util.spec_from_file_location("lab_product", PRODUCT_PATH)
+            product = importlib.util.module_from_spec(spec)
+            product.__labkit_loading__ = True
+            sys.modules["lab_product"] = product        # one product module per process, whichever labkit loads it
+            try:
+                spec.loader.exec_module(product)
+            except BaseException:
+                sys.modules.pop("lab_product", None)
+                raise
+            del product.__labkit_loading__
+        product.register(module)
+        _headless_metrics()                          # from its HEADLESS_NAMES, under the same guard
+    except (Exception, SystemExit) as e:
+        cause = "SystemExit: %s\n" % (e.code,) if isinstance(e, SystemExit) else traceback.format_exc()
+        sys.stderr.write("%slabkit: %s did not load (WO-191) — the harness does not run without its product\n"
+                         % (cause, PRODUCT_PATH))
+        raise SystemExit(2)
+    return product
+
+
+CAPTURE_EXTRAS = None                    # (WO-191) a product's register() may set it: (dev, plat, out), run.run_step
+
+# (WO-191, Part 5) The native SDK a label is built from and published as, per OS: background-geolocation's by default,
+# changed in place by a product's register().  `artifacts` / `artifact` are read by lab_setup.published (and inventory's
+# ANDROID_ARTIFACTS).  `build` is the OS's slot in lab_setup.ensure_native, build(var, published, logs, setup), setup
+# being the running lab_setup module; None is lab_setup's own (native_slot_android / native_slot_ios, its code before
+# Part 5).  Android's other four values are what that default slot hands publish_native.sh, background-geolocation's
+# script: a product whose publish is its own sets `build` (fetch: publish_native_fetch.sh, which checks the label,
+# verifies the POM and AAR, and writes the provenance only after them), and iOS's default slot runs bg-forge's iOS
+# scripts, so a product sets that one too.  SUBMODULES is not here: doctor and check_access read it before PyYAML
+# exists, when labkit cannot be imported, and GRADLE_PLACEHOLDERS stays beside it (D4, option A, Chris 2026-11-07).
+NATIVE = {
+    "android": {"submodule": "native/android",                      # the checkout a label is built from
+                "build_root": "BackgroundGeolocation",              # inside it: gradlew and local.properties
+                "gradle_task": ":tslocationmanager:publishToMavenLocal",
+                "version_property": "TS_LOCATIONMANAGER_VERSION_NAME",
+                # under labs/m2/com/transistorsoft: the first is the one published() reads; inventory prunes them all
+                "artifacts": ("tslocationmanager", "tslocationmanager-gms20"),
+                "build": None},
+    "ios": {"artifact": "TSLocationManager.xcframework",            # under labs/xcframeworks/<label>/
+            "build": None},
+}
 
 
 _DART = None
@@ -706,6 +794,23 @@ def platforms():
     """Every platform that has a lab — the closed world an `api` scenario must account for."""
     root = os.path.join(LABS, "platforms")
     return sorted(d for d in os.listdir(root) if os.path.exists(os.path.join(root, d, "lab.yaml")))
+
+
+# (WO-191) Every lab's app ids, this one's and the background-fetch lab's (fetch-forge vendors this file): the two labs
+# share the Lab devices, and their apps all link TSBackgroundFetch, so one left installed can deliver a fetch mid-step.
+LAB_PACKAGE_PREFIXES = ("com.transistorsoft.labs.", "com.transistorsoft.fetchlab.")
+# (WO-191, D1) And every other Transistor app: bg-geo's RN example woke on fetch's Lab2 at boot, under neither prefix.
+VENDOR_PACKAGE_PREFIX = "com.transistorsoft."
+
+
+def evictions(installed, package, os_name):
+    """(WO-191) A first step's (evict, foreign) from the app ids INSTALLED on its device, never `package` (the app under
+    test).  evict: every lab app, and on Android every other Transistor app too (D1: a force-stop is reversible).
+    foreign: the non-lab Transistor apps found, which iOS leaves installed (uninstalling one is not the lab's to undo).
+    From the device, not platforms(): the other lab's apps are not this repo's to build."""
+    others = sorted(p for p in set(installed) if p != package and p.startswith(VENDOR_PACKAGE_PREFIX))
+    foreign = [p for p in others if not p.startswith(LAB_PACKAGE_PREFIXES)]
+    return (others if os_name == "android" else [p for p in others if p not in foreign]), foreign
 
 
 def board_order():
@@ -1563,8 +1668,6 @@ def _event_anchor(at, decl, i, step, anchor, key):
 #   {point: <name>}         a `LAB point=<name>` line: a host mark, or the driver's own (`point=onDestroy`)
 #   {headless: <name>}      (C6.1) the headless task received that event (`point=headless event=<name>`)
 MOVE_KEYS = {"after", "delay_s", "to", "hops", "every_s", "observe_s"}
-ACTION_DOES = ("network", "location", "power_save", "server", "notification_tap", "kill")
-ACTION_KEYS = {"after", "delay_s"} | set(ACTION_DOES)
 AFTER_KINDS = ("event", "armed", "api", "move", "point", "headless")
 # (C6.1) What `server:` can do to the step's lab server: `revoke` invalidates the access token it issued, so the SDK's
 # next upload is answered 401 and it refreshes (LabHttp).
@@ -1579,6 +1682,104 @@ NOTIFICATION_TAP_S = 10
 SUGAR = re.compile(r"^([A-Za-z]\w*) ([A-Z]+)$")
 
 
+class ActionHandler:
+    """(WO-191) One kind of `actions:` item, keyed by its name in ACTION_HANDLERS.  validate(at, item, step) refuses a
+    bad value at load (SystemExit) and returns the seconds the action can take beyond its `delay_s` (0 or None for
+    none); `item` is step["actions"][i] itself, `after:` resolved, and the items before it are resolved too.
+    run(dev, item, plat, server) does it, on run_host's thread, and returns the `what` of its `host i=<i> action=<what>`
+    mark; `oses`, where it can run: a scenario excuses each other OS, dated; `keys`, what the item may carry besides
+    `after`, `delay_s` and the kind's own key (fetch's `job:` takes `expect:`), refused on any other kind."""
+
+    def __init__(self, validate, run, oses=("android",), keys=()):
+        self.validate, self.run, self.oses, self.keys = validate, run, tuple(oses), frozenset(keys)
+
+
+def _network_ok(at, item, step):
+    net = item["network"]
+    if not (isinstance(net, dict) and net and set(net) <= {"wifi", "data"}
+            and all(isinstance(v, bool) for v in net.values())):
+        raise SystemExit("%s: `network:` is {wifi: true|false, data: true|false}, one or both — not %r" % (at, net))
+    return 0
+
+
+def _network_run(dev, item, plat, server):
+    dev.network(**item["network"])
+    return "network " + " ".join("%s=%s" % (k, "on" if v else "off") for k, v in sorted(item["network"].items()))
+
+
+def _switch(kind):
+    """(C6.1) `location` and `power_save`: a switch, set and read back."""
+    def ok(at, item, step):
+        if not isinstance(item[kind], bool):
+            raise SystemExit("%s: `%s:` is true (on) or false (off) — not %r" % (at, kind, item[kind]))
+        return 0
+
+    def run(dev, item, plat, server):
+        note = getattr(dev, kind)(item[kind])    # (C6.1 pilot) location on: `dismissed=…` or ""
+        return "%s %s%s" % (kind, "on" if item[kind] else "off", " " + note if note else "")
+    return ActionHandler(ok, run)
+
+
+def _server_ok(at, item, step):
+    if item["server"] not in SERVER_ACTIONS:
+        raise SystemExit("%s: `server:` is one of %s — not %r" % (at, ", ".join(SERVER_ACTIONS), item["server"]))
+    if not uses_lab_http(step):
+        raise SystemExit("%s: `server:` acts on the step's lab server, and this step starts none — its config and "
+                         "hooks never name %s" % (at, LAB_HTTP))
+    return 0
+
+
+def _server_run(dev, item, plat, server):
+    server.revoke()                      # (C6.1) the step's lab server: run_step started it
+    return "server %s" % item["server"]
+
+
+def _notification_tap_ok(at, item, step):
+    if not (isinstance(item["notification_tap"], str) and NOTIFICATION_BUTTON.match(item["notification_tap"])):
+        raise SystemExit("%s: `notification_tap:` names the button's resource id in the app's notification layout "
+                         "(`notificationButtonPause`) — not %r" % (at, item["notification_tap"]))
+    # (C5.3 review) The tap finds its button with `uiautomator dump`, as the dialog watcher reads the screen (run.py),
+    # into the same file: two at once would read each other's.
+    blocks = [step.get("expect")] + list((step.get("platform_expect") or {}).values())
+    if step.get("dialog") or any("undeclaredDialogs" in (b or {}) for b in blocks):
+        raise SystemExit("%s: `notification_tap:` cannot share a step with `dialog:` or `undeclaredDialogs` — the tap "
+                         "and the dialog watcher both read the screen with `uiautomator dump`, one at a time" % at)
+    return NOTIFICATION_TAP_S
+
+
+def _notification_tap_run(dev, item, plat, server):
+    # (C5.3 review) a button that is not there is the SDK's doing (its layout or its id lost): marked and scored
+    # (actionsDone), with the step's log kept, not a SystemExit
+    missed = dev.notification_tap((plat or {}).get("package"), item["notification_tap"])
+    return "notification_tap %s%s" % (item["notification_tap"], " missed=%s" % missed if missed else "")
+
+
+def _kill_ok(at, item, step):
+    if item["kill"] is not True:
+        raise SystemExit("%s: `kill:` is true, a SIGKILL of the app's process — not %r" % (at, item["kill"]))
+    return 0
+
+
+def _kill_run(dev, item, plat, server):
+    what = "kill " + dev.kill(plat)      # (WO-114) SIGKILL the app; the lab server counts from it
+    if server is not None:
+        server.killed()
+    return what
+
+
+# (WO-191) The action kinds, a table a product adds its own to (fetch: `job`, `force_stop`) instead of copying run_host.
+# Read on use, never frozen at import: ACTION_KEYS was, so a kind added after it was refused as unknown.  In the order
+# an action's refusal lists them.
+ACTION_HANDLERS = {
+    "network": ActionHandler(_network_ok, _network_run),
+    "location": _switch("location"),
+    "power_save": _switch("power_save"),
+    "server": ActionHandler(_server_ok, _server_run),
+    "notification_tap": ActionHandler(_notification_tap_ok, _notification_tap_run),
+    "kill": ActionHandler(_kill_ok, _kill_run),
+}
+
+
 def _validate_moves(where, step, excused=()):
     """(Tier C, C5.0) A step's `moves:` and `actions:` (the comment above), with each `after:` resolved: the sugar to
     the declaration it names, so run.json records what the host waited for, as `previous` is recorded resolved."""
@@ -1586,7 +1787,7 @@ def _validate_moves(where, step, excused=()):
     # (Tier C, C6.1) `need` is the longest chain, not the sum: each item starts once its own conditions hold (a slot,
     # or the end of a move it waits for) and ends its delay, hops and observe_s later.  Items that wait on the same
     # thing run together; summed, headless-android-causes' seven toggles asked a 38 s window for a 6 s chain.
-    need, move_end = 0.0, []
+    need, move_end, kinds = 0.0, [], []
     for key in ("moves", "actions"):
         if step.get(key) is None:
             continue
@@ -1597,7 +1798,8 @@ def _validate_moves(where, step, excused=()):
             at = "%s %s %d" % (where, key, i)
             if not isinstance(item, dict):
                 raise SystemExit("%s: a mapping with `after:` and what to do" % at)
-            _reject_unknown(at, item, MOVE_KEYS if key == "moves" else ACTION_KEYS)
+            _reject_unknown(at, item, MOVE_KEYS if key == "moves" else {"after", "delay_s"} | set(ACTION_HANDLERS)
+                            | {k for h in ACTION_HANDLERS.values() for k in h.keys})   # (WO-191) read on use
             after = item.get("after")
             after = [after] if isinstance(after, dict) else after
             if not isinstance(after, list) or not after:
@@ -1636,49 +1838,34 @@ def _validate_moves(where, step, excused=()):
                     raise SystemExit("%s: `observe_s` is seconds after the last hop, 0 or more — not %r" % (at, observe))
                 span += (hops - 1) * item.get("every_s", 0) + observe
             else:
-                does = [k for k in ACTION_DOES if k in item]
+                does = [k for k in ACTION_HANDLERS if k in item]
                 if len(does) != 1:
                     raise SystemExit("%s: an action does exactly one of %s — not %s"
-                                     % (at, ", ".join(ACTION_DOES), " and ".join(does) or "nothing"))
-                if "network" in item:
-                    net = item["network"]
-                    if not (isinstance(net, dict) and net and set(net) <= {"wifi", "data"}
-                            and all(isinstance(v, bool) for v in net.values())):
-                        raise SystemExit("%s: `network:` is {wifi: true|false, data: true|false}, one or both — not %r"
-                                         % (at, net))
-                elif "server" in item:
-                    if item["server"] not in SERVER_ACTIONS:
-                        raise SystemExit("%s: `server:` is one of %s — not %r"
-                                         % (at, ", ".join(SERVER_ACTIONS), item["server"]))
-                    if not uses_lab_http(step):
-                        raise SystemExit("%s: `server:` acts on the step's lab server, and this step starts none — its "
-                                         "config and hooks never name %s" % (at, LAB_HTTP))
-                elif "notification_tap" in item:
-                    if not (isinstance(item["notification_tap"], str)
-                            and NOTIFICATION_BUTTON.match(item["notification_tap"])):
-                        raise SystemExit("%s: `notification_tap:` names the button's resource id in the app's "
-                                         "notification layout (`notificationButtonPause`) — not %r"
-                                         % (at, item["notification_tap"]))
-                    # (C5.3 review) The tap finds its button with `uiautomator dump`, as the dialog watcher reads the
-                    # screen (run.py), into the same file: two at once would read each other's.
-                    blocks = [step.get("expect")] + list((step.get("platform_expect") or {}).values())
-                    if step.get("dialog") or any("undeclaredDialogs" in (b or {}) for b in blocks):
-                        raise SystemExit("%s: `notification_tap:` cannot share a step with `dialog:` or "
-                                         "`undeclaredDialogs` — the tap and the dialog watcher both read the screen "
-                                         "with `uiautomator dump`, one at a time" % at)
-                    span += NOTIFICATION_TAP_S
-                elif "kill" in item:
-                    if item["kill"] is not True:
-                        raise SystemExit("%s: `kill:` is true, a SIGKILL of the app's process — not %r"
-                                         % (at, item["kill"]))
-                elif not isinstance(item[does[0]], bool):
-                    raise SystemExit("%s: `%s:` is true (on) or false (off) — not %r" % (at, does[0], item[does[0]]))
+                                     % (at, ", ".join(ACTION_HANDLERS), " and ".join(does) or "nothing"))
+                others = sorted(k for k in item if k not in ACTION_HANDLERS and k not in ("after", "delay_s")
+                                and k not in ACTION_HANDLERS[does[0]].keys)
+                if others:                       # (WO-191) another kind's key (fetch's `expect:` on a `kill:`)
+                    raise SystemExit("%s: %s belong%s to another kind of action, not a `%s:`"
+                                     % (at, ", ".join("`%s:`" % k for k in others), "" if len(others) > 1 else "s",
+                                        does[0]))
+                extra = ACTION_HANDLERS[does[0]].validate(at, item, step) or 0    # (WO-191) the kind's own rules
+                if not number(extra) or extra < 0:
+                    raise SystemExit("%s: the `%s` handler's validate returned %r — the seconds the action can take "
+                                     "beyond its delay_s, 0 or more (labkit.ActionHandler)" % (at, does[0], extra))
+                span += extra
+                kinds.append(does[0])
             need = max(need, start + span)
             if key == "moves":
                 move_end.append(start + span)
-    if step.get("actions") and "ios" not in excused:
-        raise SystemExit("%s: `actions:` are Android's (the Simulator has no network of its own) — assert them in a "
-                         "scenario whose not_applicable excuses ios, with its date" % where)
+    # (WO-191) Each kind says where it runs (ActionHandler.oses).  Every built-in is Android's, so for them this is the
+    # rule it was: a step with actions is in a scenario that excuses ios.
+    for os_name in ("android", "ios"):
+        cannot = [k for k in dict.fromkeys(kinds) if os_name not in ACTION_HANDLERS[k].oses]
+        if cannot and os_name not in excused:
+            raise SystemExit("%s: `actions:` are Android's (the Simulator has no network of its own) — assert them in a "
+                             "scenario whose not_applicable excuses ios, with its date" % where if os_name == "ios" else
+                             "%s: `actions:` %s cannot run on %s — assert them in a scenario whose not_applicable "
+                             "excuses %s, with its date" % (where, ", ".join(cannot), os_name, os_name))
     window = int(step.get("settle", 0)) + int(step.get("after", 0))
     if need and window < ANCHOR_BUDGET_S + need + TICK_SECONDS:
         raise SystemExit("%s: the moves and actions need %g s after the first batch (each after its own conditions — "
@@ -3191,27 +3378,38 @@ class Capture:
     # -- the SDK's own log ----------------------------------------------------------
 
     def sdk(self, like):
-        if self.meta.get("os") == "ios":
-            # (WO-027) The SDK mirrors every log line into os_log and the tap keeps them under
-            # the TSLocationManager tag; the pulled database is flushed on a 60 s timer and is
-            # empty for a short run.  `like` is always %substring%.
-            needle = like.strip("%")
-            return [self.norm[l] for l in self.window
-                    if "I/TSLocationManager(" in l and needle in self.norm[l]]
-        db = os.path.join(self.path, "transistor_log.db")
-        if not os.path.exists(db) or os.path.getsize(db) == 0:
-            return []
-        con = sqlite3.connect(db)
-        try:
-            rows = con.execute(
-                "select formatted_message from logging_event "
-                "where timestmp between ? and ? and formatted_message like ? order by event_id",
-                (self.t_trigger, self.t_capture, like)).fetchall()
-        except sqlite3.DatabaseError:
-            return []
-        finally:
-            con.close()
-        return [r[0] for r in rows]
+        """The SDK's own lines in the window matching `like` (an SQL LIKE pattern, `%substring%`): the product's
+        reading (SDK_LOG, WO-191)."""
+        return SDK_LOG(self, like)
+
+
+def _geo_sdk_log(c, like):
+    """background-geolocation's SDK log (WO-191: SDK_LOG's default, Capture.sdk's body until then): the pulled
+    transistor_log.db on Android, the TSLocationManager-tagged lines on iOS."""
+    if c.meta.get("os") == "ios":
+        # (WO-027) The SDK mirrors every log line into os_log and the tap keeps them under
+        # the TSLocationManager tag; the pulled database is flushed on a 60 s timer and is
+        # empty for a short run.  `like` is always %substring%.
+        needle = like.strip("%")
+        return [c.norm[l] for l in c.window
+                if "I/TSLocationManager(" in l and needle in c.norm[l]]
+    db = os.path.join(c.path, "transistor_log.db")
+    if not os.path.exists(db) or os.path.getsize(db) == 0:
+        return []
+    con = sqlite3.connect(db)
+    try:
+        rows = con.execute(
+            "select formatted_message from logging_event "
+            "where timestmp between ? and ? and formatted_message like ? order by event_id",
+            (c.t_trigger, c.t_capture, like)).fetchall()
+    except sqlite3.DatabaseError:
+        return []
+    finally:
+        con.close()
+    return [r[0] for r in rows]
+
+
+SDK_LOG = _geo_sdk_log                   # (WO-191) a product's register() replaces it
 
 
 # ---------------------------------------------------------------------------------------
@@ -3380,10 +3578,18 @@ def headlessEvents(c):
     return len(c.point("headless"))
 
 
-def headless_names():
-    """(Tier C, C6.0) The names a headless task can be handed: HeadlessEvent.name is `Event | 'locationerror'`
+def _geo_headless_names():
+    """(Tier C, C6.0) background-geolocation's: HeadlessEvent.name is `Event | 'locationerror'`
     (types/background-geolocation src/core/events/HeadlessEvent.ts:42), Event being the vocabulary's own enum."""
     return list(vocabulary()["enums"]["Event"]["values"]) + ["locationerror"]
+
+
+HEADLESS_NAMES = _geo_headless_names     # (WO-191) a product's register() replaces it
+
+
+def headless_names():
+    """(Tier C, C6.0) The names a headless task can be handed: the product's (HEADLESS_NAMES, WO-191)."""
+    return list(HEADLESS_NAMES())
 
 
 def _headless_delivered(c):
@@ -3396,7 +3602,9 @@ def _headless_metrics():
     scenario()'s unknown-metric refusal and score() hold them like any other metric.  Delivered is the task's own
     line (the name matched exactly); fired is the SDK's `🛜 💀⚡️ <name>` line (HeadlessEventTx.java:55, debug level),
     `%` before and none after, so `location` never counts `locationfilter` or `locationerror`.  Apart they tell
-    "never fired" from "fired but not delivered" — 510bbbf's signature on Flutter (the C6 headless analysis §3)."""
+    "never fired" from "fired but not delivered" — 510bbbf's signature on Flutter (the C6 headless analysis §3).
+    (WO-191) Called by _load_product at the end of this module, after the product's register(): the names are its
+    HEADLESS_NAMES, and a metric it registered under one of these names is its own, kept."""
     for name in headless_names():
         def delivered(c, name=name):
             return _headless_delivered(c).count(name)
@@ -3404,11 +3612,9 @@ def _headless_metrics():
             return len(c.sdk("%💀⚡️ " + name))
         delivered.__doc__ = "Headless `%s` events the task received (its `point=headless` line)." % name
         fired.__doc__ = "Headless `%s` events the SDK fired (its own log; Android)." % name
-        METRICS["headlessEvents." + name] = delivered
-        METRICS["headlessFired." + name] = fired
+        METRICS.setdefault("headlessEvents." + name, delivered)    # (WO-191) a product's own is kept
+        METRICS.setdefault("headlessFired." + name, fired)
 
-
-_headless_metrics()
 
 
 @metric
@@ -4614,8 +4820,9 @@ def evidence_state(lines, step, os_name):
     can ever arrive; and every declared dialog action has been answered.  (WO-027) Only the step's
     own driver counts (app_pids): another lab app's ticks proved nothing about this one's life, and
     its `api-done` or `event` lines would complete a step that never did.  Dialog marks are the
-    host's, so they are not scoped."""
-    lines = [l for l in lines if TAG in l]                # every line that matters carries it
+    host's, so they are not scoped.  (WO-191) And, last, the product's own predicate (EVIDENCE), handed the
+    lines as given."""
+    raw, lines = lines, [l for l in lines if TAG in l]    # every line that matters carries it
     own = app_pids(lines)
     norm = [normalize(l) for l in lines]
     app = [normalize(l) for l in lines if line_pid(l) in own and TAG + " app=" in normalize(l)]
@@ -4677,7 +4884,10 @@ def evidence_state(lines, step, os_name):
     for i in range(len(step.get("actions") or [])):
         if not any("%s point=host i=%d action=" % (TAG, i) in n for n in norm):
             return False, alive
-    return True, alive
+    return EVIDENCE is None or bool(EVIDENCE(raw, step, os_name)), alive
+
+
+EVIDENCE = None                          # (WO-191) a product's register() may set it: (lines, step, os_name) -> bool
 
 
 def schedule_report(c, step):
@@ -7539,6 +7749,28 @@ def _selftest():
     check("contamination: a lost log head is named, not blamed on a stray",
           devices.contamination(L("app=tick n=40", "app=api-done n=2"), "selftest"),
           ["log head lost: pid 1 logs app= lines with no app=boot, and this run's launch mark is gone too"])
+    # (WO-191, D2) A headless process of another lab's app boots no driver, so only its package gives it away:
+    # ActivityManager's `Start proc` line (MEASURED: fetch's termination-calibration, pid 4162 for FetchJobService).
+    own_ = "com.transistorsoft.labs.react"
+    start_ = lambda pid, proc: ["09-21 10:00:04.000 I/ActivityManager(  674): Start proc %d:%s/u0a236 for service "
+                                "{%s/com.transistorsoft.tsbackgroundfetch.FetchJobService}" % (pid, proc, proc.split(":")[0])]
+    fetched_ = L("point=headless event=fetch taskId=flutter_background_fetch", "point=task-api call=finish", pid=900)
+    check("(WO-191) contamination: a process Start proc ties to another package that writes LAB lines (a headless "
+          "fetch) is foreign, named with its package; tied to the app's own package (or a `:sub` process of it), not; "
+          "no Start proc line, not; and no package given, today's verdict",
+          [devices.contamination(mark + base + start_(900, "com.transistorsoft.fetchlab.react") + fetched_, "selftest",
+                                 package=own_),
+           devices.contamination(mark + base + start_(900, own_ + ":remote") + fetched_, "selftest", package=own_),
+           devices.contamination(mark + base + fetched_, "selftest", package=own_),
+           devices.contamination(mark + base + start_(900, "com.transistorsoft.fetchlab.react") + fetched_, "selftest")],
+          [["foreign lab process pid 900 (com.transistorsoft.fetchlab.react)"], [], [], []])
+    check("(WO-191) contamination: a stray app= process Start proc ties to another package is named once, with it; and "
+          "a pid reused by the app's own later start is the app's",
+          [devices.contamination(mark + base + start_(82460, "com.transistorsoft.fetchlab.react") + stray, "selftest",
+                                 package=own_),
+           devices.contamination(mark + base + start_(900, "com.transistorsoft.fetchlab.react") + start_(900, own_)
+                                 + fetched_, "selftest", package=own_)],
+          [["foreign lab process pid 82460 (com.transistorsoft.fetchlab.react)"], []])
     # Every shape a `LAB app=` line arrives in (557 logs on disk, 2026-09-24): the native tag, React
     # Native's and Capacitor's console, Flutter's print, and the iOS tap rendered by to_logcat.
     import summarize
@@ -8823,20 +9055,59 @@ def _selftest():
                 return sp.CompletedProcess(argv, 0, "/fake/app" if stays and argv[2] == "get_app_container" else "", "")
             return call
         backends.labkit.device_call = sim_call(False)
-        backends.Simctl("UDID").evict({"package": "com.other"})
+        backends.Simctl("UDID").evict("com.other")
         gone_ = list(sent_)
         backends.labkit.device_call = sim_call(True)
-        stuck = refused(lambda: backends.Simctl("UDID").evict({"package": "com.other"}))
+        stuck = refused(lambda: backends.Simctl("UDID").evict("com.other"))
         fa = FakeAdb("")
-        fa.evict({"package": "com.other"})
+        fa.evict("com.other")
         import inspect
         check("(C5.2, sweep 20260928-144003) evict: another lab app is force-stopped on Android and uninstalled on "
               "iOS, where a stopped one's geofences relaunch it mid-step; one still installed refuses the step; and "
               "run_step evicts the others, never merely terminates them",
               (fa.sent, gone_, stuck.split(" left")[0],
-               "dev.evict(other)" in inspect.getsource(run.run_step), "dev.terminate(other)" in inspect.getsource(run)),
+               "dev.evict(package)" in inspect.getsource(run.run_step), "dev.terminate(package)" in inspect.getsource(run)),
               ([("shell", "am", "force-stop", "com.other")], ["uninstall", "get_app_container"],
                "simctl uninstall com.other", True, False))
+        # (WO-191) What a first step evicts comes from the device, under every lab's prefix: the background-fetch lab
+        # (com.transistorsoft.fetchlab.*) shares the Lab devices.  On Android every other Transistor app is force-stopped
+        # too (D1); on iOS it is left installed and listed.  Never the app under test, never anyone else's.
+        listed_ = ["com.google.android.gms", "com.transistorsoft.backgroundgeolocation.react",
+                   "com.transistorsoft.fetchlab.react", "com.transistorsoft.labs.flutter", "com.transistorsoft.labs.react"]
+        check("(WO-191) evictions: every lab prefix minus the app under test, plus D1's other Transistor apps on Android; "
+              "on iOS those are listed, not uninstalled",
+              (evictions(listed_, "com.transistorsoft.labs.react", "android"),
+               evictions(listed_, "com.transistorsoft.labs.react", "ios")),
+              ((["com.transistorsoft.backgroundgeolocation.react", "com.transistorsoft.fetchlab.react",
+                 "com.transistorsoft.labs.flutter"], ["com.transistorsoft.backgroundgeolocation.react"]),
+               (["com.transistorsoft.fetchlab.react", "com.transistorsoft.labs.flutter"],
+                ["com.transistorsoft.backgroundgeolocation.react"])))
+
+        class ListingAdb(FakeAdb):
+            def _adb(self, *args, **kw):
+                self.sent.append(args)
+                return self.reads if args == ("shell", "pm", "list", "packages") else ""
+        listapps_ = ('{\n    "com.apple.Preferences" =     {\n        CFBundleIdentifier = "com.apple.Preferences";\n'
+                     '    };\n    "com.transistorsoft.fetchlab.react" =     {\n        CFBundleIdentifier = '
+                     '"com.transistorsoft.fetchlab.react";\n        GroupContainers =         {\n        };\n    };\n}\n')
+        backends.labkit.device_call = lambda argv, **kw: sp.CompletedProcess(argv, 0, listapps_, "")
+        sim_listed = backends.Simctl("UDID").installed((VENDOR_PACKAGE_PREFIX,))
+        backends.labkit.device_call = lambda argv, **kw: sp.CompletedProcess(argv, 0, "", "")
+        sim_unread = refused(lambda: backends.Simctl("UDID").installed((VENDOR_PACKAGE_PREFIX,)))
+        check("(WO-191) installed: `pm list packages` and `simctl listapps` (an old-style plist) read under the prefixes; "
+              "a listing that reads as empty refuses the step, never passes as a clean device",
+              (ListingAdb("package:com.google.android.gms\npackage:com.transistorsoft.labs.react\n"
+                          "package:com.transistorsoft.fetchlab.react\n").installed((VENDOR_PACKAGE_PREFIX,)),
+               refused(lambda: ListingAdb("").installed((VENDOR_PACKAGE_PREFIX,))).split(" listed")[0],
+               sim_listed, sim_unread.split(" could")[0]),
+              (["com.transistorsoft.fetchlab.react", "com.transistorsoft.labs.react"],
+               "`pm list packages` on emulator-5580", ["com.transistorsoft.fetchlab.react"], "`simctl listapps UDID`"))
+        check("(WO-191) run_step evicts from the device's listing (labkit.evictions), not from this repo's platforms(), "
+              "and records what it evicted and the package under test in run.json",
+              ["labkit.evictions(dev.installed(" in inspect.getsource(run.run_step),
+               "labkit.platforms()" in inspect.getsource(run.run_step)]
+              + ['"%s":' % k in inspect.getsource(run.run_step) for k in ("package", "evicted", "foreignTransistorApps")],
+              [True, False, True, True, True])
     finally:
         backends.labkit.device_call = real_call
         backends.NEUTRAL_WRITES_NETWORK = gate
@@ -8919,6 +9190,22 @@ def _selftest():
     finally:
         backends.network_default_path, lab_devices.labkit.adb = real_path, real_adb
         shutil.rmtree(tmp_)
+    # (WO-191) `--name`: one device of the pair.  Parsed and filtered offline; what each job then does is unchanged.
+    both_ = [("android", "Lab1"), ("android", "Lab2"), ("ios", "Lab1"), ("ios", "Lab2")]
+    check("(WO-191) lab_devices --name: a comma list defaulting to both, on up, status and down; it filters the jobs, "
+          "android first and Lab1 first whatever the order given; an unknown name, or none, refuses as an unknown OS "
+          "does",
+          ([lab_devices.parser().parse_args([c_]).name for c_ in ("up", "status", "down")],
+           lab_devices.parser().parse_args(["up", "--name", "Lab2", "--os", "ios"]).name,
+           lab_devices.jobs_for("android,ios", "Lab1,Lab2"), lab_devices.jobs_for("ios", "Lab2"),
+           lab_devices.jobs_for("ios,android", "Lab2,,Lab1"), lab_devices.jobs_for("android", "Lab1,Lab1"),
+           [refused(lambda a=a: lab_devices.jobs_for(*a)) for a in (("android", "Lab3"), ("android", ","),
+                                                                   ("android", "lab1"), ("tvos", "Lab1"))],
+           # main() itself needs devices: read, it builds its jobs from both switches and never walks NAMES itself
+           ("jobs_for(args.os, args.name)" in inspect.getsource(lab_devices.main),
+            "NAMES" in inspect.getsource(lab_devices.main))),
+          (["Lab1,Lab2"] * 3, "Lab2", both_, [("ios", "Lab2")], both_, [("android", "Lab1")],
+           ["--name takes Lab1, Lab2 or both"] * 3 + ["--os takes android, ios or both"], (True, False)))
 
     # ---- item 7: the named lists — every scenario on SUITE or exactly one list, and `--scenarios` expands them
     import sweep
@@ -9533,6 +9820,76 @@ def _selftest():
                ("mark", "host i=1 action=location off sent_ms=T done_ms=T mark_ms=T"), ("power_save", True),
                ("mark", "host i=2 action=power_save on sent_ms=T done_ms=T mark_ms=T")], None))
 
+    # (WO-191) ACTION_HANDLERS: the built-ins are the six kinds the refusal always named, each Android's.  A product adds
+    # a kind by registering a handler (fetch: `job`, `force_stop`), and _validate_moves, run_host and actionsDone take
+    # it with no change of their own.  Removed in `finally`, so no later check sees it.
+    check("(WO-191) ACTION_HANDLERS: the six built-in kinds, in the order an action's refusal lists them, each Android's",
+          [(k, h.oses) for k, h in ACTION_HANDLERS.items()],
+          [(k, ("android",)) for k in ("network", "location", "power_save", "server", "notification_tap", "kill")])
+
+    def job_ok(at, item, step):
+        if not (isinstance(item["selftest_job"], int) and not isinstance(item["selftest_job"], bool)):
+            raise SystemExit("%s: `selftest_job:` is the seconds it runs — not %r" % (at, item["selftest_job"]))
+        return item["selftest_job"]
+
+    def job_run(dev, item, plat, server):
+        dev.calls.append(("selftest_job", item["selftest_job"], (plat or {}).get("package")))
+        return "selftest_job s=%d" % item["selftest_job"]
+    job_ = lambda s: dict(base_, actions=[act(selftest_job=s)])
+    load_ = lambda step_, excused=("ios",): refused(lambda: _validate_moves("selftest", json.loads(json.dumps(step_)),
+                                                                            excused))
+    woke_ = ["09-21 10:00:01.000 I/LAB     ( 7): app=boot n=1",
+             "09-21 10:00:02.000 I/LAB     ( 7): point=onDestroy isChangingConfigurations=false"]
+    # Run as __main__ (the selftest), this file is not the `labkit` run.py imports: the kind goes into both tables, as a
+    # product registers into the imported one (Part 3's hook).
+    tables_ = [ACTION_HANDLERS] + [t_ for t_ in [run.labkit.ACTION_HANDLERS] if t_ is not ACTION_HANDLERS]
+
+    def register_(handler):
+        for t_ in tables_:
+            t_["selftest_job"] = handler
+    unknown_before = load_(job_(0))
+    try:
+        register_(ActionHandler(job_ok, job_run))
+        # a window of 33 s (settle 8 + after 25) holds a 17 s action and no more: ANCHOR_BUDGET_S 12 + TICK_SECONDS 4
+        product_loads = [load_(job_(17)), "at least 34 s" in load_(job_(18)), load_(job_("x")).split(" — ")[0],
+                         "are Android's" in load_(job_(0), ())]
+        register_(ActionHandler(job_ok, job_run, oses=("android", "ios")))
+        both_oses = load_(job_(0), ())
+        register_(ActionHandler(lambda at, item, step: "soon", job_run))
+        bad_span = load_(job_(0)).split(" — ")[0]
+        # a kind's own extra keys (fetch's `job:` takes `expect:`): unknown until a handler declares one, then taken
+        # by that kind only
+        keyed_ = dict(base_, actions=[act(selftest_job=0, expect="absent")])
+        key_loads = [load_(keyed_).split(" — ")[0]]
+        register_(ActionHandler(job_ok, job_run, keys=("expect",)))
+        key_loads += [load_(keyed_), load_(dict(base_, actions=[act(location=False, expect="absent")]))]
+        register_(ActionHandler(job_ok, job_run))
+        ran_step = job_(0)
+        ran_loads = refused(lambda: _validate_moves("selftest", ran_step, ("ios",)))   # a FAIL below, not a crash here
+        dev_, host_ = SwitchDev(woke_), {"error": None, "held_s": {}, "sent_s": {}}
+        run.run_host(dev_, ran_step, time.time(), time.time() + 3, threading.Event(), host_, FakeServer(),
+                     {"package": "com.lab.app"})
+        scored_ = actionsDone(capture([l.split(" ", 2)[2] for l in dev_.lines], [], None, actions=ran_step["actions"]))
+    finally:
+        for t_ in tables_:
+            t_.pop("selftest_job", None)
+    stray_host = {"error": None, "held_s": {}, "sent_s": {}}
+    run.run_host(SwitchDev(woke_), ran_step, time.time(), time.time() + 3, threading.Event(), stray_host, FakeServer())
+    check("(WO-191) a product's action kind: unknown until registered; registered, it is validated by its own handler "
+          "(its span counted in the window, its refusal, Android's unless its oses say otherwise, its own extra keys and "
+          "no other kind's), run by run_host with its mark, and scored by actionsDone; a validate that returns no "
+          "seconds refuses; unregistered, run_host refuses it rather than sending it as another kind",
+          (unknown_before.split(" — ")[0], product_loads, both_oses, bad_span, key_loads, ran_loads, dev_.calls,
+           host_["error"], scored_, load_(job_(0)).split(" — ")[0], stray_host["error"]),
+          ("selftest actions 0: unknown key(s) selftest_job",
+           ["loaded", True, "selftest actions 0: `selftest_job:` is the seconds it runs", True], "loaded",
+           "selftest actions 0: the `selftest_job` handler's validate returned 'soon'",
+           ["selftest actions 0: unknown key(s) expect", "loaded",
+            "selftest actions 0: `expect:` belongs to another kind of action, not a `location:`"], "loaded",
+           [("selftest_job", 0, "com.lab.app"), ("mark", "host i=0 action=selftest_job s=0 sent_ms=T done_ms=T mark_ms=T")],
+           None, "ok", "selftest actions 0: unknown key(s) selftest_job",
+           "action 0 does nothing — not exactly one kind labkit.ACTION_HANDLERS knows"))
+
     # Adb's switches: set, then read back until it reads what was set; one that never does refuses the step.
     reads_ = []
     def switch_call(results):
@@ -9577,9 +9934,19 @@ def _selftest():
           (noted, warn_reads[-3:], quiet, "input keyevent KEYCODE_BACK" in reads_),
           ("dismissed=LocationOffWarningActivity", [backends.Adb.FOCUS, "input keyevent KEYCODE_BACK", backends.Adb.FOCUS],
            "", False))
+    # (WO-191) Driven, now that the switch's mark is its handler's (ACTION_HANDLERS), not a line of run_host's source.
+    class NotingDev(SwitchDev):
+        def location(self, on):
+            SwitchDev.location(self, on)
+            return "dismissed=LocationOffWarningActivity"
+    noting_ = dict(base_, actions=[act(location=True)])
+    _validate_moves("selftest", noting_, ("ios",))
+    noted_dev = NotingDev(woke_)
+    run.run_host(noted_dev, noting_, time.time(), time.time() + 3, threading.Event(),
+                 {"error": None, "held_s": {}, "sent_s": {}})
     check("(C6.1 pilot) run_host adds a switch's note to its mark (`action=location on dismissed=…`)",
-          'what = "%s %s%s" % (kind, "on" if item[kind] else "off", " " + note if note else "")'
-          in inspect.getsource(run.run_host), True)
+          [c_ for c_ in noted_dev.calls if c_[0] == "mark"],
+          [("mark", "host i=0 action=location on dismissed=LocationOffWarningActivity sent_ms=T done_ms=T mark_ms=T")])
     check("(C6.1) Adb.location: set, then read back until it flips (a stale first read is polled past); "
           "Adb.power_save that never reads 1 refuses after 2 s",
           (loc_reads, stuck_, 1.9 < waited < 3.5),
@@ -10628,6 +10995,172 @@ def _selftest():
            '"--swift-api", label' in open(os.path.join(HARNESS, "lab_setup.py"), encoding="utf-8").read()),
           ((True, False), (True, True), 2, True, True))
 
+    # ---- WO-191 Part 5: the native descriptor (labkit.NATIVE), read by lab_setup, publish_native.sh and inventory.
+    # lab_setup and inventory import run.py's `labkit`, not this __main__: its NATIVE is the one patched here.
+    geo_native_ = {"android": {"submodule": "native/android", "build_root": "BackgroundGeolocation",
+                               "gradle_task": ":tslocationmanager:publishToMavenLocal",
+                               "version_property": "TS_LOCATIONMANAGER_VERSION_NAME",
+                               "artifacts": ("tslocationmanager", "tslocationmanager-gms20"), "build": None},
+                   "ios": {"artifact": "TSLocationManager.xcframework", "build": None}}
+    fetch_android_ = {"submodule": "native/background-fetch", "build_root": "android",
+                      "gradle_task": ":tsbackgroundfetch:publishToMavenLocal",
+                      "version_property": "TS_BACKGROUND_FETCH_VERSION_NAME", "artifacts": ("tsbackgroundfetch",)}
+    import inventory
+    check("(WO-191, Part 5) labkit.NATIVE defaults to background-geolocation's native SDK, in both labkit modules; "
+          "inventory's ANDROID_ARTIFACTS is its artifacts",
+          (NATIVE, run.labkit.NATIVE, inventory.ANDROID_ARTIFACTS), (geo_native_, geo_native_, geo_native_["android"]["artifacts"]))
+    native_was_ = json.loads(json.dumps({o_: {k_: v_ for k_, v_ in d_.items() if k_ != "build"}
+                                         for o_, d_ in run.labkit.NATIVE.items()}))
+    sh_was_ = (setup_.LABS, setup_.sh, setup_.native_checkout, setup_.gradle_defines, setup_.published, setup_.HARNESS,
+               setup_.swift_api_published, setup_.native_slot_android)
+    tmp_ = tempfile.mkdtemp(prefix="labkit-native-")
+    wt_, slots_, cmds_ = os.path.join(tmp_, "wt"), [], []
+    try:
+        # Every command a slot would run is recorded, never run: a slot reached by mistake (its own instead of the
+        # product's) shows in cmds_, and no git or Gradle starts.
+        setup_.sh = lambda cmd, cwd=None, env=None, log=None: cmds_.append([os.path.basename(cmd[0])] + cmd[1:])
+        setup_.native_checkout = lambda sub, sha, name: (cmds_.append(["checkout", sub, name]), wt_)[1]
+        setup_.gradle_defines = lambda key: True
+        # published(): the descriptor's artifact names, under labs/m2 and labs/xcframeworks
+        setup_.LABS = tmp_
+        for rel_ in (os.path.join("m2", "com", "transistorsoft", "tsbackgroundfetch", "L"),
+                     os.path.join("xcframeworks", "L", "TSBackgroundFetch.xcframework")):
+            os.makedirs(os.path.join(tmp_, rel_))
+        for rel_ in (os.path.join("m2", ".provenance"), os.path.join("xcframeworks", ".provenance")):
+            os.makedirs(os.path.join(tmp_, rel_), exist_ok=True)
+            open(os.path.join(tmp_, rel_, "L.txt"), "w").close()
+        as_geo_ = (setup_.published("L", "android"), setup_.published("L", "ios"))
+        run.labkit.NATIVE["android"].update(fetch_android_)
+        run.labkit.NATIVE["ios"]["artifact"] = "TSBackgroundFetch.xcframework"
+        as_fetch_ = (setup_.published("L", "android"), setup_.published("L", "ios"))
+        # ensure_native: the shared lines, then the OS's slot (the product's here), published or not
+        for o_ in ("android", "ios"):
+            run.labkit.NATIVE[o_]["build"] = lambda var, done, logs, setup, o_=o_: slots_.append(
+                (o_, var["native"], done, logs, setup is setup_))
+        setup_.published = lambda label, o: o == "android"
+        out_ = io.StringIO()
+        with contextlib.redirect_stdout(out_):
+            setup_.ensure_native({"name": "V", "native": "L", "native_source": {"ios": "b" * 40}}, ["android", "ios"],
+                                 "/logs")
+            refusal_ = refused(lambda: setup_.ensure_native({"name": "V", "native": "L", "native_source": {}}, ["ios"],
+                                                            "/logs"))
+        # with no product slot, this file's own, looked up by name at the call: a rebind of native_slot_android takes
+        for o_ in ("android", "ios"):
+            run.labkit.NATIVE[o_]["build"] = None
+        setup_.native_slot_android = lambda var, done, logs, setup=None: slots_.append(("rebound", done))
+        with contextlib.redirect_stdout(io.StringIO()):
+            setup_.ensure_native({"name": "V", "native": "L", "native_source": {}}, ["android"], "/logs")
+        setup_.native_slot_android = sh_was_[7]
+        # the default Android slot: publish_native.sh handed the descriptor's root, task, property and artifact; and,
+        # where publish_native.sh is not (fetch-forge vendors none), a refusal before any checkout
+        setup_.HARNESS = tmp_
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                setup_.native_slot_android({"name": "V", "native": "L", "native_source": {"android": "a" * 40}}, False,
+                                           "/logs")
+            missing_ = "ran"
+        except (Exception, SystemExit) as e:   # a FAIL below, not a crash here
+            missing_ = str(e)
+        setup_.HARNESS = sh_was_[5]
+        os.makedirs(os.path.join(wt_, "android"))
+        for done_ in (False, True):
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    setup_.native_slot_android({"name": "V", "native": "L", "native_source": {"android": "a" * 40}},
+                                               done_, "/logs")
+            except (Exception, SystemExit) as e:
+                cmds_.append(["raised", type(e).__name__])
+        props_ = os.path.exists(os.path.join(wt_, "android", "local.properties"))
+    finally:
+        for o_, d_ in native_was_.items():
+            run.labkit.NATIVE[o_].clear()
+            run.labkit.NATIVE[o_].update(d_, build=None)
+            if "artifacts" in d_:
+                run.labkit.NATIVE[o_]["artifacts"] = tuple(d_["artifacts"])
+        (setup_.LABS, setup_.sh, setup_.native_checkout, setup_.gradle_defines, setup_.published, setup_.HARNESS,
+         setup_.swift_api_published, setup_.native_slot_android) = sh_was_
+        while tmp_ in sys.path:              # native() put the patched HARNESS on sys.path
+            sys.path.remove(tmp_)
+        shutil.rmtree(tmp_)
+    check("(WO-191, Part 5) lab_setup reads the descriptor: published() looks for its artifact names; ensure_native "
+          "prints a published label, refuses an unpublished one with no native_source before any slot, and hands each "
+          "OS's slot (the product's, else its own, by name) the variant, whether it is published, the log dir and the "
+          "running lab_setup; the default Android slot refuses where publish_native.sh is not, before any checkout, and "
+          "hands it the descriptor's build root, task, property and artifact, nothing for a published label; and the "
+          "descriptor is put back",
+          (as_geo_, as_fetch_, slots_, "ok: android L is published" in out_.getvalue(),
+           refusal_.startswith("setup stopped: L is not published for ios"),
+           missing_.startswith("setup stopped: %s is not here" % os.path.join(tmp_, "publish_native.sh")), cmds_, props_,
+           run.labkit.NATIVE),
+          ((False, False), (True, True), [("android", "L", True, "/logs", True), ("ios", "L", False, "/logs", True),
+                                          ("rebound", True)], True, True, True,
+           [["checkout", "native/background-fetch", "native-android"],
+            ["publish_native.sh", "L", wt_, "android", ":tsbackgroundfetch:publishToMavenLocal",
+             "TS_BACKGROUND_FETCH_VERSION_NAME", "tsbackgroundfetch"]], True, geo_native_))
+
+    # The default iOS slot, its code before Part 5: driven with the same recording fakes.
+    ios_cmds_, wt_ios_ = [], "/wt"
+    was_ = (setup_.sh, setup_.native_checkout, setup_.swift_api_published)
+    try:
+        setup_.sh = lambda cmd, cwd=None, env=None, log=None: ios_cmds_.append(
+            [os.path.basename(cmd[0])] + cmd[1:] + ([os.path.basename(log)] if log else []))
+        setup_.native_checkout = lambda sub, sha, name: (ios_cmds_.append(["checkout", sub, sha[:1], name]), wt_ios_)[1]
+        runs_ = []
+        for done_, swift_, src_ in ((True, False, {"ios": "b" * 40}), (True, True, {"ios": "b" * 40}),
+                                    (True, False, {}),
+                                    (False, False, {"ios": "b" * 40, "ios_version": "4.2.0", "ios_build": 4200}),
+                                    (False, False, {"ios": "b" * 40})):
+            setup_.swift_api_published = lambda label, s_=swift_: s_
+            del ios_cmds_[:]
+            with contextlib.redirect_stdout(io.StringIO()):
+                setup_.native_slot_ios({"name": "V", "native": "L", "native_source": src_}, done_, "/logs")
+            runs_.append(list(ios_cmds_))
+    finally:
+        setup_.sh, setup_.native_checkout, setup_.swift_api_published = was_
+    xcfw_ = os.path.join(wt_ios_, "build", "Lab", "TSLocationManager_XCFramework_L")
+    check("(WO-191, Part 5) the default iOS slot is its code before Part 5: a published label without its Swift API gets "
+          "it added from its native_source, with one or with no native_source nothing; an unpublished one is built (its "
+          "ios_version and ios_build passed on) and published",
+          runs_,
+          [[["checkout", "native/ios", "b", "native-ios"], ["publish_native_ios.sh", "--swift-api", "L", wt_ios_]],
+           [], [],
+           [["checkout", "native/ios", "b", "native-ios"],
+            ["build_native_ios.sh", "L", wt_ios_, "4.2.0", "4200", "native-ios.log"],
+            ["publish_native_ios.sh", "L", xcfw_, wt_ios_]],
+           [["checkout", "native/ios", "b", "native-ios"], ["build_native_ios.sh", "L", wt_ios_, "native-ios.log"],
+            ["publish_native_ios.sh", "L", xcfw_, wt_ios_]]])
+
+    # publish_native.sh, run: a copy in a temp lab tree, against a stub gradlew that records what it was asked.
+    def published_by(*args):
+        root_ = tempfile.mkdtemp(prefix="labkit-publish-")
+        try:
+            os.makedirs(os.path.join(root_, "labs", "harness"))
+            for f_ in ("publish_native.sh", "lab-publish.init.gradle"):
+                shutil.copy2(os.path.join(HARNESS, f_), os.path.join(root_, "labs", "harness"))
+            gradle_root_ = os.path.join(root_, "native", args[2] if len(args) > 2 else "BackgroundGeolocation")
+            os.makedirs(gradle_root_)
+            with open(os.path.join(gradle_root_, "gradlew"), "w") as f:
+                f.write('#!/bin/sh\nprintf "%s\\n" "$@" > "$(dirname "$0")/asked.txt"\n')
+            os.chmod(os.path.join(gradle_root_, "gradlew"), 0o755)
+            r = sp.run(["bash", os.path.join(root_, "labs", "harness", "publish_native.sh"), args[0],
+                        os.path.join(root_, "native")] + list(args[2:]), capture_output=True, text=True, timeout=60,
+                       stdin=sp.DEVNULL)
+            asked_ = open(os.path.join(gradle_root_, "asked.txt")).read().split("\n") if r.returncode == 0 else r.stderr
+            return (r.returncode, [a_ for a_ in asked_ if a_.startswith((":", "-P"))],
+                    r.stdout.strip().splitlines()[-1].split(" -> ")[0] if r.returncode == 0 else "",
+                    os.path.exists(os.path.join(root_, "labs", "m2", ".provenance", args[0] + ".txt")))
+        finally:
+            shutil.rmtree(root_, ignore_errors=True)
+    check("(WO-191, Part 5) publish_native.sh: its two positional arguments publish tslocationmanager as before; four "
+          "more name another product's build root, task, version property and artifact",
+          [published_by("4.7.9-lab", None), published_by("4.1.1-lab", None, "android",
+                                                          ":tsbackgroundfetch:publishToMavenLocal",
+                                                          "TS_BACKGROUND_FETCH_VERSION_NAME", "tsbackgroundfetch")],
+          [(0, [":tslocationmanager:publishToMavenLocal", "-PTS_LOCATIONMANAGER_VERSION_NAME=4.7.9-lab"],
+            "published com.transistorsoft:tslocationmanager:4.7.9-lab", True),
+           (0, [":tsbackgroundfetch:publishToMavenLocal", "-PTS_BACKGROUND_FETCH_VERSION_NAME=4.1.1-lab"],
+            "published com.transistorsoft:tsbackgroundfetch:4.1.1-lab", True)])
+
     # ---- WO-027: what loaded the machine ----
     ps_ = ("  812 612.5 00:41 /usr/bin/java\n"
            "35272 301,0 02-13:44:48 /Users/x/Library/Android/sdk/emulator/qemu/darwin-aarch64/qemu-system-aarch64\n"
@@ -11438,7 +11971,7 @@ def _selftest():
           "notification's Pause button tapped by the host; iOS excused, dated",
           ([[(e["subscribe"], e.get("delivery"), e["returns"]["$"].get("equals")) for e in s_["events"]]
             for s_ in host_sc["steps"]],
-           [[next(k for k in ACTION_DOES if k in a) for a in s_["actions"]] for s_ in host_sc["steps"]],
+           [[next(k for k in ACTION_HANDLERS if k in a) for a in s_["actions"]] for s_ in host_sc["steps"]],
            DATED.match(host_sc["not_applicable"]["ios"]) is not None),
           ([[("onPowerSaveChange", 1, True), ("onPowerSaveChange", 2, False)],
             [("onNotificationAction", None, "notificationButtonPause")]],
@@ -11510,8 +12043,151 @@ def _selftest():
                   "watchPosition@0.$.coords.latitude=unreported, watchPosition@0.$err=number:1"),
            ("ok", errs_none_), ("watchPosition@0=unexpressible", errs_none_)])
 
+    # ---- WO-191, D3: the product hook (lab_product.py beside labkit.py) ----
+    check("(WO-191, D3) no lab_product.py beside labkit (bg-forge has none): no product, and every hook is "
+          "background-geolocation's",
+          (PRODUCT, os.path.exists(PRODUCT_PATH), HEADLESS_NAMES is _geo_headless_names, SDK_LOG is _geo_sdk_log,
+           EVIDENCE, CAPTURE_EXTRAS, IMPLICIT),
+          (None, False, True, True, None, None, {"configDropped": "-"}))
+    # (WO-191 review) CAPTURE_EXTRAS, driven: run_step needs a device, so its end-of-log lines are run.end_capture_log.
+    class LogDev:
+        def end_log(self, plat):
+            return "09-21 10:00:01.000 I/LAB     ( 7): app=boot n=1\n"
+    seen_ = []
+
+    def extras_(dev, plat, out):
+        seen_.append((type(dev).__name__, plat["package"], os.path.exists(os.path.join(out, "logcat.txt"))))
+
+    def failing_(dev, plat, out):
+        raise SystemExit("selftest extras failed")
+
+    def ended_(hook):
+        out_, phases_ = tempfile.mkdtemp(prefix="labkit-extras-"), {}
+        saved_ = run.labkit.CAPTURE_EXTRAS
+        try:
+            run.labkit.CAPTURE_EXTRAS = hook
+            try:
+                got_ = "ok" if run.end_capture_log(LogDev(), {"package": "com.lab.app"}, out_, phases_) else "no log"
+            except (Exception, SystemExit) as e:
+                got_ = "%s: %s" % (type(e).__name__, e)
+            return got_, list(phases_), os.path.exists(os.path.join(out_, "logcat.txt"))
+        finally:
+            run.labkit.CAPTURE_EXTRAS = saved_
+            shutil.rmtree(out_)
+    check("(WO-191) end_capture_log: with no CAPTURE_EXTRAS the log is ended and written as before; a product's is "
+          "handed the device, the platform and the capture dir once logcat.txt is on disk, and one that fails costs no "
+          "log; run_step ends its log through it",
+          ([ended_(h) for h in (None, extras_, failing_)], seen_,
+           "log_text = end_capture_log(dev, plat, out, phases)" in inspect.getsource(run.run_step)),
+          ([("ok", ["log_ended", "log_written"], True), ("ok", ["log_ended", "log_written", "capture_extras"], True),
+            ("SystemExit: selftest extras failed", ["log_ended", "log_written"], True)],
+           [("LogDev", "com.lab.app", True)], True))
+
+    def product_probe(source, probe):
+        """A copy of this harness's top-level files in a temp dir (never its .claims, scenarios or variants: the probes
+        only import), `source` as its lab_product.py (None: none; ("symlink", target): a link), and a fresh interpreter
+        running `probe` there: (exit code, last stdout line, stderr)."""
+        root_ = tempfile.mkdtemp(prefix="labkit-product-")
+        try:
+            harness_ = os.path.join(root_, "harness")
+            os.makedirs(harness_)
+            for name_ in os.listdir(HARNESS):
+                if name_ != "lab_product.py" and os.path.isfile(os.path.join(HARNESS, name_)):
+                    shutil.copy2(os.path.join(HARNESS, name_), harness_)
+            if isinstance(source, tuple):
+                os.symlink(source[1], os.path.join(harness_, "lab_product.py"))
+            elif source is not None:
+                with open(os.path.join(harness_, "lab_product.py"), "w") as f:
+                    f.write(source)
+            r = sp.run([sys.executable, "-B", "-c", probe], cwd=harness_, capture_output=True, text=True, timeout=120,
+                       stdin=sp.DEVNULL, env={k: v for k, v in os.environ.items() if k != "PYTHONPATH"})
+            return r.returncode, (r.stdout.strip().splitlines() or [""])[-1], r.stderr
+        finally:
+            shutil.rmtree(root_, ignore_errors=True)
+    product_src_ = "\n".join([
+        "CALLS = []",
+        "def register(labkit):",
+        "    CALLS.append(labkit.__name__)",
+        "    labkit.HEADLESS_NAMES = lambda: ['fetch', 'timeout']",
+        "    labkit.METRICS['headlessFired.fetch'] = lambda c: 'own'",
+        "    labkit.IMPLICIT['selftestImplicit'] = 'ok'",
+        "    labkit.EARLY_METRICS.add('selftestImplicit')",
+        "    labkit.EVIDENCE = lambda lines, step, os_name: any('selftest-settled' in l for l in lines)",
+        "    labkit.SDK_LOG = lambda c, like: ['sdk ' + like]",
+        "    def extras(dev, plat, out):",
+        "        with open(out + '/extras.txt', 'w') as f:",
+        "            f.write(plat['package'])",
+        "    labkit.CAPTURE_EXTRAS = extras",
+        "    def selftestImplicit(c):",
+        "        return 'ok'",
+        "    labkit.metric(selftestImplicit)",
+        "    labkit.ACTION_HANDLERS['selftest_job'] = labkit.ActionHandler(lambda at, item, step: 0,",
+        "                                                                 lambda dev, item, plat, server: 'selftest_job')",
+        ""])
+    # `import run` first: run imports backends, which imports labkit — the order a bare `python3 run.py` has.  The
+    # settle line is not a LAB line, so it proves EVIDENCE is handed the lines as given, not evidence_state's filter.
+    product_probe_ = "\n".join([
+        "import json, os, tempfile",
+        "import run, labkit, lab_product",
+        "c = labkit.Capture.live([], {'os': 'android'})",
+        "ls = ['09-21 10:00:01.000 I/LAB     ( 7): app=boot n=1', '09-21 10:00:02.000 I/LAB     ( 7): app=tick n=1']",
+        "settled = ['09-21 10:00:03.000 I/ActivityManager(  674): selftest-settled']",
+        "out = tempfile.mkdtemp()",
+        "run.end_capture_log(type('D', (), {'end_log': lambda self, plat: ''})(), {'package': 'com.lab.app'}, out, {})",
+        "print(json.dumps([os.path.relpath(labkit.PRODUCT.__file__, labkit.HARNESS), lab_product.CALLS,",
+        "    run.labkit is labkit, labkit.headless_names(),",
+        "    sorted(k for k in labkit.METRICS if k.startswith(('headlessEvents.', 'headlessFired.'))),",
+        "    labkit.expectations({'expect': {'crashes': 0}}, 'react').get('selftestImplicit'),",
+        "    'selftestImplicit' in labkit.EARLY_METRICS and 'selftestImplicit' in labkit.METRICS,",
+        "    [labkit.evidence_state(ls, {}, 'android')[0], labkit.evidence_state(ls + settled, {}, 'android')[0]],",
+        "    [c.sdk('%x%'), labkit.METRICS['headlessFired.timeout'](c), labkit.METRICS['headlessFired.fetch'](c)],",
+        "    open(os.path.join(out, 'extras.txt')).read(), 'selftest_job' in run.labkit.ACTION_HANDLERS]))",
+        ""])
+    rc_, line_, err_ = product_probe(product_src_, product_probe_)
+    check("(WO-191, D3) a lab_product.py beside labkit is loaded by labkit itself, registered once per labkit module, "
+          "and every hook takes effect: the headless names (the metrics generated from them after register, and the "
+          "product's own under a generated name kept), an implicit key that is early, the evidence predicate (handed "
+          "the raw lines), the SDK log adapter (which the generated metrics read too), the capture extras through "
+          "end_capture_log, a metric and an action kind",
+          (rc_, json.loads(line_) if rc_ == 0 else err_[-600:]),
+          (0, ["lab_product.py", ["labkit"], True, ["fetch", "timeout"],
+               ["headlessEvents.fetch", "headlessEvents.timeout", "headlessFired.fetch", "headlessFired.timeout"],
+               "ok", True, [False, True], [["sdk %x%"], 1, "own"], "com.lab.app", True]))
+    none_ = product_probe(None, "import run, labkit; print(labkit.PRODUCT, 'headlessEvents.location' in labkit.METRICS)")
+    broken_ = [(product_probe(src, probe), cause) for src, probe, cause in (
+        ("raise RuntimeError('selftest product import')\n", "import run", "RuntimeError: selftest product import"),
+        ("CALLS = []\n", "import run", "has no attribute 'register'"),
+        ("def register(labkit):\n    raise SystemExit('selftest refuses')\n", "import run", "SystemExit: selftest refuses"),
+        ("def register(labkit):\n    labkit.HEADLESS_NAMES = lambda: 1 / 0\n", "import run", "ZeroDivisionError"),
+        ("import labkit\n\ndef register(labkit):\n    pass\n", "import lab_product",
+         "lab_product imports labkit at module level"),
+        (("symlink", "nowhere/lab_product.py"), "import run", "FileNotFoundError"))]
+    check("(WO-191, D3) with none, the copy runs background-geolocation's seams; a product that does not load — its "
+          "import raises, it has no register(), register() refuses, its HEADLESS_NAMES fails as the metrics are "
+          "generated, it imports labkit at module level, or lab_product.py is a dangling link — stops the process with "
+          "exit 2, naming the file and the cause",
+          [none_[:2]] + [(rc, "did not load (WO-191)" in err and "lab_product.py" in err, cause in err)
+                         for (rc, _, err), cause in broken_],
+          [(0, "None True")] + [(2, True, True)] * 6)
+    native_src_ = "\n".join([
+        "def register(labkit):",
+        "    labkit.NATIVE['android'].update(artifacts=('tsbackgroundfetch',),",
+        "                                    gradle_task=':tsbackgroundfetch:publishToMavenLocal')",
+        "    labkit.NATIVE['ios']['artifact'] = 'TSBackgroundFetch.xcframework'",
+        ""])
+    check("(WO-191, Part 5) a product's native descriptor, set in register(), is what inventory and lab_setup read in a "
+          "fresh process",
+          product_probe(native_src_, "import inventory, lab_setup; print(inventory.ANDROID_ARTIFACTS, "
+                                     "lab_setup.native('ios')['artifact'], lab_setup.native('android')['gradle_task'])")[:2],
+          (0, "('tsbackgroundfetch',) TSBackgroundFetch.xcframework :tsbackgroundfetch:publishToMavenLocal"))
+
     print("\nselftest: %s" % ("PASS" if not failures else "FAIL (%d)" % failures))
     return 0 if not failures else 1
+
+
+# (WO-191, D3) The end of labkit's definitions: the product (none for background-geolocation), and the headless metrics
+# generated from its names.
+PRODUCT = _load_product(sys.modules[__name__])
 
 
 if __name__ == "__main__":

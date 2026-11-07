@@ -38,7 +38,9 @@ SDK = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT") or os
     os.path.expanduser("~"), "Library", "Android", "sdk")        # lab_devices.py's, and the build.sh files'
 # The submodules a sweep builds from: the SDK sources a label is built from (and, for iOS, the public dist repo,
 # whose podspec publish_native_ios.sh stamps), the four plugins the apps build against, and the types (the
-# vocabulary's source, which the selftest reads).  None of the others.
+# vocabulary's source, which the selftest reads).  None of the others.  (WO-191) Here, not in labkit.NATIVE: doctor and
+# check_access read it before PyYAML exists (D4, option A).  The checkout labkit.NATIVE["android"]["submodule"] names
+# must be listed here too, or step 2 initialises one checkout and step 4 builds from another.
 SUBMODULES = {"android": ["native/android"], "ios": ["native/ios", "native/background-geolocation"],
               "both": ["types/background-geolocation", "flutter/background_geolocation",
                        "react-native/background-geolocation", "capacitor/background-geolocation",
@@ -222,11 +224,20 @@ def load_variant(name):
     return labkit.variant(name)
 
 
+def native(os_name):
+    """(WO-191) The OS's native descriptor, labkit.NATIVE: the product's, else background-geolocation's.  Through
+    labkit, so it needs PyYAML: only what runs once that is there reads it (published, ensure_native)."""
+    if HARNESS not in sys.path:
+        sys.path.insert(0, HARNESS)
+    import labkit
+    return labkit.NATIVE[os_name]
+
+
 def published(label, os_name):
-    if os_name == "android":
-        return (os.path.isdir(os.path.join(LABS, "m2", "com", "transistorsoft", "tslocationmanager", label))
+    if os_name == "android":                                        # (WO-191) the descriptor's artifact
+        return (os.path.isdir(os.path.join(LABS, "m2", "com", "transistorsoft", native("android")["artifacts"][0], label))
                 and os.path.isfile(os.path.join(LABS, "m2", ".provenance", label + ".txt")))
-    return (os.path.isdir(os.path.join(LABS, "xcframeworks", label, "TSLocationManager.xcframework"))
+    return (os.path.isdir(os.path.join(LABS, "xcframeworks", label, native("ios")["artifact"]))
             and os.path.isfile(os.path.join(LABS, "xcframeworks", ".provenance", label + ".txt")))
 
 
@@ -404,37 +415,65 @@ def ensure_native(var, oses, logs):
     step("4  native SDK builds for %s (%s)" % (var["name"], var["native"]))
     src, label = var.get("native_source") or {}, var["native"]
     for os_name in oses:
-        if published(label, os_name):
+        done = published(label, os_name)
+        if done:
             print("ok: %s %s is published" % (os_name, label))
-            # (WO-143) A label published before the Swift API was copied beside it: add the source from the
-            # commit the binary was recorded at.  No rebuild, and the xcframework is not touched.
-            if os_name == "ios" and not swift_api_published(label) and src.get("ios"):
-                sh([os.path.join(HARNESS, "publish_native_ios.sh"), "--swift-api", label,
-                    native_checkout("native/ios", src["ios"], "native-ios")])
-            continue
-        if not src.get(os_name):
+        elif not src.get(os_name):
             raise SystemExit("setup stopped: %s is not published for %s, and variant %s records no native_source.%s to "
                              "build it from" % (label, os_name, var["name"], os_name))
-        if os_name == "android":
-            wt = native_checkout("native/android", src["android"], "native-android")
-            props = os.path.join(wt, "BackgroundGeolocation", "local.properties")
-            if not os.path.exists(props):
-                with open(props, "w") as f:
-                    f.write("sdk.dir=%s\n" % SDK)
-            env = dict(os.environ)
-            for key, placeholder in GRADLE_PLACEHOLDERS.items():
-                if not gradle_defines(key):
-                    env["ORG_GRADLE_PROJECT_" + key] = placeholder
-            print("(a few minutes: Gradle builds the library and publishes it to labs/m2)")
-            sh([os.path.join(HARNESS, "publish_native.sh"), label, wt], env=env, log=os.path.join(logs, "native-android.log"))
-        else:
-            wt = native_checkout("native/ios", src["ios"], "native-ios")
-            print("(several minutes: CocoaPods, then Xcode archives the simulator slice)")
-            sh([os.path.join(HARNESS, "build_native_ios.sh"), label, wt] +
-               ([str(src["ios_version"]), str(src["ios_build"])] if src.get("ios_version") else []),
-               env=dict(os.environ, LANG="en_US.UTF-8"), log=os.path.join(logs, "native-ios.log"))
-            sh([os.path.join(HARNESS, "publish_native_ios.sh"), label,
-                os.path.join(wt, "build", "Lab", "TSLocationManager_XCFramework_" + label), wt])
+        # (WO-191, D4) The OS's own slot, published or not: the product's (labkit.NATIVE[os]["build"]), else this
+        # file's, looked up by name now, so a rebind of native_slot_<os> takes.  Handed the whole variant (a key it
+        # grows, `channel:`, reaches the slot with no new signature), whether it is published, the log dir, and this
+        # module: lab_setup runs as __main__, so a product's slot that imported it would get a second copy.
+        slot = native(os_name).get("build") or globals()["native_slot_" + os_name]
+        slot(var, done, logs, sys.modules[__name__])
+
+
+def native_slot_android(var, done, logs, setup=None):
+    """(WO-191) Android's slot, as it was before it was one: nothing for a published label; else a checkout at its
+    native_source, built and published into labs/m2 by publish_native.sh from the descriptor's build root, task,
+    version property and artifact.  publish_native.sh is background-geolocation's (fetch-forge does not vendor it):
+    a product whose publish is its own sets NATIVE["android"]["build"]."""
+    if done:
+        return
+    d, label = native("android"), var["native"]
+    script = os.path.join(HARNESS, "publish_native.sh")
+    if not os.path.isfile(script):           # before any checkout: a product with no slot of its own stops here
+        raise SystemExit("setup stopped: %s is not here, so the default Android slot cannot publish %s — a product "
+                         "whose publish is its own sets labkit.NATIVE[\"android\"][\"build\"] (WO-191)" % (script, label))
+    # (WO-191) d["submodule"] is the checkout SUBMODULES must list too (steps 2 and 4 must name the same one).
+    wt = native_checkout(d["submodule"], var["native_source"]["android"], "native-android")
+    props = os.path.join(wt, d["build_root"], "local.properties")
+    if not os.path.exists(props):
+        with open(props, "w") as f:
+            f.write("sdk.dir=%s\n" % SDK)
+    env = dict(os.environ)
+    for key, placeholder in GRADLE_PLACEHOLDERS.items():
+        if not gradle_defines(key):
+            env["ORG_GRADLE_PROJECT_" + key] = placeholder
+    print("(a few minutes: Gradle builds the library and publishes it to labs/m2)")
+    sh([script, label, wt, d["build_root"], d["gradle_task"], d["version_property"], d["artifacts"][0]],
+       env=env, log=os.path.join(logs, "native-android.log"))
+
+
+def native_slot_ios(var, done, logs, setup=None):
+    """(WO-191, D4) iOS's slot, its code before Part 5 moved here: for a published label the Swift API retrofit, else
+    the build and the publish.  bg-forge's iOS scripts are background-geolocation's own (a product sets its slot)."""
+    src, label = var.get("native_source") or {}, var["native"]
+    if done:
+        # (WO-143) A label published before the Swift API was copied beside it: add the source from the
+        # commit the binary was recorded at.  No rebuild, and the xcframework is not touched.
+        if not swift_api_published(label) and src.get("ios"):
+            sh([os.path.join(HARNESS, "publish_native_ios.sh"), "--swift-api", label,
+                native_checkout("native/ios", src["ios"], "native-ios")])
+        return
+    wt = native_checkout("native/ios", src["ios"], "native-ios")
+    print("(several minutes: CocoaPods, then Xcode archives the simulator slice)")
+    sh([os.path.join(HARNESS, "build_native_ios.sh"), label, wt] +
+       ([str(src["ios_version"]), str(src["ios_build"])] if src.get("ios_version") else []),
+       env=dict(os.environ, LANG="en_US.UTF-8"), log=os.path.join(logs, "native-ios.log"))
+    sh([os.path.join(HARNESS, "publish_native_ios.sh"), label,
+        os.path.join(wt, "build", "Lab", "TSLocationManager_XCFramework_" + label), wt])
 
 
 def ensure_devices(oses):

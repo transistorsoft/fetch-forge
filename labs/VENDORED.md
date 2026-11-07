@@ -6,9 +6,10 @@ When a fetch need cannot be met without changing one of these files, the change 
 one fetch-owned module: `labs/harness/fetch_pack.py`. It is described in `labs/README.md`, and
 `python3 labs/harness/fetch_pack.py --seams` lists each vendored line it stands in for.
 
-Commit: `49d38d47f8f73d45c155a24dc7802d4128216b5f` (bg-forge `master`, 2026-11-04).
+Commit: `23f448c42b3b2e9aaabe8ff243d28ddc2c4200bd` (bg-forge `lab/WO-191-labkit-shared-device-seams`, 2026-11-07:
+WO-191 Parts 1–5, the seams this pack had worked around).  It was 49d38d47f until WO-191.
 
-Each file was extracted with `git -C <bg-forge> show 49d38d47f:<path>`, never copied from a working tree.
+Each file was extracted with `git -C <bg-forge> show <commit>:<path>`, never copied from a working tree.
 bg-forge's working tree has unrelated local edits.
 
 **Check:** `labs/harness/vendor_check.sh` (also run by `./labkit selftest`). It re-extracts every row
@@ -22,15 +23,15 @@ bg-forge is found at `$BG_FORGE`, or else beside the main fetch-forge checkout.
 
 | Path | sha256 | mode | lines |
 |---|---|---|---|
-| `labs/harness/labkit.py` | `510706ff1ebcf2c24e8ff90fd611cdb9ebe7bc7452ded5a732c9682c542dce83` | 100644 | 11520 |
-| `labs/harness/backends.py` | `23d3c44fcede2586d3daab5be73c2d6d45e0d8d4ce62d4c1de5929c7f75130a8` | 100644 | 1494 |
-| `labs/harness/run.py` | `23054b58429403910f88ad4fa388b655859c48631ee792ff1e2a11c312c247a4` | 100755 | 1477 |
+| `labs/harness/labkit.py` | `6ff484798aec17621aefb0612f386ee352a5961ea3c314cd15f83560c3be844a` | 100644 | 12196 |
+| `labs/harness/backends.py` | `4179d0d0654daf3bc75beb7d0b0440e944784e516fe3bbac794c0714f9d086e1` | 100644 | 1519 |
+| `labs/harness/run.py` | `95096d6cf5aecfcd1be4564f12f618de0873b1ea24ef546cf267ce70bb7cd08c` | 100755 | 1479 |
 | `labs/harness/sweep.py` | `411d918230d34a63713a2c9d1848d016737ec94cb6105f33e10a7df6c0a4756f` | 100644 | 950 |
-| `labs/harness/summarize.py` | `10429802d3418b52cbefe571aeeae01d2b1a3b420582b8c356e20dad7cb40782` | 100755 | 1403 |
-| `labs/harness/devices.py` | `d05ba1b388365735069382884a81747f537bfd28bacff2cbe8959cf682e57b76` | 100644 | 210 |
-| `labs/harness/lab_devices.py` | `c127fe6ebe18777a7123594357fff603065854d1928a55c261069026e40cd64c` | 100644 | 718 |
-| `labs/harness/lab_setup.py` | `08376289c43054e28dce408171501aee15336cd4a7af072c588bcf3699bbc534` | 100644 | 514 |
-| `labs/harness/inventory.py` | `7e3f852be36c6f6dc070172f5bbba216039dcfebb7befcb2d48c117283e907ef` | 100644 | 172 |
+| `labs/harness/summarize.py` | `d9e9b11d50cc48ff61e58528752d43e4757da3f7d3948877199e91239ddb66ed` | 100755 | 1405 |
+| `labs/harness/devices.py` | `e70c5cb78b5bbc47e33568f2cc6f095f4abacde733dc88987f93e1d1145b513b` | 100644 | 231 |
+| `labs/harness/lab_devices.py` | `245467c04cfd7965bea92cf812e5381793ed8beddcaf6e00bf5f6471f8867990` | 100644 | 736 |
+| `labs/harness/lab_setup.py` | `b8be37ba4fa2a2d7d5fdc0b678f6a26cc86a1b5d4398c9121122a21c7301d9b8` | 100644 | 553 |
+| `labs/harness/inventory.py` | `6ed4f61f7040f788a5123cadec49231672021dad4f00f104995f1853ae9ae715` | 100644 | 172 |
 | `labs/harness/slots_selftest.js` | `0df29055c3284069a87a58df5526c96d16439e1f865a83595fb4e6687f7023f2` | 100644 | 433 |
 | `labs/harness/avd/lab.config.ini` | `5f24bf72174ae6a75b19db55897696cc9a51f097efebaeff7c7f2c13dbb48bf9` | 100644 | 67 |
 | `labs/harness/avd/windows.swift` | `bdc283e5c5533b2d2c8b6b498668431f5e62cc7058e276ab8ffe9bf87eb32668` | 100644 | 22 |
@@ -55,6 +56,12 @@ compared with bg-forge.
 | `labs/harness/vocabulary.yaml` | Fetch's API surface, seeded from `types/background-fetch`. It is never a copy of bg-geo's |
 | `labs/harness/variants/FIX.yaml` | Fetch's FIX variant: the `tsbackgroundfetch` label in `labs/m2` and its native commit |
 | `labs/harness/scenarios/api-smoke.yaml` | Fetch's api-smoke: the seven members of `types/background-fetch`, not bg-geo's |
+
+## Fetch-owned files the vendored code loads
+
+| Path | Why |
+|---|---|
+| `labs/harness/lab_product.py` | bg-forge WO-191 (D3): the vendored `labkit.py` loads it, when present, at the end of its own definitions and calls its `register(labkit)`, which hands labkit fetch's hooks (`fetch_pack.register`). bg-forge has none, so it is at no bg-forge path and the scan above does not see it |
 
 ## Not vendored (bg-geo data, or bg-geo builds)
 

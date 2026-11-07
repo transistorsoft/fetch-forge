@@ -5,6 +5,7 @@ named `Lab1` and `Lab2`, so a sweep can run one lane per device.
     ./labkit up                  # create what is missing, start it, wait until ready (lab_devices.py up)
     ./labkit status              # the same table; changes nothing
     ./labkit down --os android   # stop the Lab devices, and only those
+    ./labkit up --name Lab1      # (WO-191) one device of each pair, not both
 
 Everything goes by NAME.  Nothing that is not called Lab1 or Lab2 is ever started, stopped, created or
 changed — not Pixel_9_API_36 (emulator-5554), not Pixel_9_API_36_lab2, not any other AVD or Simulator.
@@ -660,16 +661,33 @@ def row(os_name, name, serial, state, detail=""):
     print(("%-7s %-4s %-36s %-9s %s" % (os_name, name, serial, state, detail)).rstrip(), flush=True)
 
 
-def main():
+def parser():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("command", choices=["up", "status", "down"])
     ap.add_argument("--os", default="android,ios", help="comma list: android, ios")
+    # (WO-191) One device of the pair: a session that needs one should not boot two emulators.  The claim checks
+    # stand whatever it names: `down` refuses a claimed device, `up` reports one without touching it.
+    ap.add_argument("--name", default=",".join(NAMES), help="comma list: %s" % ", ".join(NAMES))
     ap.add_argument("--timeout", type=int, default=300, help="`up`: seconds each device has to become ready")
-    args = ap.parse_args()
-    oses = [o for o in args.os.split(",") if o]
+    return ap
+
+
+def jobs_for(os_arg, name_arg):
+    """The (os, name) pairs a command acts on, android first and Lab1 first whatever order they were given in: `--os`
+    and (WO-191) `--name`, comma lists that each default to both."""
+    oses = [o for o in os_arg.split(",") if o]
     if not oses or set(oses) - {"android", "ios"}:
         raise SystemExit("--os takes android, ios or both")
-    jobs = [(o, n) for o in ("android", "ios") if o in oses for n in NAMES]
+    names = [n for n in name_arg.split(",") if n]
+    if not names or set(names) - set(NAMES):
+        raise SystemExit("--name takes %s or both" % ", ".join(NAMES))
+    return [(o, n) for o in ("android", "ios") if o in oses for n in NAMES if n in names]
+
+
+def main():
+    args = parser().parse_args()
+    jobs = jobs_for(args.os, args.name)
+    oses = [o for o, _ in jobs]
 
     if args.command == "status":
         listing = simulators() if "ios" in oses else None

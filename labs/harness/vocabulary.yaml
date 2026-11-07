@@ -65,13 +65,8 @@ config:
 enums:
   BackgroundFetchStatus: {wire: number, values: [0, 1, 2], members: {STATUS_RESTRICTED: 0, STATUS_DENIED: 1, STATUS_AVAILABLE: 2}}
   NetworkType: {wire: number, values: [0, 1, 2, 3, 4], members: {NETWORK_TYPE_NONE: 0, NETWORK_TYPE_ANY: 1, NETWORK_TYPE_UNMETERED: 2, NETWORK_TYPE_NOT_ROAMING: 3, NETWORK_TYPE_CELLULAR: 4}}
-  # NOT A FETCH TYPE.  The vendored labkit.py reads `enums.Event.values` at import (headless_names(), :3383-3386,
-  # called by _headless_metrics() at :3412) as the names a headless task's `LAB point=headless event=<name>` line can
-  # carry, and generates a `headlessEvents.<name>` metric per name.  Fetch's HeadlessEvent has no name — it is
-  # {taskId, timeout} — so the lab's convention is: a fetch lab driver writes `event=fetch` for a HeadlessEvent whose
-  # `timeout` is false and `event=timeout` for one whose `timeout` is true.  Upstream seam (Phase B): a pack hook for
-  # headless_names(), so this entry can go.
-  Event: {wire: string, values: [fetch, timeout], members: {Fetch: fetch, Timeout: timeout}}
+  # (No `Event`: the names a headless task can be handed, `fetch` and `timeout`, are the pack's, through labkit's
+  # HEADLESS_NAMES hook since bg-forge WO-191 — fetch_pack.HEADLESS_NAMES.)
 
 # Keys only one OS declares ([Android only] / [iOS only] in the types).  Every AbstractConfig key is [Android only];
 # minimumFetchInterval is both.  TaskConfig.requiresNetworkConnectivity is [iOS only] (a TaskConfig field, so not in
