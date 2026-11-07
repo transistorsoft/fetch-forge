@@ -27,7 +27,7 @@ import labkit
 from run import expand
 
 M2 = os.path.join(labkit.LABS, "m2", "com", "transistorsoft")
-ANDROID_ARTIFACTS = ("tslocationmanager", "tslocationmanager-gms20")
+ANDROID_ARTIFACTS = tuple(labkit.NATIVE["android"]["artifacts"])     # (WO-191) the product's, from its descriptor
 XCFW = os.path.join(labkit.LABS, "xcframeworks")
 
 

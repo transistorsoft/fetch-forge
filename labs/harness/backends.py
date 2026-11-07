@@ -95,11 +95,21 @@ class Adb:
     def terminate(self, plat, timeout=labkit.DEVICE_TIMEOUT):
         self._adb("shell", "am", "force-stop", plat["package"], timeout=timeout)
 
-    def evict(self, plat):
+    def installed(self, prefixes):
+        """(WO-191) The installed packages under any of `prefixes`: what a first step evicts is read from the device."""
+        ids = [l[len("package:"):].strip() for l in self._adb("shell", "pm", "list", "packages", timeout=15).splitlines()
+               if l.startswith("package:")]
+        if not ids:                      # every device lists `android`: none read is a failed read, not a clean device
+            raise SystemExit("`pm list packages` on %s listed nothing — the other lab apps cannot be evicted; nothing "
+                             "from this step is scored" % self.serial)
+        return sorted(p for p in ids if p.startswith(tuple(prefixes)))
+
+    def evict(self, package):
         """(WO-027, C5.2) Another lab app, out of this step's way: force-stopped.  A stopped package is sent nothing
         until it is launched again, so its geofences cannot wake it mid-step (INFERRED: no Android cell of sweep
-        20260928-144003 logged another lab app)."""
-        self.terminate(plat)
+        20260928-144003 logged another lab app).  (WO-191) By package id: it may be the other lab's.  A force-stop
+        also cancels a fetch app's job (MEASURED, fetch-forge WO-002: job 999 gone after `am force-stop`)."""
+        self.terminate({"package": package})
 
     def alive(self, plat):
         """(Tier C, C6.0) The pid of plat's main process, or None when it is not running — the precondition of a
@@ -1075,18 +1085,33 @@ class Simctl:
     def terminate(self, plat, timeout=labkit.DEVICE_TIMEOUT):
         self._run("terminate", self.serial, plat["package"], timeout=timeout)   # exit 1 when not running: fine
 
-    def evict(self, plat):
+    def installed(self, prefixes):
+        """(WO-191) The installed bundle ids under any of `prefixes`.  `simctl listapps` prints an old-style plist,
+        which plistlib cannot read; plutil converts it."""
+        listing = self._run("listapps", self.serial, check=True)
+        try:
+            apps = json.loads(subprocess.run(["plutil", "-convert", "json", "-o", "-", "-"], input=listing,
+                                             capture_output=True, text=True, timeout=20).stdout)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            apps = None
+        if not isinstance(apps, dict) or not apps:   # every Simulator lists its system apps: none read is a failed read
+            raise SystemExit("`simctl listapps %s` could not be read — the other lab apps cannot be evicted; nothing "
+                             "from this step is scored" % self.serial)
+        return sorted(p for p in apps if p.startswith(tuple(prefixes)))
+
+    def evict(self, package):
         """(WO-027, C5.2) Another lab app, out of this step's way: uninstalled, since a terminated one is not.  Killed,
         nothing called its stop(), so its CoreLocation regions stay registered, and iOS relaunches it in the background
         when the location crosses one: a scenario's move, or the standing fix put back at a step's start.  Sweep
         20260928-144003: six iOS cells refused as contaminated, the react-native, capacitor and flutter apps booting
         0.6-1.6 s after the move, logging didExitRegion / didEnterRegion lab-fence-dwell.  Nothing is lost: every
         scenario starts from a fresh install of its own app, from the build on disk (reset_app).  Refused if it is
-        still installed, since it could still wake."""
-        self._run("uninstall", self.serial, plat["package"])
-        if self.container(plat, "app"):
+        still installed, since it could still wake.  (WO-191) By bundle id: it may be the other lab's, which
+        reinstalls its own app the same way."""
+        self._run("uninstall", self.serial, package)
+        if self.container({"package": package}, "app"):
             raise SystemExit("simctl uninstall %s left it installed on %s — its geofences could still wake it mid-step; "
-                             "nothing from this step is scored" % (plat["package"], self.serial))
+                             "nothing from this step is scored" % (package, self.serial))
 
     def neutral(self):
         return False                     # no Configuration triggers on iOS: nothing to settle

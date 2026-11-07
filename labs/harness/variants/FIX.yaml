@@ -1,7 +1,7 @@
 name: FIX
 description: everything under test, fixed — the native master and each bridge's own checkout
-# (WO-002, 2026-11-05) The first slice's variant.  Read by the vendored labkit.variant() (labkit.py:2874; bg-forge
-# 49d38d47f), whose schema this follows: `native` a label published to labs/m2 (and, once the iOS pin exists,
+# (WO-002, 2026-11-05) The first slice's variant.  Read by the vendored labkit.variant() (labkit.py:3061; bg-forge
+# 23f448c42), whose schema this follows: `native` a label published to labs/m2 (and, once the iOS pin exists,
 # labs/xcframeworks), `native_source` the full commit it was built from, `plugin` the checkout each platform builds.
 #
 # native: com.transistorsoft:tsbackgroundfetch:4.1.1-master-5de5242 in labs/m2, published by
@@ -10,7 +10,7 @@ description: everything under test, fixed — the native master and each bridge'
 #   still reads VERSION_NAME=4.1.1, so the label is 4.1.1-<branch>-<commit>.  The commit is in
 #   labs/m2/.provenance/4.1.1-master-5de5242.txt (dirty: no), which run.py's native_source() reads into every
 #   capture's run.json.  `./labkit setup` rebuilds the label from native_source.android when labs/m2 lacks it
-#   (labs/m2 is gitignored; fetch_pack.py's lab_setup.ensure_native).
+#   (labs/m2 is gitignored; fetch_pack._native_android, labkit.NATIVE's Android slot).
 # native_source.ios: none yet — the fetch iOS pin (labs/xcframeworks) is WO-002 phase 2, and no platform in this
 #   slice has an `ios:` host.
 # plugin: `worktree`, which each platform's lab.yaml maps to its own checkout; react-native maps it to `default`,

@@ -400,7 +400,8 @@ def judge(out, label, plat, scen, var, step):
     """(WO-027) A step's verdict, computed ONCE: main() reports it and writes summary.txt from it,
     and the device view is shown the same rows before the screenshot (final_view)."""
     cap = labkit.Capture(out)
-    j = {"cap": cap, "foreign": devices.contamination(cap.lines, label, cap.meta.get("os", "android")), "rows": [],
+    j = {"cap": cap, "foreign": devices.contamination(cap.lines, label, cap.meta.get("os", "android"),
+                                                      plat["package"]), "rows": [],   # (WO-191) by package too
          "expect": None, "inverted": labkit.must_fail(var, scen["name"], step["name"]), "ok": None}
     if j["foreign"]:
         j["ok"] = False
@@ -578,27 +579,13 @@ def run_host(dev, step, t_launch, deadline, stop, host, server=None, plat=None):
                     if h < n:
                         continue
                 else:
-                    if "network" in item:
-                        dev.network(**item["network"])
-                        what = "network " + " ".join("%s=%s" % (k, "on" if v else "off")
-                                                     for k, v in sorted(item["network"].items()))
-                    elif "server" in item:          # (C6.1) the step's lab server: run_step started it
-                        server.revoke()
-                        what = "server %s" % item["server"]
-                    elif "notification_tap" in item:    # (C5.3) the app's notification button, in the shade
-                        # (C5.3 review) a button that is not there is the SDK's doing (its layout or its id lost):
-                        # marked and scored (actionsDone), with the step's log kept, not a SystemExit
-                        missed = dev.notification_tap((plat or {}).get("package"), item["notification_tap"])
-                        what = "notification_tap %s%s" % (item["notification_tap"],
-                                                          " missed=%s" % missed if missed else "")
-                    elif "kill" in item:            # (WO-114) SIGKILL the app; the lab server counts from it
-                        what = "kill " + dev.kill(plat)
-                        if server is not None:
-                            server.killed()
-                    else:                           # (C6.1) location or power_save: a switch, read back
-                        kind = "location" if "location" in item else "power_save"
-                        note = getattr(dev, kind)(item[kind])    # (C6.1 pilot) location on: `dismissed=…` or ""
-                        what = "%s %s%s" % (kind, "on" if item[kind] else "off", " " + note if note else "")
+                    # (WO-191) The kind's handler (labkit.ACTION_HANDLERS), a product's among them.  Exactly one, as
+                    # _validate_moves checked at load: anything else is refused here, never sent as another kind.
+                    kinds = [k for k in labkit.ACTION_HANDLERS if k in item]
+                    if len(kinds) != 1:
+                        raise SystemExit("action %d does %s — not exactly one kind labkit.ACTION_HANDLERS knows"
+                                         % (i, " and ".join(kinds) or "nothing"))
+                    what = labkit.ACTION_HANDLERS[kinds[0]].run(dev, item, plat, server)
                     done = time.time()
                     dev.mark("host i=%d action=%s sent_ms=%d done_ms=%d mark_ms=%d"
                              % (i, what, began * 1000, done * 1000, time.time() * 1000))
@@ -609,6 +596,21 @@ def run_host(dev, step, t_launch, deadline, stop, host, server=None, plat=None):
         host["error"] = str(e.code if isinstance(e.code, str) else e)
     except Exception as e:
         host["error"] = "%s: %s" % (type(e).__name__, e)
+
+
+def end_capture_log(dev, plat, out, phases):
+    """The step's log, ended and written into the capture as logcat.txt; then (WO-191) the product's own reads into
+    the capture (labkit.CAPTURE_EXTRAS: fetch's `dumpsys jobscheduler <pkg>`), after the log is safe on disk, so an
+    extra that fails costs no log.  Its own function so the selftest can drive it: run_step needs a device."""
+    log_text = dev.end_log(plat)
+    phases["log_ended"] = time.time()
+    with open(os.path.join(out, "logcat.txt"), "w") as f:
+        f.write(log_text)
+    phases["log_written"] = time.time()
+    if labkit.CAPTURE_EXTRAS is not None:
+        labkit.CAPTURE_EXTRAS(dev, plat, out)
+        phases["capture_extras"] = time.time()
+    return log_text
 
 
 def run_step(dev, plat, scen, var, step, args, timings=None):
@@ -699,19 +701,18 @@ def run_step(dev, plat, scen, var, step, args, timings=None):
     # does whatever it declares.  The provenance below records this, not the key.
     reset = step is scen["steps"][0] or fresh
     actions = list((step["dialog"] or {}).get(dev.os) or [])   # the declared sequence, this OS
+    evicted = foreign_apps = None        # (WO-191) first step only: run.json `evicted` / `foreignTransistorApps`
     if step is scen["steps"][0]:
         # (WO-027) And no OTHER lab app is left running: one left on the Simulator for two hours
         # ticked through every flutter-ios step of the 2026-09-24 board and decided when each one
         # ended (how it was left is not known).  Ours to stop: the device is claimed.
         # (WO-027, C5.2) Nor able to be woken mid-step: on iOS a stopped one is relaunched by its own
         # geofences when the location moves, so there evict uninstalls it (Simctl.evict).
-        for name in labkit.platforms():
-            try:
-                other = labkit.platform(name, dev.os)
-            except SystemExit:
-                continue
-            if other["package"] != plat["package"]:
-                dev.evict(other)
+        # (WO-191) Every lab's, read from the device: the background-fetch lab shares it (labkit.evictions).
+        evicted, foreign_apps = labkit.evictions(dev.installed((labkit.VENDOR_PACKAGE_PREFIX,)), plat["package"],
+                                                 dev.os)
+        for package in evicted:
+            dev.evict(package)
         phases["others_stopped"] = time.time()
     if reset:
         dev.reset_app(plat, artifact(plat))
@@ -1167,11 +1168,7 @@ def run_step(dev, plat, scen, var, step, args, timings=None):
         pusher.join(timeout=10)
         if not pusher.is_alive():
             phases["pusher_joined"] = time.time()
-    log_text = dev.end_log(plat)
-    phases["log_ended"] = time.time()
-    with open(os.path.join(out, "logcat.txt"), "w") as f:
-        f.write(log_text)
-    phases["log_written"] = time.time()
+    log_text = end_capture_log(dev, plat, out, phases)
     # (WO-027, Tier B) Did the driver keep the schedule the step declared — its anchor, a slot per
     # `at_s` and none late, the per-tick fix the host expects?  A LAB defect, not a verdict: printed
     # and recorded in run.json, never scored.
@@ -1213,8 +1210,13 @@ def run_step(dev, plat, scen, var, step, args, timings=None):
     phases["db_pulled"] = time.time()
     with open(os.path.join(out, "run.json"), "w") as f:
         json.dump({"label": label, "platform": plat["name"], "os": dev.os,
+                   # (WO-191) the app under test, which summarize hands contamination: a re-score needs it too
+                   "package": plat["package"],
                    "scenario": scen["name"],
                    "variant": var["name"], "step": step["name"], "serial": dev.serial,
+                   # (WO-191) a first step's: what it stopped (Android) or uninstalled (iOS), and the non-lab Transistor
+                   # apps it found (iOS leaves them installed, D1), so a board shows a dirty device.  null: a later step
+                   "evicted": evicted, "foreignTransistorApps": foreign_apps,
                    "native": var.get("native"), "native_source": native_source(var, dev.os),
                    # (WO-027) what the installed artifact actually embeds, where readable
                    "native_resolved": dev.native_resolved(plat, artifact(plat)),

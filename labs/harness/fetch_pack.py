@@ -1,14 +1,21 @@
 """The fetch pack (WO-002): every place background-fetch differs from the vendored bg-forge harness, in ONE module.
 
-The harness beside this file is bg-forge's, vendored byte-identical (labs/VENDORED.md, D1: commit 49d38d47f).  It
-carries background-geolocation names at known seams.  Nothing here edits a vendored file: each override below
-rebinds a name in a vendored module after that module is imported, and each names the vendored line it stands in
-for (`SEAM`) — the hook bg-forge should grow in Phase B, so this module shrinks to data.
+The harness beside this file is bg-forge's, vendored byte-identical (labs/VENDORED.md, D1: commit 23f448c42).  It
+carries background-geolocation names at known seams.  Nothing here edits a vendored file, and each override names the
+vendored line it stands in for (`SEAM`).
 
-How it is made active in EVERY Python process the harness starts:
+labkit.py's seams are the product hooks bg-forge grew for this pack (bg-forge WO-191: ACTION_HANDLERS, SDK_LOG,
+EVIDENCE, CAPTURE_EXTRAS, HEADLESS_NAMES, NATIVE, …).  labkit loads labs/harness/lab_product.py itself, at the end of
+its own definitions, and lab_product.py calls register() below: so labkit gets fetch's seams in every process that
+imports it, with no post-import patch.  The other vendored modules (backends, run, sweep, lab_setup) have no such hook
+until Phase B: their overrides rebind names after the module is imported, by the activation below — and since
+register() runs while backends.py is still loading, lab_product.py refuses a process without that activation (exit 2):
+it would mix fetch's labkit seams with bg-geo's backends, run and sweep.
+
+How the activation is made active in EVERY Python process the harness starts:
   * `./labkit` exports PYTHONPATH=labs/harness/pack and FETCH_LABKIT_PACK=1.  labs/harness/pack/sitecustomize.py
     (chaining whatever sitecustomize the interpreter ships, Homebrew's included) calls activate().
-  * activate() installs a post-import hook: when a vendored module (`labkit`, `backends`, `run`, …) is imported from
+  * activate() installs a post-import hook: when a vendored module (`backends`, `run`, …) is imported from
     labs/harness, its patches run right after its body does.
   * A vendored SCRIPT run as __main__ (`run.py`, which sweep.py starts as `sys.executable -u run.py` at
     sweep.py:644; `lab_setup.py`, which re-execs itself) has its own globals patched the moment its main() is
@@ -29,12 +36,11 @@ import json
 import os
 import re
 import sys
-import threading
 import time
 
-HARNESS = os.path.dirname(os.path.abspath(__file__))
+HARNESS = os.path.dirname(os.path.realpath(__file__))   # real paths throughout: Python gives a script its realpath
 LABS = os.path.dirname(HARNESS)
-UPSTREAM = "bg-forge 49d38d47f"
+UPSTREAM = "bg-forge 23f448c42"
 ENV_FLAG = "FETCH_LABKIT_PACK"
 ENV_REPORT = "FETCH_PACK_REPORT"       # a file: every patched module appends one JSON line (the selftest's proof)
 
@@ -54,6 +60,10 @@ JOB_SETTLE_S = 1.5
 JOB_REPEAT_S = 5.5
 JOBSCHEDULER = "jobscheduler.txt"                   # the capture's `dumpsys jobscheduler <pkg>`, at the step's end
 FETCH_ACTIONS = ("job", "force_stop")
+# The names a fetch headless task is handed, by the lab's convention: a fetch lab driver writes `event=fetch` for a
+# HeadlessEvent whose `timeout` is false and `event=timeout` for one whose `timeout` is true (fetch's HeadlessEvent is
+# {taskId, timeout}, with no name).  labkit.HEADLESS_NAMES (WO-191) generates a headlessEvents.<name> metric per name.
+HEADLESS_NAMES = ("fetch", "timeout")
 # The first slice's suite (WO-002 Log, 2026-11-05).  A name with no scenario file yet is refused by sweep as usual.
 SUITE = ["termination-calibration", "api-smoke", "events-fetch-android"]
 LISTS = {}
@@ -95,17 +105,13 @@ def _extend(obj, name, value):
 # Vendored functions the pack COPIES or RE-IMPLEMENTS rather than wraps, each with the sha256 of its source
 # (inspect.getsource) at UPSTREAM.  A re-vendor that changes one stops the pack (exit 2) until its fetch copy here is
 # reviewed against the new source and the hash updated: vendor_check pins the files' bytes, this pins the logic the
-# pack keeps a second copy of.  The run_host copy is approved on this condition (WO-002 Log, 2026-11-05) until bg-forge
-# grows an ACTION_HANDLERS seam and the copy is deleted.
+# pack keeps a second copy of.  (WO-191 deleted four: run.run_host's copy for ACTION_HANDLERS, labkit.Capture.sdk's
+# for SDK_LOG, lab_setup.published and ensure_native's for NATIVE.)
 PINNED = {
-    "run.run_host": "a96c663497be2bdb49ba0bcfd0f9f4228ea9b76b30a9df42e21f7311c51ad253",
     "backends.Simctl.native_resolved": "d096d885420974749ff7c464745e85ad4a3e8663e2e1a0a0c31d454eb7b81c8a",
     "backends.Simctl.permissions": "21c189bfb25c46c7f4926b616cf7bae886c6f8cb4b91f6cc2807ead03c4692d2",
     "backends.Adb.sdk_db": "a409db941314b6e45fbb33e34026893c2efbff300af1451e770b9e42deb39e44",
     "backends.Simctl.sdk_db": "38ece09ef32f44b212005f479491f7629bd5f9c58dae672b00df07dc63d1abd4",
-    "labkit.Capture.sdk": "08d8b8ca25c8476e4fa88ead814737b21f57ea5281757b2669dcf675f8500e7f",
-    "lab_setup.ensure_native": "8b5090f3b1ad21e13f555ba1e17d96301df76578ac2d27b49651737b6e5bdba9",
-    "lab_setup.published": "bd7ac84931e63616421294e982e568b5658aaea5f602df89328e29146afd2cff",
     "lab_setup.swift_api_published": "cad25bdcdacdfae1d47e8e7052e0d8a1a050327668656c308f332725f285ce0a",
     "lab_setup.capacitor_ready": "4fa7054ffe195d899aa0e05bf6ff6dd6f1fc5f8721b9be4515d586913a4001de",
     "lab_setup.ensure_capacitor": "f5dcaef7a00928af12c5f9a5cd68bd10c8cd72774a4cb25a223da804c6cd99d1",
@@ -184,7 +190,7 @@ def _backends(m):
     import labkit
     _check_pinned("backends", m)
     _rebind(m, "SDK_TAG", SDK_TAG)
-    # The tap's predicate is a format string around SDK_SUBSYSTEM (backends.py:1289-1292), and fetch has no
+    # The tap's predicate is a format string around SDK_SUBSYSTEM (backends.py:1314-1317), and fetch has no
     # subsystem: the value closes the subsystem clause and opens fetch's own.  The predicate the Simulator gets:
     #   (eventMessage CONTAINS "LAB ") OR (subsystem == "com.transistorsoft.fetchlab.none")
     #   OR (eventMessage BEGINSWITH "[TSB") OR (eventMessage CONTAINS "LICENSE VALIDATION FAILURE")
@@ -250,24 +256,7 @@ def _backends(m):
     native_resolved.vendored = original_native_resolved
     _rebind(m.Simctl, "native_resolved", native_resolved)
 
-    original_end_log = m.Adb.end_log
-
-    def end_log(self, plat):
-        """The vendored log dump, then the host's read of the app's jobs: `dumpsys jobscheduler <pkg>` into the
-        capture as jobscheduler.txt (the step's dir, which the run_step wrapper below hands the device)."""
-        text = original_end_log(self, plat)
-        out = getattr(self, "_fetch_capture_out", None)
-        if out:
-            r = labkit.device_call(["adb", "-s", self.serial, "shell", "dumpsys", "jobscheduler", plat["package"]],
-                                   timeout=30)
-            with open(os.path.join(out, JOBSCHEDULER), "w") as f:
-                f.write("# adb -s %s shell dumpsys jobscheduler %s  (exit %d, read %s)\n%s%s"
-                        % (self.serial, plat["package"], r.returncode, time.strftime("%Y-%m-%d %H:%M:%S"),
-                           r.stdout, r.stderr))
-        return text
-    _rebind(m.Adb, "end_log", end_log)
-
-    # The fetch host actions' device primitives (dispatched by the run.run_host wrapper below).
+    # The fetch host actions' device primitives, run by labkit.ACTION_HANDLERS' `job` and `force_stop` (register()).
     def job(self, plat, value, expect="present"):
         """`cmd jobscheduler run -f <pkg> <jobId>`, outside the SDK's guards: a repeat of the same job on this device
         waits out JOB_REPEAT_S from the last one (FetchJobService.java:38-51); JOB_SETTLE_S after scheduling is the
@@ -335,35 +324,39 @@ def _backends(m):
         _extend(m.Simctl, name, refuse)
     return ["SDK_TAG", "SDK_SUBSYSTEM", "to_logcat", "Adb.sdk_db", "Simctl.sdk_db", "PERMISSIONS",
             "FLAG_PERMISSIONS", "PRIVACY", "SDK_ALERT_TITLES", "Simctl.permissions", "Simctl.native_resolved",
-            "Adb.end_log", "Adb.job", "Adb.force_stop", "Simctl.job", "Simctl.force_stop"]
+            "Adb.job", "Adb.force_stop", "Simctl.job", "Simctl.force_stop"]
 
 
 seam("backends.SDK_TAG", "data", "backends.py:40", "fetch's logcat tag, TSBackgroundFetch")
-seam("backends.SDK_SUBSYSTEM", "data", "backends.py:39 + :1289-1292",
+seam("backends.SDK_SUBSYSTEM", "data", "backends.py:39 + :1314-1317",
      "fetch has no os_log subsystem; the value is spliced into the tap predicate to add `eventMessage BEGINSWITH "
      "\"[TSB\"` — seam: an IOS_LOG_PREDICATE constant")
-seam("backends.to_logcat", "wrap", "backends.py:992-1021 (:1015)",
+seam("backends.to_logcat", "wrap", "backends.py:1002-1031 (:1025)",
      "retags fetch's NSLog lines (`[TSB…`) to SDK_TAG — seam: an sdk_line(ev) predicate")
-seam("backends.Adb.sdk_db / Simctl.sdk_db", "replace", "backends.py:633-635, :1394-1400; run.py:1211",
+seam("backends.Adb.sdk_db / Simctl.sdk_db", "replace", "backends.py:643-645, :1419-1425; run.py:1209",
      "no SDK database: b'' (run.py still writes an empty transistor_log.db) — seam: SDK_DB = None skips the pull")
 seam("backends.PERMISSIONS / FLAG_PERMISSIONS / PRIVACY / SDK_ALERT_TITLES", "data",
-     "backends.py:732, :954, :751, :806", "no location/motion permissions, no SDK alert")
-seam("backends.Simctl.permissions", "replace", "backends.py:1094-1102 (:1095 hardcodes location-always, motion)",
+     "backends.py:742, :964, :761, :816", "no location/motion permissions, no SDK alert")
+seam("backends.Simctl.permissions", "replace", "backends.py:1119-1127 (:1120 hardcodes location-always, motion)",
      "grants nothing — seam: an IOS_GRANTS constant")
-seam("backends.Simctl.native_resolved", "replace", "backends.py:1458-1490 (:1485 hardcodes TSLocationManager)",
+seam("backends.Simctl.native_resolved", "replace", "backends.py:1483-1515 (:1510 hardcodes TSLocationManager)",
      "reads PROJECT:TSBackgroundFetch-<build> — seam: a NATIVE_PROJECT constant")
-seam("backends.Adb.end_log", "wrap", "backends.py:629-631; run.py:1170",
-     "adds the host's `dumpsys jobscheduler <pkg>` read as jobscheduler.txt — seam: a capture_extras(dev, plat, out) "
-     "hook")
-seam("backends.Adb.job / Adb.force_stop / Simctl.job / Simctl.force_stop", "extend", "backends.py:238 (beside Adb.kill)",
+seam("backends.Adb.job / Adb.force_stop / Simctl.job / Simctl.force_stop", "extend", "backends.py:248 (beside Adb.kill)",
      "the fetch host actions' device primitives; the Simulator's two refuse (actions are Android's)")
 
 # ---------------------------------------------------------------------------------------------------- labkit
 
 
-@patches("labkit")
-def _labkit(m):
-    _check_pinned("labkit", m)
+def register(lk):
+    """(bg-forge WO-191, D3) fetch's seams in labkit.py, applied by labkit itself: lab_product.py, which labkit loads at
+    the end of its own definitions, calls this with the module (`lk`) — once per labkit module a process holds — and
+    labkit exits 2 if it raises.  Everything here changes only `lk`: backends.py may still be loading (WO-191 Part 3)."""
+    symbols = _register(lk)
+    _report("labkit", lk.__name__ == "__main__", symbols)
+    return symbols
+
+
+def _register(m):
     # configure(config, onEvent, onTimeout?) and status(callback?): the types name callbacks onEvent/onTimeout/task,
     # which the vendored name test (`cb` or `…callback…`) does not count — so configure would read as taking two
     # values before its callback.  :1421 already finds callbacks by TYPE; this widens the name test to fetch's names.
@@ -379,16 +372,15 @@ def _labkit(m):
     _rebind(m, "FGS_PROMOTED", re.compile(re.escape(SDK_TAG) + vendored_fgs.pattern[len("TSLocationManager"):],
                                           vendored_fgs.flags))
 
-    def sdk(self, like):
-        """The SDK's own lines in the window, on both OSes from the log (fetch has no database): Android's logcat
-        tag TSBackgroundFetch, and the iOS tap's lines retagged there (backends.to_logcat above), from the app under
-        test's own processes only (own_pids).  Logcat is device-wide, and bg-forge's lab apps link TSBackgroundFetch
-        too: the database the vendored method read was the app's own, so it was scoped by construction.  `like` is
-        the vendored callers' SQL LIKE pattern (`%needle%`)."""
-        rx, own = like_regex(like), _own_pids(m, self)
-        return [self.norm[l] for l in self.window
-                if SDK_LINE.match(l) and m.line_pid(l) in own and rx.search(self.norm[l])]
-    _rebind(m.Capture, "sdk", sdk)
+    # The SDK's own lines (bg-forge WO-191's SDK_LOG): on both OSes from the log, never transistor_log.db (fetch has
+    # no database) — Android's logcat tag TSBackgroundFetch, and the iOS tap's lines retagged there (backends.to_logcat
+    # above), from the app under test's own processes only (own_pids).  Logcat is device-wide, and bg-forge's lab apps
+    # link TSBackgroundFetch too: the database bg-geo's reader reads was the app's own, so it was scoped by
+    # construction.  `like` is the callers' SQL LIKE pattern (`%needle%`).
+    def sdk_log(c, like):
+        rx, own = like_regex(like), _own_pids(m, c)
+        return [c.norm[l] for l in c.window if SDK_LINE.match(l) and m.line_pid(l) in own and rx.search(c.norm[l])]
+    _rebind(m, "SDK_LOG", sdk_log)
 
     # Every step that expects anything also expects (WO-002 review):
     #   * configureOutcome ok — its configure() resolved: a rejected or hung configure leaves start/stop/status acting
@@ -397,22 +389,18 @@ def _labkit(m):
     #     configures once per JS context, and run.py clears the log at every step).
     #   * foreignLines 0 — no SDK, headless or task line from a process that is not the app's (own_pids): logcat is
     #     device-wide, bg-forge's lab apps link TSBackgroundFetch, and the vendored headless metrics read every pid.
-    # Both read the whole log and are complete once the driver's configure() has settled (evidence_state below), so
-    # they are early metrics: a step that may end on its evidence still does.
-    _rebind(m, "IMPLICIT", dict(m.IMPLICIT, configureOutcome="ok", foreignLines=0))
-    _rebind(m, "EARLY_METRICS", m.EARLY_METRICS | {"configureOutcome", "foreignLines"})
+    # Both read the whole log and are complete once the driver's configure() has settled (EVIDENCE below), so they are
+    # early metrics: a step that may end on its evidence still does.  Added in place (WO-191: register's hook).
+    _extend(m.IMPLICIT, "configureOutcome", "ok")
+    _extend(m.IMPLICIT, "foreignLines", 0)
+    for name in ("configureOutcome", "foreignLines"):
+        if name in m.EARLY_METRICS:
+            raise PackError("vendored labkit.EARLY_METRICS already has `%s` — reconcile fetch_pack.py with it" % name)
+        m.EARLY_METRICS.add(name)
 
-    original_evidence_state = m.evidence_state
-
-    def evidence_state(lines, step, os_name):
-        """The vendored live read, and not complete while a configure() the driver made has not settled, or (a fresh
-        process) before the driver has logged its boot configure decision — so configureOutcome is final when the
-        step ends on its evidence."""
-        complete, alive = original_evidence_state(lines, step, os_name)
-        if complete and not configure_settled(m, lines, step):
-            return False, alive
-        return complete, alive
-    _rebind(m, "evidence_state", evidence_state)
+    # Not complete while a configure() the driver made has not settled, or (a fresh process) before the driver has
+    # logged its boot configure decision — so configureOutcome is final when the step ends on its evidence.
+    _rebind(m, "EVIDENCE", lambda lines, step, os_name: configure_settled(m, lines, step))
 
     original_expectations = m.expectations
 
@@ -425,76 +413,11 @@ def _labkit(m):
         return merged
     _rebind(m, "expectations", expectations)
 
-    original_validate_moves = m._validate_moves
-
-    def _validate_moves(where, step, excused=()):
-        """The vendored check, with fetch's actions in it: each `job:` / `force_stop:` item is checked here, then
-        handed to the vendored check as a `kill: true` stand-in, so its `after:`, `delay_s`, the window budget and
-        the iOS excuse are held by vendored code; the resolved item gets its own key back."""
-        acts = step.get("actions")
-        if not isinstance(acts, list) or not any(isinstance(a, dict) and set(a) & set(FETCH_ACTIONS) for a in acts):
-            return original_validate_moves(where, step, excused)
-        own, stand, seen = {}, [], []
-        for i, a in enumerate(acts):
-            kinds = [k for k in FETCH_ACTIONS if isinstance(a, dict) and k in a]
-            if not kinds:
-                stand.append(a)
-                continue
-            at = "%s actions %d" % (where, i)
-            does = kinds + [k for k in m.ACTION_DOES if k in a]
-            if len(does) != 1:
-                raise SystemExit("%s: an action does exactly one of %s — not %s"
-                                 % (at, ", ".join(m.ACTION_DOES + FETCH_ACTIONS), " and ".join(does)))
-            kind, value = kinds[0], a[kinds[0]]
-            delay = a.get("delay_s", 0)
-            expect = a.get("expect")
-            extra = 0
-            if "expect" in a and (kind != "job" or expect not in ("present", "absent")):
-                raise SystemExit("%s: `expect:` belongs to a `job:` and is `present` (it runs: the default) or "
-                                 "`absent` (JobScheduler holds no such job) — not %r on a `%s:`" % (at, expect, kind))
-            if kind == "job":
-                if isinstance(value, bool) or not (isinstance(value, int) or (isinstance(value, str) and value)):
-                    raise SystemExit("%s: `job:` is the jobId JobScheduler holds (`%d`, the fetch job) or a "
-                                     "scheduleTask taskId (its String.hashCode) — not %r" % (at, FETCH_JOB_ID, value))
-                if not isinstance(delay, (int, float)) or isinstance(delay, bool) or delay < JOB_SETTLE_S:
-                    raise SystemExit("%s: a `job:` waits `delay_s: %g` or more after its conditions — "
-                                     "FetchJobService ignores a run < 1 s after the job was scheduled "
-                                     "(FetchJobService.java:24-31), and a run it ignores reads as an SDK defect"
-                                     % (at, JOB_SETTLE_S))
-                if job_id(value) in seen:          # the host waits out the SDK's duplicate guard: budget for it
-                    extra = JOB_REPEAT_S
-                seen.append(job_id(value))
-            elif value is not True:
-                raise SystemExit("%s: `force_stop:` is true, an `am force-stop` of the app — not %r" % (at, value))
-            own[i] = (kind, value, delay, expect)
-            s = {k: v for k, v in a.items() if k not in (kind, "expect")}
-            s["kill"] = True
-            if extra:
-                s["delay_s"] = delay + extra
-            stand.append(s)
-        step["actions"] = stand
-        original_validate_moves(where, step, excused)
-        resolved = []
-        for i, item in enumerate(step["actions"]):
-            if i in own:
-                kind, value, delay, expect = own[i]
-                item = {k: v for k, v in item.items() if k != "kill"}
-                item[kind] = value
-                if expect is not None:
-                    item["expect"] = expect
-                if "delay_s" in acts[i]:
-                    item["delay_s"] = delay
-                else:
-                    item.pop("delay_s", None)
-            resolved.append(item)
-        step["actions"] = resolved
-    _rebind(m, "_validate_moves", _validate_moves)
-
     original_validate_hooks = m._validate_hooks
 
     def _validate_hooks(where, step, excused=()):
         """The vendored check, with fetch's constants: a probe of a property is held to `function|object` at `$`
-        (labkit.py:1165-1177: bg-geo's properties are namespaces and objects), but fetch's STATUS_* / NETWORK_TYPE_*
+        (labkit.py:1270-1282: bg-geo's properties are namespaces and objects), but fetch's STATUS_* / NETWORK_TYPE_*
         are numbers on the default export, and the driver's probe reports one as it is (labapi.js:378-383).  A probe
         of a property whose vocabulary entry carries `wire:` (a constant) may assert `$` by `type` (its wire) and
         `equals` (one of its type's values) — checked here; the vendored check sees `function|object` in its place,
@@ -524,35 +447,131 @@ def _labkit(m):
             step["hooks"][i] = dict(h, returns=dict(h["returns"], **{"$": checks}))
     _rebind(m, "_validate_hooks", _validate_hooks)
 
+    # The names a headless task is handed (HEADLESS_NAMES above): labkit generates headlessEvents.<name> from them
+    # after register(), so they are fetch's, not the vocabulary's.
+    _rebind(m, "HEADLESS_NAMES", lambda: list(HEADLESS_NAMES))
+
+    # After the step's log is on disk: the host's read of the app's jobs, `dumpsys jobscheduler <pkg>`, into the capture
+    # as jobscheduler.txt (jobIds, jobsAtForceStop and own_pids read it).  Android's: the Simulator has no JobScheduler.
+    def capture_extras(dev, plat, out):
+        if dev.os != "android":
+            return
+        r = m.device_call(["adb", "-s", dev.serial, "shell", "dumpsys", "jobscheduler", plat["package"]], timeout=30)
+        with open(os.path.join(out, JOBSCHEDULER), "w") as f:
+            f.write("# adb -s %s shell dumpsys jobscheduler %s  (exit %d, read %s)\n%s%s"
+                    % (dev.serial, plat["package"], r.returncode, time.strftime("%Y-%m-%d %H:%M:%S"), r.stdout, r.stderr))
+    _rebind(m, "CAPTURE_EXTRAS", capture_extras)
+
+    # fetch's host actions, as two kinds of labkit's own (ACTION_HANDLERS): validated and run by the vendored
+    # _validate_moves and run_host, scored by actionsDone.  `expect:` is the job's (both declare it, so an `expect:`
+    # on a force_stop is refused in fetch's own words, below).  Android's only (the default `oses`).
+    _extend(m.ACTION_HANDLERS, "job", m.ActionHandler(_job_ok, lambda dev, item, plat, server: dev.job(
+        plat, item["job"], item.get("expect", "present")), keys=("expect",)))
+    _extend(m.ACTION_HANDLERS, "force_stop", m.ActionHandler(
+        _force_stop_ok, lambda dev, item, plat, server: dev.force_stop(plat), keys=("expect",)))
+
+    # The native SDK a label is built from and published as: tsbackgroundfetch in labs/m2 and TSBackgroundFetch's
+    # xcframework, both OSes from one checkout (native/background-fetch).  Android's slot is fetch's own, so its publish is
+    # publish_native_fetch.sh (the label checked, the POM and AAR verified, the provenance written only after them;
+    # bg-forge's publish_native.sh is not vendored), into a worktree named `native` as before; iOS's stops at its pin.
+    for os_name, values in (("android", {"submodule": "native/background-fetch", "build_root": "android",
+                                         "gradle_task": ":tsbackgroundfetch:publishToMavenLocal",
+                                         "version_property": "TS_BACKGROUND_FETCH_VERSION_NAME",
+                                         "artifacts": (ANDROID_ARTIFACT,), "build": _native_android}),
+                            ("ios", {"artifact": XCFRAMEWORK, "build": _native_ios})):
+        for key, value in values.items():
+            if key not in m.NATIVE[os_name]:
+                raise PackError("vendored labkit.NATIVE[%r] has no `%s` — the seam moved since %s"
+                                % (os_name, key, UPSTREAM))
+            m.NATIVE[os_name][key] = value
+
     _fetch_metrics(m)
-    return ["CALLBACK_ARG", "FGS_PROMOTED", "Capture.sdk", "IMPLICIT", "EARLY_METRICS", "evidence_state",
-            "expectations", "_validate_moves", "_validate_hooks", "METRICS(+fetch)"]
+    return ["CALLBACK_ARG", "FGS_PROMOTED", "SDK_LOG", "IMPLICIT", "EARLY_METRICS", "EVIDENCE", "expectations",
+            "_validate_hooks", "HEADLESS_NAMES", "CAPTURE_EXTRAS", "ACTION_HANDLERS(+job, force_stop)", "NATIVE",
+            "METRICS(+fetch)"]
 
 
-seam("labkit.CALLBACK_ARG", "data", "labkit.py:185",
-     "the vendored pattern plus onEvent/onTimeout/task — seam: find callbacks by type (`=>`), as :1421 does")
-seam("labkit.FGS_PROMOTED", "data", "labkit.py:4428",
+def _expect_ok(at, item, kind):
+    expect = item.get("expect")
+    if "expect" in item and (kind != "job" or expect not in ("present", "absent")):
+        raise SystemExit("%s: `expect:` belongs to a `job:` and is `present` (it runs: the default) or "
+                         "`absent` (JobScheduler holds no such job) — not %r on a `%s:`" % (at, expect, kind))
+
+
+def _job_ok(at, item, step):
+    """A `job:` action (ACTION_HANDLERS' validate): its value, its `delay_s` outside the SDK's scheduling guard, and the
+    seconds it can take beyond that — JOB_REPEAT_S when an earlier action of the step fires the same job, since the
+    host then waits out the SDK's duplicate guard (Adb.job).  `item` is step["actions"][i] itself (WO-191): found by
+    identity, never by equality, or an equal repeat would read as the first."""
+    _expect_ok(at, item, "job")
+    value, delay = item["job"], item.get("delay_s", 0)
+    if isinstance(value, bool) or not (isinstance(value, int) or (isinstance(value, str) and value)):
+        raise SystemExit("%s: `job:` is the jobId JobScheduler holds (`%d`, the fetch job) or a "
+                         "scheduleTask taskId (its String.hashCode) — not %r" % (at, FETCH_JOB_ID, value))
+    if not isinstance(delay, (int, float)) or isinstance(delay, bool) or delay < JOB_SETTLE_S:
+        raise SystemExit("%s: a `job:` waits `delay_s: %g` or more after its conditions — "
+                         "FetchJobService ignores a run < 1 s after the job was scheduled "
+                         "(FetchJobService.java:24-31), and a run it ignores reads as an SDK defect" % (at, JOB_SETTLE_S))
+    actions = step.get("actions") or []
+    i = next(j for j, a in enumerate(actions) if a is item)
+    earlier = [job_id(a["job"]) for a in actions[:i] if isinstance(a, dict) and "job" in a]
+    return JOB_REPEAT_S if job_id(value) in earlier else 0
+
+
+def _force_stop_ok(at, item, step):
+    _expect_ok(at, item, "force_stop")
+    if item["force_stop"] is not True:
+        raise SystemExit("%s: `force_stop:` is true, an `am force-stop` of the app — not %r" % (at, item["force_stop"]))
+    return 0
+
+
+def _native_android(var, done, logs, setup):
+    """labkit.NATIVE["android"]["build"], lab_setup.ensure_native's slot (WO-191): nothing for a published label; else
+    native/background-fetch at its native_source, built and published by publish_native_fetch.sh."""
+    if done:
+        return
+    wt = setup.native_checkout("native/background-fetch", var["native_source"]["android"], "native")
+    print("(a few minutes: Gradle builds tsbackgroundfetch and publishes it to labs/m2)")
+    setup.sh([os.path.join(setup.HARNESS, "publish_native_fetch.sh"), var["native"], wt],
+             log=os.path.join(logs, "native-android.log"))
+
+
+def _native_ios(var, done, logs, setup):
+    """labkit.NATIVE["ios"]["build"]: a published label needs nothing; fetch's iOS pin is not built yet."""
+    if done:
+        return
+    raise SystemExit("setup stopped: the iOS pin for fetch (xcframeworks/%s/%s) is not built yet — WO-002 phase 2"
+                     % (var["native"], XCFRAMEWORK))
+
+
+seam("labkit.CALLBACK_ARG", "data", "labkit.py:187",
+     "the vendored pattern plus onEvent/onTimeout/task — seam: find callbacks by type (`=>`), as :1526 does")
+seam("labkit.FGS_PROMOTED", "data", "labkit.py:4634",
      "the vendored pattern under fetch's tag: fetch starts no foreground service, so it never matches")
-seam("labkit.IOS_GRACE_S", "none", "labkit.py:4413, ios_grace :4444",
+seam("labkit.IOS_GRACE_S", "none", "labkit.py:4619, ios_grace :4650",
      "not overridden: its keys are geo (addGeofence, watchPosition), no fetch hook names them, so 'default' (2 s)")
-seam("labkit.Capture.sdk", "replace", "labkit.py:3193-3215",
-     "reads TSBackgroundFetch lines from the log on both OSes, never transistor_log.db — seam: SDK log adapter")
-seam("labkit._validate_moves", "wrap", "labkit.py:1565-1567 (ACTION_DOES), :1582-1688",
-     "admits `job:` and `force_stop:` — seam: an ACTION_VALIDATORS table")
-seam("labkit._validate_hooks", "wrap", "labkit.py:1165-1177 (a property probe's `$` is function|object)",
+seam("labkit.SDK_LOG", "hook", "labkit.py:3386-3412",
+     "reads TSBackgroundFetch lines from the log on both OSes, never transistor_log.db")
+seam("labkit.ACTION_HANDLERS", "hook", "labkit.py:1773",
+     "`job:` and `force_stop:`, two action kinds of labkit's own")
+seam("labkit._validate_hooks", "wrap", "labkit.py:1270-1282 (a property probe's `$` is function|object)",
      "a probe of a constant (STATUS_*, NETWORK_TYPE_*: numbers) may assert its type and value — seam: "
      "`allowed |= wire_of(member)` for a property whose return has a `wire`")
-seam("labkit.headless_names", "data", "labkit.py:3383-3386, :3411 (import time)",
-     "reads vocabulary enums.Event: fetch's vocabulary carries [fetch, timeout] (a lab convention) — seam: a pack "
-     "hook for headless names; `locationerror` stays appended")
-seam("labkit.METRICS", "extend", "labkit.py:3221-3227 (the registry: no override)",
+seam("labkit.HEADLESS_NAMES", "hook", "labkit.py:3587-3592",
+     "fetch and timeout (HEADLESS_NAMES): the vocabulary carries no Event enum any more")
+seam("labkit.METRICS", "extend", "labkit.py:3419-3425 (the registry: no override)",
      "fetch's metrics: SDK-line counts, fetchTally, jobIds, jobsRegistered, configureOutcome")
-seam("labkit.IMPLICIT / EARLY_METRICS", "data", "labkit.py:4316, :4339 (IMPLICIT read at :4746 with setdefault)",
+seam("labkit.IMPLICIT / EARLY_METRICS", "hook", "labkit.py:4522, :4545",
      "adds `configureOutcome: ok` and `foreignLines: 0` to every step that expects anything, both early (whole-log) "
-     "metrics — seam: a pack hook for implicit expectations")
-seam("labkit.evidence_state", "wrap", "labkit.py:4604",
-     "not complete while a configure() the driver made is unsettled — seam: an evidence hook per product")
-seam("labkit.expectations", "wrap", "labkit.py:4732",
+     "metrics, in place")
+seam("labkit.EVIDENCE", "hook", "labkit.py:4890",
+     "not complete while a configure() the driver made is unsettled")
+seam("labkit.CAPTURE_EXTRAS", "hook", "run.py:601-614 (end_capture_log)",
+     "the host's `dumpsys jobscheduler <pkg>` read as jobscheduler.txt (Android)")
+seam("labkit.NATIVE", "hook", "labkit.py:275; lab_setup.py:236-242, :414-429; inventory.py:30",
+     "tsbackgroundfetch / TSBackgroundFetch.xcframework; fetch's own Android slot (publish_native_fetch.sh) and an "
+     "iOS slot that stops at the pin")
+seam("labkit.expectations", "wrap", "labkit.py:4942",
      "a `process: live` step expects configureOutcome '-' (the driver configures once per JS context)")
 
 # ---------------------------------------------------------------------------------------------------- metrics
@@ -735,54 +754,9 @@ def _package_of(c):
 # ---------------------------------------------------------------------------------------------------- run
 
 
-def _fetch_kind(item):
-    return next((k for k in FETCH_ACTIONS if isinstance(item, dict) and k in item), None)
-
-
 @patches("run")
 def _run(m):
-    import labkit
     _check_pinned("run", m)
-    original_run_host = m.run_host
-
-    def run_host(dev, step, t_launch, deadline, stop, host, server=None, plat=None):
-        """The vendored runner for every move and action it knows, untouched; fetch's `job:` / `force_stop:` items
-        on a companion thread with the same rule — each acts once the log shows its `after:` (labkit.after_unmet over
-        the driver's own lines and the host's marks) plus `delay_s`, and is marked `host i=<i> action=…` at its own
-        index, which actionsDone scores.  The vendored runner is handed the step with each fetch item's `after:`
-        replaced by a condition no log ever shows, so it keeps every index and never sends one.
-
-        A PACK-SIDE COPY of run.run_host's wait-then-act loop (run.py:543-580), for fetch's kinds only: the
-        vendored dispatch is a closed if/elif whose last branch treats any other key as `power_save`
-        (run.py:581-601).  The upstream seam (an ACTION_HANDLERS table) deletes this copy."""
-        actions = step.get("actions") or []
-        mine = {i: a for i, a in enumerate(actions) if _fetch_kind(a)}
-        if not mine:
-            return original_run_host(dev, step, t_launch, deadline, stop, host, server, plat)
-        never = [{"point": "fetch-pack-owned-%d" % os.getpid()}]
-        shadow = dict(step, actions=[dict(a, after=never) if i in mine else a for i, a in enumerate(actions)])
-        others = bool(step.get("moves")) or len(mine) < len(actions)
-        companion = threading.Thread(target=_fetch_runner, args=(labkit, dev, step, mine, t_launch, deadline, stop,
-                                                                  host, plat), daemon=True)
-        companion.start()
-        if others:
-            original_run_host(dev, shadow, t_launch, deadline, stop, host, server, plat)
-        companion.join()
-    run_host.vendored = original_run_host
-    _rebind(m, "run_host", run_host)
-
-    original_run_step = m.run_step
-
-    def run_step(dev, plat, scen, var, step, args, timings=None):
-        """The vendored step, with the device told its capture directory (Adb.end_log above writes jobscheduler.txt
-        there)."""
-        dev._fetch_capture_out = labkit.capture_dir(plat["name"], scen["name"], var["name"], step["name"], dev.os)
-        try:
-            return original_run_step(dev, plat, scen, var, step, args, timings)
-        finally:
-            dev._fetch_capture_out = None
-    _rebind(m, "run_step", run_step)
-
     original_assert_native = m.assert_native
 
     def assert_native(dev, plat, var):
@@ -795,54 +769,13 @@ def _run(m):
                                  .replace("publish_native_ios.sh", "the fetch iOS pin (WO-002 phase 2)"))
             raise
     _rebind(m, "assert_native", assert_native)
-    return ["run_host", "run_step", "assert_native"]
+    return ["assert_native"]
 
 
-def _fetch_runner(labkit, dev, step, mine, t_launch, deadline, stop, host, plat):
-    state = {i: {"held": None, "next": None} for i in mine}
-    try:
-        while not stop.is_set() and time.time() < deadline and state:
-            lines, norm = dev.peek(), None
-            now = time.time()
-            for i, item in sorted(mine.items()):
-                st = state.get(i)
-                if st is None:
-                    continue
-                if st["held"] is None:
-                    if norm is None:
-                        own = labkit.app_pids(lines)
-                        norm = [labkit.normalize(l) for l in lines if labkit.TAG in l and (
-                            labkit.line_pid(l) in own or " point=" in labkit.normalize(l))]
-                    if labkit.after_unmet(item["after"], norm, step) is not None:
-                        continue
-                    st["held"], st["next"] = now, now + item.get("delay_s", 0)
-                    host["held_s"]["action%d" % i] = round(now - t_launch, 3)
-                if now < st["next"]:
-                    continue
-                began = time.time()
-                kind = _fetch_kind(item)
-                what = (dev.job(plat, item["job"], item.get("expect", "present")) if kind == "job"
-                        else dev.force_stop(plat))
-                done = time.time()
-                dev.mark("host i=%d action=%s sent_ms=%d done_ms=%d mark_ms=%d"
-                         % (i, what, began * 1000, done * 1000, time.time() * 1000))
-                host["sent_s"]["action%d" % i] = round(began - t_launch, 3)
-                del state[i]
-            stop.wait(labkit.POLL_S)
-    except SystemExit as e:
-        host["error"] = host["error"] or str(e.code if isinstance(e.code, str) else e)
-    except Exception as e:
-        host["error"] = host["error"] or "%s: %s" % (type(e).__name__, e)
-
-
-seam("run.run_host", "wrap", "run.py:531-611 (dispatch :581-601)",
-     "fetch's `job:` and `force_stop:` on a companion runner (a copy of the wait-then-act loop) — seam: an "
-     "ACTION_HANDLERS table keyed by action name")
-seam("run.run_step", "wrap", "run.py:614-616", "tells the device its capture dir, for jobscheduler.txt")
 seam("run.assert_native", "wrap", "run.py:293-308 (:307 wording)", "names TSBackgroundFetch")
-seam("run.run_step eviction", "none", "run.py:708-714",
-     "not overridden: evicts this lab's platforms() only; prefix eviction of every Transistor lab app is a bg-forge "
-     "work order (WO-002 'Lab devices')")
+seam("run.run_step eviction", "none", "run.py:710-716",
+     "not overridden: bg-forge WO-191 evicts every installed com.transistorsoft.labs.* and .fetchlab.* app but the one "
+     "under test (and force-stops every other Transistor app on Android), and flags a foreign headless process")
 seam("_shared/labapi.js, labevents.js screen titles", "none", "labapi.js:96, labevents.js:53,96",
      "not overridden (vendored JS, read on the device): the driver's screen says 'BackgroundGeolocation api calls' / "
      "'`on*` events' — cosmetic; seam: a title the driver passes in")
@@ -860,13 +793,7 @@ def _sweep(m):
 seam("sweep.SUITE / LISTS", "data", "sweep.py:64-105, :115-164", "fetch's scenario lists")
 
 
-@patches("inventory")
-def _inventory(m):
-    _rebind(m, "ANDROID_ARTIFACTS", (ANDROID_ARTIFACT,))
-    return ["ANDROID_ARTIFACTS"]
-
-
-seam("inventory.ANDROID_ARTIFACTS", "data", "inventory.py:30", "tsbackgroundfetch")
+# inventory.ANDROID_ARTIFACTS reads labkit.NATIVE (bg-forge WO-191): tsbackgroundfetch, set by register().
 
 # ---------------------------------------------------------------------------------------------------- lab_setup
 
@@ -880,9 +807,9 @@ def _lab_setup(m):
                                "both": ["native/background-fetch", "types/background-fetch",
                                         "react-native/background-fetch", "cordova/background-fetch",
                                         "capacitor/background-fetch", "flutter/background_fetch"]})
-    # tsbackgroundfetch/build.gradle reads every property through findProperty (:103-120): nothing is required at
-    # configuration time, so no placeholder (signing is made optional by lab-publish.init.gradle).
-    _rebind(m, "GRADLE_PLACEHOLDERS", {})
+    # (WO-191) GRADLE_PLACEHOLDERS is not rebound: only lab_setup's default Android slot reads it, and fetch's slot
+    # (labkit.NATIVE, register()) runs publish_native_fetch.sh, whose build reads every property through findProperty
+    # (tsbackgroundfetch/build.gradle :103-120), so it needs none.
 
     def capacitor_ready():
         plugin = os.path.join(m.REPO, "capacitor", "background-fetch")
@@ -897,14 +824,6 @@ def _lab_setup(m):
             return
         m.sh(["npm", "ci", "--no-audit", "--no-fund"], cwd=os.path.join(m.REPO, "capacitor", "background-fetch"))
     _rebind(m, "ensure_capacitor", ensure_capacitor)
-
-    def published(label, os_name):
-        if os_name == "android":
-            return (os.path.isdir(os.path.join(m.LABS, "m2", "com", "transistorsoft", ANDROID_ARTIFACT, label))
-                    and os.path.isfile(os.path.join(m.LABS, "m2", ".provenance", label + ".txt")))
-        return (os.path.isdir(os.path.join(m.LABS, "xcframeworks", label, XCFRAMEWORK))
-                and os.path.isfile(os.path.join(m.LABS, "xcframeworks", ".provenance", label + ".txt")))
-    _rebind(m, "published", published)
 
     def swift_api_published(label):
         """Fetch's Swift API (native/background-fetch ios/TSBackgroundFetch/SwiftInterface) beside the label, when
@@ -921,7 +840,9 @@ def _lab_setup(m):
         native pin lands) is a MISSING line, not a traceback."""
         try:
             return original_check_repo(r, oses, var_name)
-        except (SystemExit, FileNotFoundError) as e:     # labkit.variant() opens the file bare (labkit.py:2875)
+        except (SystemExit, FileNotFoundError) as e:     # labkit.variant() opens the file bare (labkit.py:3062)
+            if isinstance(e, SystemExit) and not isinstance(e.code, str):
+                raise                    # labkit's own exit 2 (its product did not load): never a "missing variant"
             why = (e.code if isinstance(e, SystemExit) and isinstance(e.code, str) else
                    "no labs/harness/variants/%s.yaml" % var_name if isinstance(e, FileNotFoundError) else str(e))
             r.line(False, "variant %s" % var_name, why[:90],
@@ -933,47 +854,26 @@ def _lab_setup(m):
     original_line = m.Report.line
 
     def line(self, ok, name, detail, fix=None, tool=False):
-        """The vendored report line; check_repo's Capacitor detail names bg-geo's plugin path (lab_setup.py:249)."""
+        """The vendored report line; check_repo's Capacitor detail names bg-geo's plugin path (lab_setup.py:260)."""
         if detail == "capacitor/background-geolocation/node_modules":
             detail = "capacitor/background-fetch/node_modules"
         return original_line(self, ok, name, detail, fix, tool)
     _rebind(m.Report, "line", line)
 
-    def ensure_native(var, oses, logs):
-        m.step("4  native SDK builds for %s (%s)" % (var["name"], var["native"]))
-        src, label = var.get("native_source") or {}, var["native"]
-        for os_name in oses:
-            if published(label, os_name):
-                print("ok: %s %s is published" % (os_name, label))
-                continue
-            if not src.get(os_name):
-                raise SystemExit("setup stopped: %s is not published for %s, and variant %s records no native_source.%s"
-                                 " to build it from" % (label, os_name, var["name"], os_name))
-            wt = m.native_checkout("native/background-fetch", src[os_name], "native")
-            if os_name == "android":
-                print("(a few minutes: Gradle builds tsbackgroundfetch and publishes it to labs/m2)")
-                m.sh([os.path.join(m.HARNESS, "publish_native_fetch.sh"), label, wt],
-                     log=os.path.join(logs, "native-android.log"))
-            else:
-                raise SystemExit("setup stopped: the iOS pin for fetch (xcframeworks/%s/%s) is not built yet — WO-002 "
-                                 "phase 2" % (label, XCFRAMEWORK))
-    _rebind(m, "ensure_native", ensure_native)
-    return ["SUBMODULES", "GRADLE_PLACEHOLDERS", "capacitor_ready", "ensure_capacitor", "published",
-            "swift_api_published", "check_repo", "Report.line", "ensure_native"]
+    return ["SUBMODULES", "capacitor_ready", "ensure_capacitor", "swift_api_published", "check_repo", "Report.line"]
 
 
-seam("lab_setup.SUBMODULES / GRADLE_PLACEHOLDERS", "data", "lab_setup.py:42-45, :52-56", "fetch's submodules; none")
-seam("lab_setup.capacitor_ready / ensure_capacitor", "replace", "lab_setup.py:212-215, :368-373 (:371 prints the bg-geo path)",
+seam("lab_setup.SUBMODULES", "data", "lab_setup.py:44-47",
+     "fetch's submodules (doctor and check_access read it before PyYAML exists: not a labkit hook, WO-191 D4 option A)")
+seam("lab_setup.capacitor_ready / ensure_capacitor", "replace", "lab_setup.py:214-217, :379-384 (:382 prints the bg-geo path)",
      "capacitor/background-fetch and its types dependency — seam: a CAPACITOR_PLUGIN path")
-seam("lab_setup.published / swift_api_published", "replace", "lab_setup.py:225-239 (:229 TSLocationManager)",
-     "tsbackgroundfetch / TSBackgroundFetch.xcframework — seam: ANDROID_ARTIFACT / XCFRAMEWORK constants")
-seam("lab_setup.check_repo", "wrap", "lab_setup.py:242-265 (labkit.py:2875 opens the variant bare)",
+seam("lab_setup.swift_api_published", "replace", "lab_setup.py:244-250",
+     "fetch's Swift API (BackgroundFetch.swift) beside the label — waits for the iOS pin (WO-191 D4)")
+seam("lab_setup.check_repo", "wrap", "lab_setup.py:253-276 (labkit.py:3062 opens the variant bare)",
      "a variant that does not load is a MISSING line, not a traceback")
-seam("lab_setup.Report.line", "wrap", "lab_setup.py:249 (the Capacitor line's detail text)",
+seam("lab_setup.Report.line", "wrap", "lab_setup.py:260 (the Capacitor line's detail text)",
      "names capacitor/background-fetch — seam: the CAPACITOR_PLUGIN path above")
-seam("lab_setup.ensure_native", "replace", "lab_setup.py:403-437",
-     "native/background-fetch checkout, publish_native_fetch.sh — seam: a native-build table per OS")
-seam("lab_setup.check_access", "none", "lab_setup.py:326-339",
+seam("lab_setup.check_access", "none", "lab_setup.py:337-350",
      "not overridden: its private list (native/android, native/ios) is never missing here, so it checks nothing")
 
 # ---------------------------------------------------------------------------------------------------- activation
@@ -1022,7 +922,7 @@ class _Finder(importlib.abc.MetaPathFinder):
         if name not in PATCHES:
             return None
         spec = importlib.machinery.PathFinder.find_spec(name, path)
-        if spec is None or not spec.origin or os.path.dirname(os.path.abspath(spec.origin)) != HARNESS:
+        if spec is None or not spec.origin or os.path.dirname(os.path.realpath(spec.origin)) != HARNESS:
             return None
         spec.loader = _Loader(spec.loader, name)
         return spec
@@ -1048,9 +948,9 @@ def activate():
     sys.meta_path.insert(0, _Finder())
     for name in [n for n in PATCHES if n in sys.modules]:    # imported before activation: patch now
         mod = sys.modules[name]
-        if os.path.dirname(os.path.abspath(getattr(mod, "__file__", "") or "")) == HARNESS:
+        if os.path.dirname(os.path.realpath(getattr(mod, "__file__", "") or "")) == HARNESS:
             _apply(name, mod, False)
-    argv0 = os.path.abspath(sys.argv[0]) if sys.argv and sys.argv[0] else ""
+    argv0 = os.path.realpath(sys.argv[0]) if sys.argv and sys.argv[0] else ""
     if os.path.dirname(argv0) == HARNESS and os.path.basename(argv0) in SCRIPTS:
         sys.setprofile(_patch_main)
 

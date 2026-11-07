@@ -43,6 +43,7 @@ Devices (shared with bg-forge's lab: Android emulators Lab1/Lab2 on emulator-558
   ./labkit up [--os android,ios] [--timeout S]   create what is missing, start it, wait until ready
   ./labkit status [--os …]                       one line per Lab device; changes nothing
   ./labkit down [--os …]                         stop the Lab devices, and only those
+                                                 each takes --name Lab1|Lab2: one device of the pair
 
 Tests:
   ./labkit sweep [switches]      the suite on the Lab devices that are up (sweep.py)
