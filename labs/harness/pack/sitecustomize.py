@@ -12,18 +12,25 @@ import importlib.util as _util
 import os as _os
 import sys as _sys
 
-_HERE = _os.path.dirname(_os.path.abspath(__file__))
+_HERE = _os.path.dirname(_os.path.realpath(__file__))
 
+# The interpreter's own is the first sitecustomize.py on sys.path that is not a fetch pack's.  Another fetch pack's shim
+# is skipped, never chained: another checkout's (PYTHONPATH still holding it after `./labkit env` there, with `./labkit`
+# here putting this one first), or this one reached through a symlink.  Chained, it chained this one back, and every
+# harness process died of RecursionError at startup.  Real paths, so a symlinked spelling is still this one.
 for _p in list(_sys.path):
     _candidate = _os.path.join(_p or _os.getcwd(), "sitecustomize.py")
-    if _os.path.abspath(_os.path.dirname(_candidate)) != _HERE and _os.path.isfile(_candidate):
-        try:
-            _spec = _util.spec_from_file_location("_fetch_chained_sitecustomize", _candidate)
-            _chained = _util.module_from_spec(_spec)
-            _spec.loader.exec_module(_chained)
-        except Exception as _e:            # the interpreter's own: reported, as site.py would, and the pack still loads
-            _sys.stderr.write("Error in %s (chained by the fetch pack): %s: %s\n" % (_candidate, type(_e).__name__, _e))
-        break
+    _dir = _os.path.dirname(_os.path.realpath(_candidate))
+    if (_dir == _HERE or not _os.path.isfile(_candidate)
+            or _os.path.isfile(_os.path.join(_os.path.dirname(_dir), "fetch_pack.py"))):   # a fetch pack's own shim
+        continue
+    try:
+        _spec = _util.spec_from_file_location("_fetch_chained_sitecustomize", _candidate)
+        _chained = _util.module_from_spec(_spec)
+        _spec.loader.exec_module(_chained)
+    except Exception as _e:                # the interpreter's own: reported, as site.py would, and the pack still loads
+        _sys.stderr.write("Error in %s (chained by the fetch pack): %s: %s\n" % (_candidate, type(_e).__name__, _e))
+    break
 
 if _os.environ.get("FETCH_LABKIT_PACK") == "1":
     try:
