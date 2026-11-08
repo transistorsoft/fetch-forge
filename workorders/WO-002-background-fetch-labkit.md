@@ -446,3 +446,12 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
       - no `inventory` check.
     - **Not fixed (pre-existing, out of scope):** two pack dirs on `PYTHONPATH` make the sitecustomize shims chain each other to `RecursionError`. It needs a realpath compare and a sentinel in `pack/sitecustomize.py`; worth its own small change.
   - **Verification:** "bg-forge prefix-eviction work order filed and done" stays unticked. It was filed and its code is in (WO-191 Part 1), but its on-device proof is Chris's. "Back-to-back sweeps" still waits for those runs.
+- 2026-11-08 — **Committed** (`80a0b26` labs, `b6450b2` Log) after Chris's diff review.
+- 2026-11-08 — **The pack's sitecustomize recursion, fixed** (uncommitted, awaiting Chris's diff review), on Chris's approval of the plan.
+  - **Diagnosis** (pre-existing; found by the re-vendor review): `pack/sitecustomize.py` chained the first other `sitecustomize.py` on `sys.path`, by `abspath`. A second fetch pack on `PYTHONPATH` counted as "other" and chained the first one back, until `RecursionError`, and every harness process exited 2.
+    - Reproduced both ways: another checkout's pack (`eval "$(./labkit env)"` in the main checkout, then `./labkit selftest` in a worktree), and this pack spelled through a symlink.
+  - **Fix:** the shim skips any fetch pack's shim (a pack dir beside a `fetch_pack.py`) and chains the first other one, the interpreter's own (Homebrew's here), comparing real paths. `./labkit` puts its own checkout's pack first, so that one loads. A hand-run shell whose first pack is another checkout's now gets lab_product's "another checkout's" refusal instead of a recursion.
+  - **Proof:**
+    - The selftest's new `test_shim` covers two packs, and a symlinked spelling first. Each loads the first pack and chains exactly the sitecustomize a bare interpreter imports. 140 → 141 checks, PASS.
+    - Mutants: no skip of fetch shims, and never chaining anything, each fail it. Reverting the candidate compare to `abspath` passes, as an equivalent mutant: the skip rule alone already catches a symlinked spelling, so the realpath compare is defence in depth.
+    - The documented case, run for real: the main checkout's env, then `./labkit selftest` here, PASS. With `HEAD`'s shim in the same shell, `RecursionError`.
