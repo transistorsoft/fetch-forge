@@ -811,6 +811,33 @@ def test_hooks(tmp):
                     "build it from")])
 
 
+def test_shim(tmp):
+    """The pack's sitecustomize shim chains the interpreter's own sitecustomize and never another fetch pack's.  Two
+    packs on PYTHONPATH (another checkout's, left by `./labkit env` there, behind the one `./labkit` puts first) or one
+    reached through a symlink used to chain each other until RecursionError: every harness process exited 2."""
+    base = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "FETCH_LABKIT_PACK", "FETCH_PACK_REPORT")}
+    own = subprocess.run([sys.executable, "-c", "import sitecustomize; print(sitecustomize.__file__)"], env=base,
+                         capture_output=True, text=True, timeout=60)
+    interpreters = os.path.realpath(own.stdout.strip()) if own.returncode == 0 and own.stdout.strip() else None
+    other = os.path.join(tmp, "shim-other", "harness")
+    os.makedirs(other)
+    shutil.copytree(os.path.join(HARNESS, "pack"), os.path.join(other, "pack"))
+    shutil.copy2(os.path.join(HARNESS, "fetch_pack.py"), other)
+    link = os.path.join(tmp, "shim-link")
+    os.symlink(HARNESS, link)
+    probe = ("import os, sys, sitecustomize as s; c = getattr(s, '_chained', None); "
+             "print(os.path.realpath(sys.modules['fetch_pack'].HARNESS)); print(os.path.realpath(c.__file__) if c else None)")
+    got = []
+    for path in ([os.path.join(HARNESS, "pack"), os.path.join(other, "pack")],
+                 [os.path.join(link, "pack"), os.path.join(HARNESS, "pack")]):
+        r = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, timeout=60,
+                           env=dict(base, FETCH_LABKIT_PACK="1", PYTHONPATH=os.pathsep.join(path)))
+        got.append((r.returncode, r.stdout.split("\n")[:2] if r.returncode == 0 else r.stderr[-300:]))
+    check("the pack's shim: two packs on PYTHONPATH, or one spelled through a symlink, load the first one's pack and "
+          "chain exactly the interpreter's own sitecustomize (no RecursionError)",
+          got, [(0, [os.path.realpath(HARNESS), str(interpreters)])] * 2)
+
+
 def test_live():
     """configureOutcome's live half (evidence_state) and the expectations a `process: live` step gets."""
     step = {"hooks": [{"api": "status"}], "expect": {"crashes": 0}}
@@ -862,7 +889,8 @@ def main():
     tmp = tempfile.mkdtemp(prefix="fetch-selftest-")
     try:
         for test in (test_seams, test_vocabulary, lambda: test_scenarios(tmp), lambda: test_capture(tmp),
-                     test_ios_adapter, test_primitives, test_runner, lambda: test_hooks(tmp), test_live, test_shipped,
+                     test_ios_adapter, test_primitives, test_runner, lambda: test_hooks(tmp), lambda: test_shim(tmp),
+                     test_live, test_shipped,
                      lambda: test_activation(tmp)):
             try:
                 test()
