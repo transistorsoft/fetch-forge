@@ -36,7 +36,7 @@ supersedes: []
 
 Every one of these shipped and was fixed in a bridge or native release. A unit test could not have caught any of them, because each needs a real process, lifecycle or build:
 
-- **RN 4.4.2:** a cold-start race in headless mode (`HeadlessTask.java:135,158`). Also bridgeless headless (4.2.6) and the `isTaskRunning` guard (4.2.7).
+- **RN 4.4.2:** a cold-start race in headless mode (`HeadlessTask.java:135,158`). Also bridgeless headless (4.2.6) and the `isTaskRunning` guard (4.2.7). (Corrected 2026-11-09: 4.2.7's guard cannot be pinned on the lab's RN 0.88, whose `HeadlessJsTaskContext.finishTask` ignores an id it does not run, `HeadlessJsTaskContext.kt:141-152`.)
 - **Flutter:**
   - 1.6.2: `MissingPluginException` after a relaunch while a foreground service kept the process alive.
   - 1.1.3: "FlutterJNI was detached" on the back button.
@@ -45,14 +45,14 @@ Every one of these shipped and was fixed in a bridge or native release. A unit t
 - **Capacitor 8.1.4:** `proguard-rules.pro` was missing from the npm package, so R8 stripped `BackgroundFetchHeadlessTask` in release builds.
 - **Cordova:** 7.1.3, `onDestroy` → `setHeadless(true)`; 7.2.3, a missing `scheduleProcessingTask` argument.
 - **Native Android:**
-  - `stopOnTerminate` didn't cancel jobs (2020);
+  - `stopOnTerminate` didn't cancel jobs (2020; 786b557: `save()` skipped a `stopOnTerminate:true` config. The same commit added a silent "no config: cancel by jobId" fallback, so "the job is gone" alone does not catch a revert);
   - an NPE after upgrading (2020);
   - `onBoot` didn't re-arm AlarmManager tasks (2020);
   - headless detection moved to `LifecycleManager` (2022);
   - Android 14 exact alarms (2023);
   - the 5 s duplicate-job guard (2023).
 - **Native iOS 4.1.0:** BGTask handlers auto-register from `+load` (UIScene hosts depend on it), `TSBGTask` delay and type persistence, and subscriber counting.
-- **Types / docforge:** the `NETWORK_TYPE_UNMETERED`, `NOT_ROAMING` and `CELLULAR` constants were transposed (types `7be684d`, docforge `37af5f2`).
+- **Types / docforge:** the `NETWORK_TYPE_UNMETERED`, `NOT_ROAMING` and `CELLULAR` constants were transposed (types `7be684d`, docforge `37af5f2`). (Corrected 2026-11-09: in documentation only — the types' JSDoc `Value:` and table for a day, 9c296a8 → 7be684d, and docforge from 2cec8ae to 37af5f2. No bridge ever shipped a wrong runtime value; the live site was republished 13 minutes after 37af5f2.)
 
 ### Suspected defects for the lab to confirm or rule out (SUSPECTED; none reproduced)
 
@@ -60,13 +60,14 @@ Each one that a scenario confirms becomes its own work order.
 
 1. **Capacitor iOS `start()`** is declared `CAPPluginReturnCallback` (`capacitor/background-fetch/ios/Sources/BackgroundFetchPlugin/BackgroundFetchPlugin.swift:13`), so it probably resolves a callbackId, not a status.
 2. **Android `start()` after `stop()` does nothing.** `stop` destroys the config (`BackgroundFetch.java:166-173`), so `registerTask` logs "failed to find BackgroundFetchConfig" (`:249-251`). Every bridge still resolves `start()`.
-3. **A headless class that can't be loaded strands the BGTask.** This happens with a missing Cordova class, a Capacitor `applicationIdSuffix`, or an R8 strip. The BGTask is never finished, and the error repeats every 60 s (`BackgroundFetch.java:280-284`, `BGTask.java:215-219`).
+3. **A headless class that can't be loaded strands the BGTask.** This happens with a missing Cordova class, a Capacitor `applicationIdSuffix`, or an R8 strip. The BGTask is never finished (`BackgroundFetch.java:280-284`, `BGTask.java:215-219`). (Corrected 2026-11-09: the error does not repeat every 60 s. The timer is one-shot (`BGTask.java:85`), so it logs at delivery, once at +60 s, and again only on onStopJob; the stranded BGTask then shadows later tasks with the same taskId, `BGTask.java:32-39`.)
 4. **Capacitor Android has no `onDestroy`/`setHeadless` hook.** With the Activity finished but the process alive, events go to a dead bridge and are never finished. `ProcessLifecycleOwner` never dispatches `ON_DESTROY` (`LifecycleManager.java:161-166`).
 5. **Flutter headless burst:** a second event during isolate start-up is stranded until it times out (`flutter/background_fetch/android/.../HeadlessTask.java:114-123`).
 6. **iOS stale subscriber:** a subscriber persisted from a previous run, now without a callback, blocks completion until the task expires (`TSBGAppRefreshSubscriber.m:27-43,133-134`, `TSBackgroundFetch.m:358-368`).
 7. **iOS reconfigure is ignored:** a new `minimumFetchInterval` is dropped by the `fetchScheduled` guard (`TSBackgroundFetch.m:104`). Flutter's Dart `configure` also binds its callbacks only once (`lib/background_fetch.dart:442`).
 8. **The Swift API's `@discardableResult` `onFetch`/`scheduleTask`** remove the listener or stop the task at once if the caller doesn't keep the result (`SwiftInterface/BackgroundFetch.swift:132,147-149,189,210-212`).
 9. **A `delay` above 2³¹−1 ms** breaks the `getInt`/`getInteger`/`Integer` casts in RN, Capacitor and Flutter.
+10. **RN: a configuration-change recreation leaves the SDK headless** (added 2026-11-09, INFERRED from code). React Native runs the old Activity's `onHostDestroy` on a recreation, and the plugin calls `LifecycleManager.setHeadless(true)` (`RNBackgroundFetchModule.java:113-117`). Nothing resets it: `onHostResume` does not (`:98-103`), and `ProcessLifecycleOwner` sends no ON_START/ON_RESUME when the new Activity resumes within 700 ms. The next fetch, with the app on screen, is then stopped (`stopOnTerminate: true`, the default: `- Stopping on terminate`) or silently stranded (`false`: `HeadlessTask.java:68-70`). `recreate-foreground-android` measures it.
 
 ### How events can be forced (PROVEN from source; each device command is INFERRED until a lab has run it — those marked MEASURED have, see the Log)
 
@@ -80,7 +81,7 @@ Fetch differs from background-geolocation in one fundamental way: **the OS sched
 | Custom task | `run -f <pkg> <Java String.hashCode(taskId)>`. The log line `registerTask: <id> (jobId: N)` gives the id. |
 | Timeout | Withhold `finish` for the SDK's 60 s (`BGTask.java:28,80-85`), or `cmd jobscheduler timeout <pkg> <jobId>` (API 28+; NOT CHECKED on the lab image) → `onStopJob` (`FetchJobService.java:63-76`). |
 | Headless | `stopOnTerminate:false`, `enableHeadless:true`. Kill with `run-as <pkg> kill -9` (bg-forge's `AndroidBackend.kill`), then `run -f 999`. **MEASURED** (RN, Android 16, both Lab AVDs): a new process, the RN headless task, finish, `jobFinished` (`termination-calibration`). `am force-stop` instead cancels job 999. |
-| Activity destroyed, process alive | `KEYCODE_BACK` or bg-forge's `finishNow`, then `run -f 999`. |
+| Activity destroyed, process alive | bg-forge's `finishNow` (`trigger: finish`), then `run -f 999`. (Corrected 2026-11-09: not `KEYCODE_BACK` — on Android 12+ Back moves a root launcher Activity's task to the back without destroying it, INFERRED; the harness has no back-key cause either.) |
 | Boot | `adb reboot` with `startOnBoot:true, stopOnTerminate:false, enableHeadless:true`. Only that combination persists the JobInfo (`BGTask.java:147`). |
 | Package replaced | `adb install -r`, which triggers `BootReceiver` via `MY_PACKAGE_REPLACED`. |
 | AlarmManager (`forceAlarmManager`) | adb **cannot** fire it, because the receiver is not exported. Wait for it on time; an exact alarm needs `USE_EXACT_ALARM` in the lab app (`BGTask.java:180-189`). |
@@ -181,7 +182,7 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 
 | Action | What it does | State |
 |---|---|---|
-| `job:` | `cmd jobscheduler run -f <pkg> <jobId>`, honouring the ≥ 1.5 s and ≥ 5 s guards; `expect: present \| absent` says whether JobScheduler should hold the job, and its answer rides in the mark (`said=`) | built |
+| `job:` | `cmd jobscheduler run -f <pkg> <jobId>`, honouring the ≥ 1.5 s and ≥ 5 s guards; `expect: present \| absent` says whether JobScheduler should hold the job, and its answer rides in the mark (`said=`). A dated `unspaced:` fires a repeat inside the 5 s guard on purpose, only where the step states `duplicateJobs` (Tier 1, `events-duplicate`) | built |
 | `force_stop:` | `am force-stop <pkg>`, after reading the jobs JobScheduler holds (`held=`, the `jobsAtForceStop` metric) | built (added for `termination-calibration`) |
 | `kill:` | Reused from bg-forge: `run-as kill -9` | reused |
 | `job_timeout:` | `cmd jobscheduler timeout` | later |
@@ -304,7 +305,7 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   Doing C properly needs the same core/pack split as B anyway.
 - **A plain fork of the harness** (copy, then edit freely). It recreates exactly the copy-adapted forks bg-forge WO-026 was written to end, and every hard-won rule (claims, Grace, preflight/App Nap, contamination, transport limits) would then be maintained twice. Vendored files stay byte-identical with a recorded commit.
 - **Waiting for the OS to schedule real fetches.** `minimumFetchInterval` is at least 15 minutes and timing is up to the OS. Force events with JobScheduler or the lab hook.
-- **Firing events inside the SDK's guards.** A `run -f` less than 1 s after scheduling, or a repeat within 5 s, is dropped on purpose (`FetchJobService.java:24-31,38-51`). A scenario that does this will show false failures.
+- **Firing events inside the SDK's guards.** A `run -f` less than 1 s after scheduling, or a repeat within 5 s, is dropped on purpose (`FetchJobService.java:24-31,38-51`). A scenario that does this will show false failures. The one exception (2026-11-09) is a step that measures the guard and asserts the drop: each such `job:` carries a dated `unspaced:`, which the pack accepts only where the step states `duplicateJobs` as a number (`events-duplicate`). `events-initial-ignored` fires nothing inside a guard: the run it measures is JobScheduler's own, at configure().
 - **`_simulateLaunchForTaskWithIdentifier` on the simulator.** It works on a device only; `BGTaskScheduler` is unavailable on the simulator. An iOS `scheduleTask` rejection on the simulator is expected (`BGTaskSchedulerErrorDomain` code 1), not a defect.
 - **Using `am force-stop` to "terminate" in a headless scenario.** Force-stop cancels the app's fetch job (MEASURED 2026-11-05 by `termination-calibration` on both Lab AVDs: `Could not find job 999` afterwards), so a headless scenario would test nothing. Use `run-as kill -9`, which is what bg-forge's `kill` does and which keeps the job. Not yet measured: a custom task's job, and AlarmManager tasks.
 - **A separate claims directory or sweep lock.** The two labs would then use Lab1/Lab2 at the same time and corrupt each other's captures.
@@ -470,3 +471,73 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 - 2026-11-09 — **bg-forge WO-191 is `done`**, so the prefix-eviction box is ticked. The details are in WO-191's Log, 2026-11-09.
   - **iOS:** bg-forge's react-native api-smoke on the Lab1 Simulator uninstalled a `com.transistorsoft.fetchlab.` app at its first step. The app was a stand-in, bg-forge's `NativeLab.app` re-identified as `com.transistorsoft.fetchlab.standin`, because fetch has no iOS app yet. Eviction matches on the prefix alone, so phase 2's real app takes the same path; its first iOS run's `evicted` will show it.
   - **D4:** bg-geo's `./labkit setup --os ios` rebuilt and published its label through Part 5's default iOS slot. fetch's own iOS slot (`fetch_pack._native_ios`) still stops at "WO-002 phase 2".
+- 2026-11-09 — **Tier 1 on react-native Android: eight scenarios and one measurement** (uncommitted, awaiting Chris's diff review), on Chris's approval of the plan. Branch `feat/WO-002-tier1-android`, from `master` `efe59ce`.
+  - **How it was designed.**
+    - Five read-only research agents covered: the native SDK and RN bridge at the pin, the harness, the RN driver, the regression history, and bg-forge's precedents. They read the native pin `5de5242`, the RN plugin `c6dff5f` (now `a3c6996`, which changes only npm publishing, not `android/`, `index.js` or `src/`), and the measured captures.
+    - Three adversarial reviewers then read the draft: one for harness validity, one for device behaviour, one for regression coverage.
+    - Their 4 blockers were load refusals: a hook id, missing `status` hooks, and a configure declaration without `args`/`returns`.
+    - Their 4 majors, all fixed in what was built:
+      - a timeout metric that floored at the 60 s boundary;
+      - a warm headless job with only ~0.3 s of margin past the SDK's duplicate window;
+      - RN 4.4.2 left unpinned by a latency recorded as `any`;
+      - a control job inside the initial run's 5 s window, which hid a revert of c88f7d8.
+  - **Scenarios** (`labs/harness/scenarios/`, all in SUITE):
+    - `api-constants`: the eight constants probed against the vocabulary.
+    - `events-initial-ignored`: configure()'s immediate run ignored; a control run 6 s later delivered.
+    - `events-duplicate`: job 999, then a custom task, then 999 `unspaced` at +3 s (dropped), then 999 `unspaced` at +6.5 s (delivered). This pins the 5 s window, the queue (not 9f75ea1's single slot), and that a dropped run does not restart the window.
+    - `events-task-android`: scheduleTask, the task fired by its hashCode, then `expect: absent`.
+    - `events-timeout-sdk`: finish withheld, the SDK's 60 s timeout, about 95 s a cell.
+    - `stop-on-terminate`: a kill step and a finishNow step, each with job present, then absent. It pins both halves of 786b557.
+    - `headless-kill`: cold then warm job. It pins 4.2.6, 4.2.7's start/end lines, and 4.4.2 (latency `<500` ms). 4.2.7's isTaskRunning guard behaviour cannot be pinned on RN 0.88.
+    - `headless-activity-destroyed`: RN's control for suspected defect 4.
+    - `recreate-foreground-android`: the measurement for suspected defect 10, PREDICTED RED.
+  - **Pack** (`fetch_pack.py`):
+    - **`job:` gains a dated `unspaced:`.** It skips the host's 5.5 s repeat wait and is refused unless an earlier action fires the same job and the step states `duplicateJobs` as a number. The mark carries `unspaced since_ms=`.
+    - **New metrics:**
+      - `jobStops`: JobScheduler's `Job history:` STOP reasons, windowed by the host clock now written in jobscheduler.txt's header (`host_ms=`), else run.json's capture_extras phase;
+      - `jobsCancelled`;
+      - `rnHeadlessInit` / `rnHeadlessStarts` / `rnHeadlessEnds` / `rnHeadlessErrors`;
+      - `headlessNoTask`;
+      - `headlessLatencyMs`;
+      - `driverEvents` / `driverFinishes`;
+      - `appProcesses`;
+      - `fetchTimeoutSkewMs`;
+      - `lifecycleTally`.
+    - No driver change. No vendored file touched: `vendor_check` passes.
+  - **Offline half of api-constants:** the selftest now holds the types package's JSDoc `Value: N` and its types.ts tables to the vocabulary. That is where the NETWORK_TYPE transposition shipped.
+  - **Selftest:** 141 → 164 checks, PASS. Re-scored on today's real captures (main checkout, gitignored):
+    - events-fetch-android: `jobStops` `999:app_called_jobFinished=2,999:onStartJob_returned_false=1`, the pattern events-initial-ignored asserts;
+    - termination-calibration's kill step: `appProcesses` 2, `rnHeadlessInit`/`Starts`/`Ends` 1/1/1, `headlessLatencyMs` 71.
+  - **Corrections to this work order** (amended in place above, each marked 2026-11-09):
+    - **`onStartJob returned false`** is JobScheduler's job-history stop reason, not an SDK line. The SDK logs nothing on that path (`FetchJobService.java:26-31`). This corrects the 2026-11-05 Log's wording.
+    - **The Activity-destroyed cause is `finishNow`,** not `KEYCODE_BACK`.
+    - **Suspected defect 3** does not repeat every 60 s.
+    - **RN 4.2.7's isTaskRunning guard** cannot be pinned on RN 0.88. A revert of b640726 still shows, because its start/end lines go missing.
+    - **The NETWORK_TYPE transposition** was in documentation only.
+    - **786b557** has two halves.
+    - **New suspected defect 10:** an RN recreation leaves the SDK headless.
+    - **"Not an acceptable shortcut"** now names its one exception, `unspaced:`.
+  - **The docs site** (checked at Chris's request): fetch.transistorsoft.com shows the correct NETWORK_TYPE values on every page and in its search index (`Last-Modified` 2026-06-29 16:09:58 GMT, 13 minutes after 37af5f2). The local `deploy/gh-pages` ref is behind its remote (`8a2d8aa`). fetch-forge's own `origin/gh-pages` (`ac1bb1b`, April) still carries the wrong values but is not what the site serves.
+  - **PREDICTED, for the first board to settle:**
+    - the dropped duplicate's stop reason, `onStartJob returned false`;
+    - the one-shot task's job gone after its finish;
+    - whether RN 0.88's JS timers run after its Activity is destroyed (headless-activity-destroyed's 1 s finish);
+    - the first `[BGTask] timeout` line in any capture;
+    - recreate-foreground-android red. If it is, file a work order for suspected defect 10.
+  - **Not pinned:**
+    - the behaviour of RN 4.2.7's isTaskRunning guard (its log lines are pinned);
+    - HeadlessTask's old-architecture branch (the lab app is bridgeless);
+    - the R8 keeps (Tier 2's `release-build-headless`);
+    - the 1000 ms threshold's exact value, because no run between ~0.2 and 0.9 s after scheduling can be forced.
+  - **Review and mutation, after the build.**
+    - **Two read-only reviewers** read the built change: one on the pack code, run against the real captures; one on the scenarios, against the source. They found no blocker or major issue. Eight minor findings, all applied:
+      - the action handler never ran with `unspaced`;
+      - taskId pairing and the header's `host_ms` were not really exercised by the fixture;
+      - `headlessLatencyMs` counted a headless timeout as a hand-over (now `event=fetch` only);
+      - 4.2.7, not 4.2.6, added the start/end lines;
+      - api-smoke's history shows a cancelled second run, not a second ignored one;
+      - `jobsRegistered` is a set, so it cannot show "asked once";
+      - the README's `lifecycleTally` example was in the wrong order;
+      - the check count.
+    - **Mutation testing:** 30 mutants of the new pack code, each in its own scratch copy of the harness, and each fails the selftest. They cover every `unspaced` rule, the no-wait primitive and the handler, the `host_ms` header, `jobStops`' window, row, package, block, mark and clock rules, the age parser, and each other new metric's scoping, pairing and arithmetic. The baseline passes.
+  - **Next:** Chris's device run, `./labkit sweep --os android --devices 1 --build stale` (twelve scenarios, about 12 minutes; the first three took 184 s on 2026-11-09).

@@ -1,0 +1,56 @@
+name: events-initial-ignored
+description: >
+  (WO-002, Tier 1) configure() schedules the periodic fetch job, JobScheduler starts it at once, and the SDK ignores
+  that run: it is < 1 s after the job's `scheduled_at` (FetchJobService.java:24-31; c88f7d8, 2021, "Ignore initial
+  fetch task fired immediately"; 07e597c, 2023, made it `return false`).  A later forced run is delivered.
+
+  THE GUARD, MEASURED ON PURPOSE.  WO-002 rejects firing inside the SDK's guards to get a delivery; this scenario fires
+  nothing inside one: the run it measures is JobScheduler's own, at configure().  The SDK logs nothing when it
+  ignores it — no `- Background Fetch event received`, no `- jobFinished`, no duplicate line — so the proof is
+  JobScheduler's: its `Job history:` (jobscheduler.txt, read at the step's end) records the run's stop reason,
+  `onStartJob returned false`, where a delivered run reads `app called jobFinished` (jobStops).  MEASURED in today's
+  events-fetch-android capture (2026-11-09, Lab1): `999:app_called_jobFinished=2,999:onStartJob_returned_false=1`.
+
+  THE CONTROL.  One `job: 999` 6 s after status() settled — outside the duplicate guard's 5 s from the ignored run
+  too, so a revert of c88f7d8 shows as two deliveries (the initial run and the forced one), not as a forced run
+  dropped for a duplicate.  No start() call: it would reschedule job 999 and start a second immediate run
+  (api-smoke's history shows one, cancelled there by its own stop() before it bound; here it would be ignored too).
+
+  WHAT THE STEP READS (from the launch):
+    * configure@0: exactly one delivery, `react-native-background-fetch` (the forced run).
+    * fetchReceived 1, jobFinished 1, duplicateJobs 0; jobsRegistered 999 (the jobIds the SDK asked for, each once);
+      jobIds 999 at the end.
+    * jobStops `999:app_called_jobFinished=1,999:onStartJob_returned_false=1`: one ignored run — so one registration
+      — and one delivered.
+  A revert of c88f7d8: fetchReceived 2, configure@0 over its max, jobStops `999:app_called_jobFinished=2`.  Of
+  07e597c's return value: the ignored run's reason changes.  Known risk: an initial run JobScheduler starts ≥ 1 s
+  after scheduling (a loaded emulator) is delivered as a real fetch — measured 26-40 ms after (api-smoke's history).
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-09 — JobScheduler is Android's: iOS schedules BGAppRefresh with no immediate first run, and `job:` is an
+    Android action."
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 25
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 1
+        max: 1
+        returns: {$: {type: string, equals: react-native-background-fetch}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 6, job: 999}
+    expect:
+      crashes: 0
+      fetchReceived: 1
+      jobFinished: 1
+      duplicateJobs: 0
+      jobsRegistered: "999"
+      jobIds: "999"
+      jobStops: "999:app_called_jobFinished=1,999:onStartJob_returned_false=1"
+      bootBroadcasts: any

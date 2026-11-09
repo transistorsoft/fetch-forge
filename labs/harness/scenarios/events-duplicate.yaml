@@ -1,0 +1,67 @@
+name: events-duplicate
+description: >
+  (WO-002, Tier 1) The SDK's duplicate-job guard: a run of the same taskId within 5000 ms of an ACCEPTED run is
+  dropped (`- Caught duplicate Job <taskId>: [IGNORED]`, FetchJobService.java:38-51), per process, keyed on the
+  taskId, over a queue of the last 5 accepted runs.  History: 9f75ea1 (2023-08-20) shipped a 2000 ms window and a
+  single last-job slot (RN 4.2.1); 07e597c (2023-08-21) made it 5000 ms, a queue of 5, `return false`.
+
+  THE GUARD, MEASURED ON PURPOSE.  WO-002 rejects firing inside the SDK's guards to get a delivery (the drop reads as an
+  SDK defect).  Here the drop is what the step asserts: the two repeats of job 999 carry a dated `unspaced:` (the host
+  does not wait out its usual JOB_REPEAT_S), which the pack accepts only where the step states duplicateJobs.
+
+  THE RUNS (finishDelayMs 0: each delivery is finished at once, so JobScheduler is not still running job 999 when the
+  next arrives), timed from the first delivery (configure@0's first event):
+    * job 999, status() + 3 s: delivered — the accepted run the window counts from.
+    * job <task>, + 1.5 s: a scheduleTask's one-shot job (another taskId), delivered.  It fills the slot a single
+      last-job guard (9f75ea1) would hold, so that guard would let the next run through.
+    * job 999 `unspaced`, + 3 s: ~3 s after the accepted run — dropped by the 5 s queue (a 2 s window, or a single
+      slot now holding the task, would deliver it).
+    * job 999 `unspaced`, + 6.5 s: past 5 s from the accepted run, ~3.5 s after the dropped one — delivered: a dropped
+      run does not restart the window (the queue holds accepted runs only, :46-50).
+
+  WHAT THE STEP READS (from the launch):
+    * configure@0: exactly three deliveries; fetchTally `com.transistorsoft.fetchlab.task=1,react-native-background-fetch=2`.
+    * duplicateJobs 1; fetchReceived 3, fetchFinished 3, jobFinished 3 (a dropped run logs no `- jobFinished`).
+    * jobsRegistered `-1681675378,999`; jobIds 999 at the end (the task's one-shot job is gone once finished).
+    * jobStops: the initial run configure() caused and the dropped repeat both `onStartJob returned false`, the three
+      delivered runs `app called jobFinished`.  PREDICTED for the dropped repeat (it calls jobFinished, then returns
+      false, as the ignored initial run does, whose reason is MEASURED); the first board settles it.
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-09 — the guard is FetchJobService's (Android's JobService); `job:` is an Android action."
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 30
+    extras: {finishDelayMs: 0}
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        returns: {$: {type: boolean, equals: true}}
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 3
+        max: 3
+        returns: {$: {type: string}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 3, job: 999}
+      - {after: {event: configure@0}, delay_s: 1.5, job: com.transistorsoft.fetchlab.task}
+      - {after: {event: configure@0}, delay_s: 3, job: 999,
+         unspaced: "2026-11-09 3 s after the accepted run, inside the SDK's 5 s window: dropped"}
+      - {after: {event: configure@0}, delay_s: 6.5, job: 999,
+         unspaced: "2026-11-09 past 5 s from the accepted run, 3.5 s after the dropped one: delivered"}
+    expect:
+      crashes: 0
+      duplicateJobs: 1
+      fetchReceived: 3
+      fetchFinished: 3
+      jobFinished: 3
+      fetchTally: "com.transistorsoft.fetchlab.task=1,react-native-background-fetch=2"
+      jobsRegistered: "-1681675378,999"
+      jobIds: "999"
+      jobStops: "-1681675378:app_called_jobFinished=1,999:app_called_jobFinished=2,999:onStartJob_returned_false=2"
+      bootBroadcasts: any

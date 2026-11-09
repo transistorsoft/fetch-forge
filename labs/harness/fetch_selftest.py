@@ -205,6 +205,18 @@ def types_surface(root):
     return {"api": api, "interfaces": flat, "unions": unions}
 
 
+def types_doc_values(root):
+    """(WO-002 Tier 1) The constants' values as the types package DOCUMENTS them — where the NETWORK_TYPE transposition
+    shipped (9c296a8, fixed a day later in 7be684d): each static's JSDoc `Value: \\`N\\`` (src/BackgroundFetch.ts) and
+    the `| \\`N\\` | [[BackgroundFetch.<NAME>]] |` rows of src/types.ts.  No runtime reads either, so types_surface's
+    `0 | 1 | 2 | 3 | 4` union cannot see a swap."""
+    bf = open(os.path.join(root, "src", "BackgroundFetch.ts")).read()
+    ty = open(os.path.join(root, "src", "types.ts")).read()
+    jsdoc = {name: int(v) for v, name in re.findall(r"Value: `(\d+)`\s*\*/\s*static (\w+):", bf)}
+    table = {name: int(v) for v, name in re.findall(r"\|\s*`(\d+)`\s*\|\s*\[\[BackgroundFetch\.(\w+)\]\]", ty)}
+    return {"jsdoc": jsdoc, "table": table}
+
+
 def test_vocabulary():
     vocab = labkit.vocabulary()
     root = os.path.join(REPO, "types", "background-fetch")
@@ -226,6 +238,13 @@ def test_vocabulary():
               {k.rstrip("?"): v for k, v in t["interfaces"]["BackgroundFetchConfig"].items()})
         for name, values in t["unions"].items():
             check("vocabulary enums.%s values == types.ts" % name, vocab["enums"][name]["values"], values)
+        # (WO-002 Tier 1, api-constants' offline half) The documented values, where the transposition shipped.
+        doc = types_doc_values(root)
+        members = {k: v for entry in vocab["enums"].values() for k, v in (entry.get("members") or {}).items()}
+        check("constants: every static's JSDoc `Value: N` in types/background-fetch == the vocabulary (9c296a8 documented "
+              "CELLULAR 2, UNMETERED 3, NOT_ROAMING 4)", doc["jsdoc"], members)
+        check("constants: the BackgroundFetchStatus and NetworkType tables in types.ts == the vocabulary",
+              doc["table"], members)
     db = os.path.join(REPO, "docforge", "db")
     if os.path.isdir(db):
         consts = {}
@@ -305,6 +324,25 @@ steps:
 """
 
 
+# (WO-002 Tier 1) `unspaced:`: the same two jobs, the second fired inside the SDK's guard on purpose.  It costs no repeat
+# budget (20 s holds it: 12 + 2 + 4 = 18), and only loads with a date, after an earlier run of the same job, and where
+# the step states duplicateJobs.
+UNSPACED = """
+description: fetch selftest, unspaced (never run on a device)
+not_applicable: {ios: "2026-11-09 the host actions are Android's"}
+steps:
+  - name: one
+    settle: 5
+    after: 15
+    events:
+      - {subscribe: configure, args: {minimumFetchInterval: 15, stopOnTerminate: false, enableHeadless: true}, errors: true, returns: {"$": {type: string}}}
+    actions:
+      - {after: {armed: configure@0}, delay_s: 2, job: 999}
+      - {after: {armed: configure@0}, delay_s: 2, job: 999, unspaced: "2026-11-09 inside the guard, on purpose"}
+    expect: {duplicateJobs: 1}
+"""
+
+
 def load_scenario(tmp, text, name="selftest-fetch"):
     os.makedirs(os.path.join(tmp, "scenarios"), exist_ok=True)
     with open(os.path.join(tmp, "scenarios", name + ".yaml"), "w") as f:
@@ -357,6 +395,19 @@ def test_scenarios(tmp):
           ("need 7.5 s" in repeated and "raise them" in repeated,
            refused(lambda: load_scenario(tmp, "job: 7}".join(REPEAT.rsplit("job: 999}", 1)), "selftest-norepeat"))),
           (True, None))                                     # this selftest's refused(): None for one that loads
+    unspaced = lambda old, new, name: refused(lambda: load_scenario(tmp, UNSPACED.replace(old, new), name)) or ""
+    check("unspaced: a dated repeat in a step that states duplicateJobs loads, with no repeat budget (20 s holds it)",
+          refused(lambda: load_scenario(tmp, UNSPACED, "selftest-unspaced")), None)
+    check("unspaced: refused without a date, as `expect: absent`, with no earlier run of the job, and without a "
+          "duplicateJobs count; never on another kind of action",
+          ["dated reason" in unspaced('unspaced: "2026-11-09 ', 'unspaced: "', "selftest-u1"),
+           "`expect: absent`" in unspaced("job: 999, unspaced", "job: 999, expect: absent, unspaced", "selftest-u2"),
+           "no earlier action fires job 999" in unspaced("      - {after: {armed: configure@0}, delay_s: 2, job: 999}\n",
+                                                         "", "selftest-u3"),
+           "states how many runs" in unspaced("{duplicateJobs: 1}", "{duplicateJobs: any}", "selftest-u4"),
+           "states how many runs" in unspaced("    expect: {duplicateJobs: 1}\n", "", "selftest-u5"),
+           "another kind of action" in unspaced("job: 999, unspaced", "force_stop: true, unspaced", "selftest-u6")],
+          [True] * 6)
     check("configure as an api hook refuses (two required parameters)", "required parameters" in (refused(
         lambda: load_scenario(tmp, SCENARIO.replace("      - {api: status, ",
                                                     "      - {api: configure, args: {minimumFetchInterval: 15}, "),
@@ -516,6 +567,133 @@ def test_capture(tmp):
     check("Adb.sdk_db pulls nothing", backends.Adb("emulator-0").sdk_db({"package": pkg}), b"")
 
 
+def LT(t, level, tag, pid, msg):
+    """A logcat line `t` seconds after 12:00:00 (minutes allowed: the timeout is 60 s)."""
+    return "11-05 12:%02d:%06.3f %s/%s(%5d): %s" % (int(t // 60), t % 60, level, tag, pid, msg)
+
+
+def test_tier1(tmp):
+    """(WO-002 Tier 1) The metrics the react-native Android Tier 1 scenarios read, on one synthetic capture: the app's
+    foreground process (200), its headless one (201), another lab app's (300, never counted), lines before and after
+    the window, and a jobscheduler.txt whose `Job history:` spans the device's life."""
+    out = os.path.join(tmp, "captures", "react-native", "t1", "FIX", "run")
+    os.makedirs(out)
+    pkg = "com.transistorsoft.fetchlab.react"
+    S = lambda t, pid, msg, level="D": LT(t, level, "TSBackgroundFetch", pid, msg)
+    J = lambda t, pid, msg: LT(t, "I", "ReactNativeJS", pid, msg)
+    lines = [
+        LT(0.5, "D", "TSBackgroundFetch", 200, "[HeadlessTask] start taskId: 0"),               # before the window
+        LT(1.0, "I", "LAB     ", 100, "point=launch label=x"),
+        LT(1.05, "I", "LAB     ", 200, "point=appCreate pid=200 process=%s headless=- tasks=-" % pkg),
+        J(1.1, 200, "LAB app=boot n=1 args={}"),
+        S(1.2, 200, "☯️  onCreate"),
+        S(1.3, 200, "☯️  onStart"),
+        LT(2.0, "I", "LAB     ", 100, "point=trigger none"),
+        J(2.0, 200, "LAB app=event=fetch n=1 taskId=react-native-background-fetch"),
+        J(2.0, 200, "LAB app=event id=configure@0 n=1"),                       # a declaration's, not the driver's
+        J(2.1, 200, "LAB app=finish taskId=react-native-background-fetch timeout=false after_ms=- outcome=withheld"),
+        S(2.5, 200, "- Background Fetch event received: com.lab.t"),                # an earlier receipt: not the one
+        S(3.0, 200, "- Background Fetch event received: com.lab.t"),
+        J(3.1, 200, "LAB app=event=fetch n=2 taskId=com.lab.t"),
+        J(3.2, 200, "LAB app=finish taskId=com.lab.t timeout=false after_ms=0 outcome=ok"),
+        S(62.0, 200, "- Background Fetch event received: com.lab.other"),            # another task's: never paired
+        S(63.004, 200, "[BGTask] timeout: com.lab.t"),
+        J(63.01, 200, "LAB app=event=timeout n=1 taskId=com.lab.t"),
+        J(63.02, 200, "LAB app=finish taskId=com.lab.t timeout=true after_ms=0 outcome=ok"),
+        S(64.0, 200, "- cancel taskId=react-native-background-fetch, jobId=999", "I"),
+        S(64.1, 200, "- cancel taskId=react-native-background-fetch, jobId=999", "I"),
+        S(64.2, 200, "- cancel taskId=com.lab.t, jobId=-1234", "I"),
+        S(65.0, 200, "☯️  HeadlessMode? true"),
+        LT(69.0, "I", "LAB     ", 201, "point=appCreate pid=201 process=%s headless=- tasks=x" % pkg),
+        S(69.5, 201, "☯️  HeadlessMode? true"),
+        S(70.0, 201, "- Background Fetch event received: react-native-background-fetch"),
+        S(70.01, 201, "[HeadlessTask] initializing ReactContext"),
+        S(70.05, 201, "- Background Fetch event received: com.lab.other"),           # another task's: never paired
+        S(70.06, 201, "[HeadlessTask] start taskId: 1"),
+        J(70.071, 201, "LAB point=headless event=fetch taskId=react-native-background-fetch timeout=false"),
+        S(71.0, 201, "[HeadlessTask] end taskId: 1"),
+        LT(71.5, "W", "ReactNativeJS", 201, "No task registered for key BackgroundFetch"),
+        S(80.0, 201, "- Background Fetch event received: react-native-background-fetch"),
+        S(80.005, 201, "[HeadlessTask] start taskId: 2"),
+        J(80.02, 201, "LAB point=headless event=fetch taskId=react-native-background-fetch timeout=false"),
+        S(80.5, 201, "[HeadlessTask] end taskId: 2"),
+        S(81.0, 201, "[HeadlessTask] Reflection error ReactHost: x"),
+        S(81.1, 201, "[HeadlessTask] reflection error addReactInstanceEventListener: x", "E"),
+        S(81.2, 201, "[HeadlessTask] task attempted to run in the foreground.  Task ignored.", "E"),
+        S(81.3, 201, "[HeadlessTask] Failed invoke HeadlessTask: x"),
+        J(81.4, 201, "LAB point=headless event=timeout taskId=react-native-background-fetch timeout=true"),  # no hand-over
+        LT(82.0, "I", "LAB     ", 300, "point=appCreate pid=300 process=com.other.lab headless=-"),
+        S(82.1, 300, "[HeadlessTask] start taskId: 9"),
+        LT(82.2, "W", "ReactNativeJS", 300, "No task registered for key BackgroundFetch"),
+        J(82.3, 300, "LAB app=event=fetch n=1 taskId=x"),
+        LT(90.0, "I", "LAB     ", 100, "point=capture"),
+        S(91.0, 201, "[HeadlessTask] start taskId: 3"),                                   # after the window
+    ]
+    with open(os.path.join(out, "logcat.txt"), "w") as f:
+        f.write("\n".join(lines) + "\n")
+    t0 = 1794171579.0
+    meta = {"os": "android", "year": 2026, "measure_from": "launch",
+            "timings": {"t0": t0, "phases": {"launch_mark": 1.0, "trigger": 2.0, "capture_extras": 90.5}}}
+    history = ("Registered 1 job:\n  JOB #u0a213/999: 3c1 %(p)s/svc.FetchJobService\n"
+               "  Job history:\n"
+               "     -2h26m50s884ms  STOP-P: #u0a213/999 %(p)s/svc.FetchJobService onStartJob returned false\n"
+               "        -2m09s691ms  STOP-P: #u0a213/999 %(p)s/svc.FetchJobService cancelled while waiting for bind\n"
+               "          -89s500ms START-P: #u0a213/999 %(p)s/svc.FetchJobService\n"
+               "          -89s480ms  STOP-P: #u0a213/999 %(p)s/svc.FetchJobService onStartJob returned false\n"
+               "          -40s000ms  STOP-P: #u0a213/999 %(p)s/svc.FetchJobService app called jobFinished\n"
+               "          -10s000ms  STOP-P: #u0a99/7 com.other/svc.Job app called jobFinished\n"
+               "             -884ms   STOP: #u0a213/-1234 %(p)s/svc.FetchJobService app called jobFinished\n"
+               "  Pending queue:\n"
+               "     -1s000ms  STOP-P: #u0a213/999 %(p)s/svc.FetchJobService not a history row\n" % {"p": pkg})
+
+    def capture(head_extra=", host_ms=%d" % ((t0 + 91.0) * 1000), meta_=meta, exit_=0):
+        with open(os.path.join(out, "run.json"), "w") as f:
+            json.dump(meta_, f)
+        with open(os.path.join(out, fetch_pack.JOBSCHEDULER), "w") as f:
+            f.write("# adb -s emulator-5580 shell dumpsys jobscheduler %s  (exit %d, read 2026-11-05 12:01:31%s)\n%s"
+                    % (pkg, exit_, head_extra, history))
+        return labkit.Capture(out)
+    c = capture()
+    names = ("rnHeadlessInit", "rnHeadlessStarts", "rnHeadlessEnds", "rnHeadlessErrors", "headlessNoTask",
+             "driverEvents", "driverFinishes", "appProcesses", "fetchTimeoutSkewMs", "headlessLatencyMs",
+             "lifecycleTally", "jobsCancelled", "jobStops")
+    check("Tier 1 metrics: the app's own processes, in the window",
+          {n: labkit.METRICS[n](c) for n in names},
+          {"rnHeadlessInit": 1, "rnHeadlessStarts": 2, "rnHeadlessEnds": 2, "rnHeadlessErrors": 4,
+           "headlessNoTask": 1, "driverEvents": "fetch=2,timeout=1",
+           "driverFinishes": "fetch:ok=1,fetch:withheld=1,timeout:ok=1", "appProcesses": 2,
+           "fetchTimeoutSkewMs": 4, "headlessLatencyMs": 71, "lifecycleTally": "headless:true=2,onCreate=1,onStart=1",
+           "jobsCancelled": "-1234,999",
+           "jobStops": "-1234:app_called_jobFinished=1,999:app_called_jobFinished=1,999:onStartJob_returned_false=1"})
+    with open(os.path.join(out, "logcat.txt"), "w") as f:      # a timeout 59.5 s early: |skew|, not skew
+        f.write("\n".join(lines[:-2] + [S(84.0, 200, "- Background Fetch event received: com.lab.u"),
+                                        S(84.5, 200, "[BGTask] timeout: com.lab.u")] + lines[-2:]) + "\n")
+    check("fetchTimeoutSkewMs: an early timeout counts as far as a late one (the largest |skew|)",
+          labkit.METRICS["fetchTimeoutSkewMs"](labkit.Capture(out)), 59500)
+    with open(os.path.join(out, "logcat.txt"), "w") as f:
+        f.write("\n".join(lines) + "\n")
+    check("jobStops: placed by run.json's capture_extras when the header has no host_ms (a capture from before it)",
+          labkit.METRICS["jobStops"](capture("")), labkit.METRICS["jobStops"](c))
+    check("jobStops: from the trigger mark when the step measures from it (the 89 s-old run falls before it)",
+          labkit.METRICS["jobStops"](capture(meta_=dict(meta, measure_from="trigger"))),
+          "-1234:app_called_jobFinished=1,999:app_called_jobFinished=1")
+    check("jobStops: the header's host_ms wins over run.json's capture_extras (a dump 1.5 s after that phase puts the "
+          "89 s-old run after the trigger mark)",
+          labkit.METRICS["jobStops"](capture(", host_ms=%d" % ((t0 + 92.0) * 1000), dict(meta, measure_from="trigger"))),
+          "-1234:app_called_jobFinished=1,999:app_called_jobFinished=1,999:onStartJob_returned_false=1")
+    check("jobStops: no-epoch without timings, unread after a failed read, no-read without a read",
+          (labkit.METRICS["jobStops"](capture("", {"os": "android", "year": 2026, "measure_from": "launch"})),
+           labkit.METRICS["jobStops"](capture(exit_=255)),
+           (os.remove(os.path.join(out, fetch_pack.JOBSCHEDULER)), labkit.METRICS["jobStops"](labkit.Capture(out)))[1]),
+          ("no-epoch", "unread", "no-read"))
+    check("history_age_ms: days, hours, zero-padded minutes, seconds, ms; not a bare dash",
+          [fetch_pack.history_age_ms(a) for a in ("-2h26m50s884ms", "-2m09s691ms", "-40s597ms", "-884ms", "-1d2h", "-")],
+          [8810884, 129691, 40597, 884, 93600000, None])
+    check("every Tier 1 metric is registered, and the RN HeadlessTask counts beside the SDK's",
+          (sorted(n for n in names if n not in labkit.METRICS), sorted(fetch_pack.RN_HEADLESS_COUNTS)),
+          ([], ["rnHeadlessEnds", "rnHeadlessInit", "rnHeadlessStarts"]))
+
+
 def test_ios_adapter():
     ev = lambda msg, proc="/x/Runner.app/Runner", sub="": json.dumps({
         "eventType": "logEvent", "timestamp": "2026-11-05 12:00:01.000000-0500", "processID": 77,
@@ -569,7 +747,7 @@ class FakeDev:
         self.marks.append(text)
         self.add("point=" + text, pid=999)
 
-    def job(self, plat, value, expect="present"):
+    def job(self, plat, value, expect="present", unspaced=None):
         self.calls.append(("job", value) if expect == "present" else ("job", value, expect))
         return "job %d" % fetch_pack.job_id(value)
 
@@ -633,6 +811,15 @@ def test_primitives():
         gone = dev.job(plat, 7, "absent")
         still = dev.job(plat, 9, "absent")
         absent = refused(lambda: dev.job(plat, 8))
+        # (WO-002 Tier 1) `unspaced`: right after a run of the same job, with a repeat wait that would take 30 s.
+        fetch_pack.JOB_REPEAT_S = 30
+        t = time.time()
+        inside = dev.job(plat, 999, "present", "2026-11-09 on purpose")
+        inside_s = time.time() - t
+        fresh = backends.Adb("emulator-1").job(plat, 999, "present", "2026-11-09 the first here")
+        # The action kind's runner hands `unspaced` to the device (run_host calls it so): no wait, its mark.
+        handled = labkit.ACTION_HANDLERS["job"].run(dev, {"job": 999, "unspaced": "2026-11-09 via the handler"},
+                                                     plat, None)
     finally:
         labkit.device_call, fetch_pack.JOB_REPEAT_S = saved, saved_repeat
     check("Adb.job: the command", answers[0], ["adb", "-s", "emulator-0", "shell", "cmd", "jobscheduler", "run", "-f",
@@ -647,6 +834,11 @@ def test_primitives():
     check("Adb.job expect=absent: a job that runs is a scored miss", still,
           "job 9 expect=absent missed=present said=Running_job_FORCED")
     check("Adb.job: no such package refuses", "is not installed" in (absent or ""), True)
+    check("Adb.job unspaced: no repeat wait (30 s here), the ms since the job last ran in the mark; '-' for a first run",
+          (inside_s < 5, bool(re.fullmatch(r"job 999 unspaced since_ms=\d+ said=Running_job_FORCED", inside)), fresh),
+          (True, True, "job 999 unspaced since_ms=- said=Running_job_FORCED"))
+    check("the `job` action kind passes `unspaced` through to Adb.job (the runner's handler, not only the primitive)",
+          bool(re.fullmatch(r"job 999 unspaced since_ms=\d+ said=Running_job_FORCED", handled)), True)
     dumps = []
 
     def dump_call(argv, timeout=60, text=True):
@@ -749,10 +941,11 @@ def test_hooks(tmp):
         labkit.device_call = real_call
     head = open(os.path.join(out_a, fetch_pack.JOBSCHEDULER)).readline()
     check("CAPTURE_EXTRAS: Android's `dumpsys jobscheduler <pkg>` into jobscheduler.txt, whose header names the package "
-          "own_pids reads; nothing on iOS",
+          "own_pids reads and the host clock jobStops places the history by; nothing on iOS",
           (calls, head.startswith("# adb -s emulator-0 shell dumpsys jobscheduler com.lab.p  (exit 0"),
+           bool(re.search(r", host_ms=\d{13}\)$", head.strip())),
            fetch_pack._package_of(types.SimpleNamespace(path=out_a)), os.listdir(out_i)),
-          ([["adb", "-s", "emulator-0", "shell", "dumpsys", "jobscheduler", "com.lab.p"]], True, "com.lab.p", []))
+          ([["adb", "-s", "emulator-0", "shell", "dumpsys", "jobscheduler", "com.lab.p"]], True, True, "com.lab.p", []))
 
     rec, runs = [], []
     saved = (lab_setup.sh, lab_setup.native_checkout, lab_setup.LABS)
@@ -889,7 +1082,7 @@ def main():
     tmp = tempfile.mkdtemp(prefix="fetch-selftest-")
     try:
         for test in (test_seams, test_vocabulary, lambda: test_scenarios(tmp), lambda: test_capture(tmp),
-                     test_ios_adapter, test_primitives, test_runner, lambda: test_hooks(tmp), lambda: test_shim(tmp),
+                     lambda: test_tier1(tmp), test_ios_adapter, test_primitives, test_runner, lambda: test_hooks(tmp), lambda: test_shim(tmp),
                      test_live, test_shipped,
                      lambda: test_activation(tmp)):
             try:

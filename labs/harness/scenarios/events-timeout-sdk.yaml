@@ -1,0 +1,59 @@
+name: events-timeout-sdk
+description: >
+  (WO-002, Tier 1) The SDK's own task timeout, in the foreground: a fetch the app never finishes is timed out after
+  BGTask.MAX_TIME, 60 000 ms (BGTask.java:28, posted in the BGTask constructor :80-85; fbae69c / RN 9279640, RN 4.0.0):
+  `[BGTask] timeout: <taskId>` (:203), then configure()'s onTimeout with the taskId (:207-211; the bridge emits
+  {taskId, timeout: true}, index.js routes it to the third argument).  onTimeout only notifies: the task ends when
+  the app calls finish(taskId) — the driver does at once (finishOnTimeout, its default) — `- finish:`, `- jobFinished`.
+
+  The driver withholds the fetch's own finish (extras withholdFinish), so only the timeout ends it.  The declaration
+  passes `errors: true`, so the timeout reaches it as a failure (recorded as configure@0.errors, never judged); the
+  verdict is read from the SDK and the driver: driverEvents counts the driver's own onEvent and onTimeout deliveries.
+  JobScheduler's stop (onStopJob, `cmd jobscheduler timeout`) is another path, not this one: jobStopped 0.
+
+  WHAT THE STEP READS (from the launch; the job at status() + 3 s, the timeout ~60 s later — a full window of 90 s, about
+  95 s a cell):
+    * configure@0: exactly one onEvent delivery, `react-native-background-fetch`.
+    * fetchReceived 1, fetchTimeouts 1, fetchTimeoutSkewMs < 1000 (the timeout lands within 1 s of 60 s after the
+      receipt: a changed MAX_TIME or a lost timer is red).
+    * driverEvents `fetch=1,timeout=1`; driverFinishes `fetch:withheld=1,timeout:ok=1`.
+    * fetchFinished 1, jobFinished 1, jobStopped 0, headlessEvents.timeout 0; jobIds 999 at the end.
+    * jobStops `999:app_called_jobFinished=1,999:onStartJob_returned_false=1` (configure()'s ignored first run, then
+      the timed-out run, finished).
+  NOT CHECKED before this scenario: no capture yet holds a `[BGTask] timeout` line.
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-09 — `job:` is JobScheduler's; an iOS timeout is driven by the lab hook (WO-002 D3), which is
+    ios-timeout-sim's."
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 80
+    extras: {withholdFinish: true}
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 1
+        max: 1
+        errors: true
+        returns: {$: {type: string, equals: react-native-background-fetch}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 3, job: 999}
+    expect:
+      crashes: 0
+      fetchReceived: 1
+      fetchTimeouts: 1
+      fetchTimeoutSkewMs: "<1000"
+      driverEvents: "fetch=1,timeout=1"
+      driverFinishes: "fetch:withheld=1,timeout:ok=1"
+      fetchFinished: 1
+      jobFinished: 1
+      jobStopped: 0
+      headlessEvents.timeout: 0
+      jobIds: "999"
+      jobStops: "999:app_called_jobFinished=1,999:onStartJob_returned_false=1"
+      bootBroadcasts: any

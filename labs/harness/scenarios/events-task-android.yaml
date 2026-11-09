@@ -1,0 +1,56 @@
+name: events-task-android
+description: >
+  (WO-002, Tier 1) A custom task: scheduleTask({taskId, delay}) registers a one-shot JobScheduler job whose jobId is
+  the taskId's Java String.hashCode (BackgroundFetchConfig.java:302-308; 16030b7), logged as `- registerTask: <taskId>
+  (jobId: N)` (b45adb3, RN 4.1.8) for exactly this: `cmd jobscheduler run -f <pkg> <jobId>` fires it before its delay
+  (`job: <taskId>` hashes it the same way).  It reaches configure()'s onEvent with the custom taskId — every task does,
+  through the one callback configure() set (BackgroundFetch.java:272-275) — is finished, and its job is gone: finish()
+  destroys a non-periodic task's config (:203-210; fbae69c) and JobScheduler drops a one-shot job finished without a
+  reschedule.
+
+  The delay is 10 minutes, so JobScheduler never runs the task on its own during the step (and far below 2^31-1 ms,
+  which RN's getInt would break: suspected defect 9).  com.transistorsoft.fetchlab.task hashes to -1681675378 — a
+  negative jobId, which `run -f` takes as RN's CHANGELOG (4.1.8) documents.
+
+  WHAT THE STEP READS (from the launch):
+    * jobsRegistered `-1681675378,999` (the fetch task and the custom one: the SDK asked for both).
+    * The forced run of the task (scheduleTask + 3 s): configure@0's one delivery, `com.transistorsoft.fetchlab.task`;
+      fetchTally `com.transistorsoft.fetchlab.task=1`; fetchFinished 1, jobFinished 1, duplicateJobs 0.
+    * A second `job:` of the task, after the delivery (the host waits out JOB_REPEAT_S): `expect: absent` —
+      JobScheduler answers `Could not find job` (a jobId formula that drifted reads `missed(no-job)` on the first one
+      instead).  PREDICTED: the one-shot job is gone after its jobFinished(false); the first board settles it.
+    * jobIds 999 at the end: the fetch job stays, the task's is gone.
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-09 — `job:` is JobScheduler's; an iOS custom task is fired by the lab hook (WO-002 D3), which is
+    ios-task-sim's."
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 30
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        returns: {$: {type: boolean, equals: true}}
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 1
+        max: 1
+        returns: {$: {type: string, equals: com.transistorsoft.fetchlab.task}}
+    actions:
+      - {after: {api: "scheduleTask#1"}, delay_s: 3, job: com.transistorsoft.fetchlab.task}
+      - {after: {event: configure@0}, delay_s: 3, job: com.transistorsoft.fetchlab.task, expect: absent}
+    expect:
+      crashes: 0
+      jobsRegistered: "-1681675378,999"
+      fetchTally: "com.transistorsoft.fetchlab.task=1"
+      fetchReceived: 1
+      fetchFinished: 1
+      jobFinished: 1
+      duplicateJobs: 0
+      jobIds: "999"
+      bootBroadcasts: any
