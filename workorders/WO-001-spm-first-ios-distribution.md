@@ -398,6 +398,16 @@ This is the transition hazard. Picture an app that combines a fetch plugin on Sw
     - A re-push after a late landing returns 409 (trunk recorded it) or 500 (it landed in Specs but trunk never recorded it). Both mean stop pushing.
     - Space retries at least 5 minutes apart. Escalate to info@cocoapods.org.
   - **Correction to the 2026-11-05 entry:** that rejection did not prove the server-side checks passed, because the test-week check (`pods_controller.rb:184`) runs before the server lint. The 2026-11-06 timeouts did prove it, since the GitHub step (`:232`) runs only after all of the checks.
+- 2026-11-09 — **SwiftPM floor raised to 4.2.0 in all four fetch plugins**, reversing the 2026-11-05 decision to keep `from: "4.1.0"`.
+  - Chris: "update all the plugins to use 4.2.0 (and all minor bumps)", "the podspec and package.swift".
+  - **Changed:** `from: "4.1.0"` → `from: "4.2.0"` (4.2.0..<5.0.0) in react-native `ios/Package.swift`, capacitor `Package.swift`, cordova `Package.swift` and flutter `ios/background_fetch/Package.swift`. Each plugin's Unreleased CHANGELOG entry now names both requirements. Branch `chore/tsbackgroundfetch-4.2.0` in each submodule.
+  - **Unchanged:** the podspecs and Cordova's `<pod>` were already `~> 4.2` (D1), which also accepts every later 4.x. Android is untouched; `com.transistorsoft:tsbackgroundfetch` is still 4.1.1.
+  - **PROVEN (`swift package resolve`, cold cache, Xcode 27.2):**
+    - All four manifests resolve TSBackgroundFetch 4.2.0. Capacitor (with capacitor-swift-pm 8.6.0) and Cordova (with cordova-ios) resolved as they are. React Native's and Flutter's local path dependencies were replaced by stub packages.
+    - The `ios/4.2.0` zip downloads and passes its checksum.
+    - An app root needing `native-background-geolocation` `from: "4.8.0"` together with fetch `from: "4.2.0"` is still unresolvable: every TSLocationManager 4.8.0–4.8.3 requires 4.1.0..<4.2.0.
+  - **So the pre-publish gate in "Release order" now covers SwiftPM as well as CocoaPods.** Releasing a fetch plugin before a TSLocationManager that accepts 4.2 makes an app that also uses geolocation fail to resolve its packages, on both channels. The planned widening (`~> 4.1` / `from: "4.1.0"`) is compatible with the 4.2.0 floor.
+  - The Appendix A/B manifests are the 2026-11-05 experiment snapshots and still show `from: "4.1.0"`.
 
 ## Appendix A: React Native `ios/Package.swift` (PROVEN in experiment A on RN 0.88.1)
 
