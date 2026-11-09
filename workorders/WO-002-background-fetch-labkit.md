@@ -322,7 +322,7 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 - [x] `termination-calibration` result recorded
 - [ ] Tier 1 board green, or each failure linked to a work order; board captures (`summary.txt` + `run.json`) committed; full-window replay set saved under `labs/baselines/`
 - [ ] Mutation variants fail as intended
-- [ ] Back-to-back bg-forge and fetch sweeps: no contamination
+- [x] Back-to-back bg-forge and fetch sweeps: no contamination (Android Lab1, api-smoke, 2026-11-08/09: bg-forge `20261108-133031`, fetch `20261108-133328` and `20261108-155938`, bg-forge `20261109-083338`, each PASS; iOS waits for phase 2's app)
 - [ ] Manual iOS device tier run once and documented
 - [ ] Each confirmed suspected defect has its own work order
 
@@ -455,3 +455,15 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - The selftest's new `test_shim` covers two packs, and a symlinked spelling first. Each loads the first pack and chains exactly the sitecustomize a bare interpreter imports. 140 → 141 checks, PASS.
     - Mutants: no skip of fetch shims, and never chaining anything, each fail it. Reverting the candidate compare to `abspath` passes, as an equivalent mutant: the skip rule alone already catches a symlinked spelling, so the realpath compare is defence in depth.
     - The documented case, run for real: the main checkout's env, then `./labkit selftest` here, PASS. With `HEAD`'s shim in the same shell, `RecursionError`.
+- 2026-11-08 — **Committed** (`78b9ba7` labs, `b704bc1` Log) after Chris's diff review. Both of this branch's commits are merged in `master`: the re-vendor in `f03a087`, the sitecustomize fix in `e744105`.
+- 2026-11-09 — **Back-to-back sweeps with bg-forge: no contamination** (Chris's runs on Android Lab1 `emulator-5580`, checked from their captures). The full account is in bg-forge WO-191's Log, 2026-11-09.
+  - **fetch's side first:** `./labkit setup --os android` (`setup-20261108-133239`) published `4.1.1-master-5de5242` into the main checkout's `labs/m2` (commit `5de52423e1c5`, `dirty=no`) and built the react-native app.
+    - The fetch sweep before it (`20261108-133134`) stopped at its build: the label was not in `labs/m2` yet, and the build's guard refused. Nothing reached the device.
+  - **The sweeps,** api-smoke, each with `--devices 1 --build stale --no-uninstall`. A sweep uninstalls its own Android app after its last cell, so without `--no-uninstall` the next lab's sweep finds nothing to evict.
+    - bg-forge `20261108-133031`, PASS: the baseline. No fetch app was installed yet.
+    - fetch `20261108-133328` and `20261108-155938`, PASS, 43 s each. `evicted`: `com.transistorsoft.backgroundgeolocation.react` and `com.transistorsoft.labs.react`. `foreignTransistorApps`: the first. The only `Start proc` line is `fetchlab.react`'s.
+    - bg-forge `20261109-083338`, PASS. fetch's app had been launched just before it, with job 999 run and scheduled. The step evicted it, and the force-stop cancelled the job (`get-job-state … 999` → `Could not find job 999`).
+    - `summarize` scores every capture PASS, with no `CONTAMINATED`.
+  - **Still open in this box's neighbours:**
+    - "bg-forge prefix-eviction work order filed and done": WO-191 is filed but still `verify`, with iOS eviction, parity and D4's `setup --os ios` open.
+    - The fetch captures from these sweeps are not committed. That belongs to the Tier 1 box.
