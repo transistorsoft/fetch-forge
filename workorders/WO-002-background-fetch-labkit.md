@@ -315,7 +315,7 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 ## Verification
 
 - [x] Decisions D1–D4 recorded in the Log
-- [ ] bg-forge prefix-eviction work order filed and done
+- [x] bg-forge prefix-eviction work order filed and done (bg-forge WO-191, `done` 2026-11-09: on-device eviction on Android and iOS, and D4)
 - [x] `labs/VENDORED.md` names the bg-forge commit, and the vendored files are byte-identical with it
 - [ ] `./labkit doctor` / `up` / `status` / `down` work against the shared Lab devices
 - [x] Offline selftest passes
@@ -467,3 +467,6 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   - **Still open in this box's neighbours:**
     - "bg-forge prefix-eviction work order filed and done": WO-191 is filed but still `verify`, with iOS eviction, parity and D4's `setup --os ios` open.
     - The fetch captures from these sweeps are not committed. That belongs to the Tier 1 box.
+- 2026-11-09 — **bg-forge WO-191 is `done`**, so the prefix-eviction box is ticked. The details are in WO-191's Log, 2026-11-09.
+  - **iOS:** bg-forge's react-native api-smoke on the Lab1 Simulator uninstalled a `com.transistorsoft.fetchlab.` app at its first step. The app was a stand-in, bg-forge's `NativeLab.app` re-identified as `com.transistorsoft.fetchlab.standin`, because fetch has no iOS app yet. Eviction matches on the prefix alone, so phase 2's real app takes the same path; its first iOS run's `evicted` will show it.
+  - **D4:** bg-geo's `./labkit setup --os ios` rebuilt and published its label through Part 5's default iOS slot. fetch's own iOS slot (`fetch_pack._native_ios`) still stops at "WO-002 phase 2".
