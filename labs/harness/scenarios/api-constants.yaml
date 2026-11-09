@@ -1,0 +1,38 @@
+name: api-constants
+description: >
+  (WO-002, Tier 1) The eight constants the bridge exports — NETWORK_TYPE_NONE/ANY/UNMETERED/NOT_ROAMING/CELLULAR and
+  STATUS_RESTRICTED/DENIED/AVAILABLE — read on the device (a `probe:` resolves the member, never calls it) and held to
+  the values the vocabulary records from types/background-fetch and docforge/db, which are Android's JobInfo
+  NETWORK_TYPE_* (0-4) and BackgroundFetchStatus (0-2).
+
+  WHAT IT PINS, AND WHAT IT DOES NOT.  The NETWORK_TYPE regression WO-002 lists ("transposed") never reached a runtime
+  value in any bridge: React Native's getters have returned 0-4 since e33dc9a (2019; react-native/background-fetch
+  index.js:18-22, :29-33), as Cordova's, Capacitor's and Flutter's do.  It shipped in documentation only: the types
+  package's JSDoc `Value: N` and its types.ts table for one day (9c296a8 → 7be684d), and docforge's db and rendered
+  signatures from 2026-04-14 to 2026-06-29 (2cec8ae → 37af5f2; the live site was republished 13 minutes after the
+  fix).  Those are pinned OFFLINE, by the fetch selftest (the vocabulary against docforge/db, and against the types'
+  JSDoc and table).  On the device this scenario pins a bridge's hand-copied getter drifting from the vocabulary: a
+  swapped pair in index.js turns two probes red.  It does not follow a value into JobScheduler (a `job:` run is forced
+  past every constraint): that is Tier 2's config-jobinfo-android.
+
+  `noConfigure`: the driver makes no configure() (configureOutcome '-'); the probes need none.  Every expectation is
+  an early one, so the step ends on its evidence.
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-09 — the react-native platform has no iOS host yet (labs/platforms/react-native/lab.yaml has no `ios:`
+    block); the iOS half of this scenario arrives with the fetch iOS pin (WO-002 phase 2)."
+settle: 10
+after: 15
+extras: {noConfigure: true}
+hooks:
+  - {api: NETWORK_TYPE_NONE, probe: true, returns: {$: {type: number, equals: 0}}}
+  - {api: NETWORK_TYPE_ANY, probe: true, returns: {$: {type: number, equals: 1}}}
+  - {api: NETWORK_TYPE_UNMETERED, probe: true, returns: {$: {type: number, equals: 2}}}
+  - {api: NETWORK_TYPE_NOT_ROAMING, probe: true, returns: {$: {type: number, equals: 3}}}
+  - {api: NETWORK_TYPE_CELLULAR, probe: true, returns: {$: {type: number, equals: 4}}}
+  - {api: STATUS_RESTRICTED, probe: true, returns: {$: {type: number, equals: 0}}}
+  - {api: STATUS_DENIED, probe: true, returns: {$: {type: number, equals: 1}}}
+  - {api: STATUS_AVAILABLE, probe: true, returns: {$: {type: number, equals: 2}}}
+expect:
+  crashes: 0
+  configureOutcome: "-"

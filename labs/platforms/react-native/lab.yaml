@@ -8,8 +8,8 @@ name: react-native
 column: 2
 short: rn                        # its name in a board's eight-character column (labkit.board_name)
 # Distinct from bg-forge's com.transistorsoft.labs.* (WO-002 "Distinct package ids"): the two labs
-# share the Lab devices and their claims.  Each evicts only its own platforms() today (run.py:708-714);
-# evicting every Transistor lab app by prefix is a bg-forge work order, not done yet.
+# share the Lab devices and their claims.  Since bg-forge WO-191 each lab's first step evicts every other lab
+# app by prefix (labkit.evictions, run.py:710-716).
 package: com.transistorsoft.fetchlab.react
 activity: .MainActivity
 

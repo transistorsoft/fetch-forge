@@ -84,7 +84,7 @@ What it changes:
 | Vocabulary | [`harness/vocabulary.yaml`](harness/vocabulary.yaml) is seeded from `types/background-fetch` and has no State tree. `configure(config, onEvent, onTimeout?)` is an `events:` declaration (`subscribe: configure`, `args:` the config, `errors: true` for onTimeout); it can never be an `api:` hook. The `STATUS_*` and `NETWORK_TYPE_*` constants are probed: `{api: STATUS_AVAILABLE, probe: true, returns: {$: {equals: 2}}}` |
 | Headless names | `fetch` and `timeout` (`fetch_pack.HEADLESS_NAMES`, labkit's `HEADLESS_NAMES` hook). A lab driver logs `LAB point=headless event=fetch` for a HeadlessEvent with `timeout: false`, and `event=timeout` otherwise: fetch's HeadlessEvent has no name |
 | Implicit expectations | Every step that expects anything also expects `configureOutcome: ok` and `foreignLines: 0` (below). Both are early metrics, so a step can still end on its evidence |
-| Suite | `sweep.SUITE`: `termination-calibration`, `api-smoke`, `events-fetch-android` (the first slice) |
+| Suite | `sweep.SUITE`: the first slice (`termination-calibration`, `api-smoke`, `events-fetch-android`), then Tier 1 on react-native Android (`api-constants`, `events-initial-ignored`, `events-duplicate`, `events-task-android`, `events-timeout-sdk`, `stop-on-terminate`, `headless-kill`, `headless-activity-destroyed`) and the measurement `recreate-foreground-android` (WO-002, suspected defect 10) |
 | Setup / doctor | The fetch submodules, `capacitor/background-fetch`, the `tsbackgroundfetch` pin through `publish_native_fetch.sh`. The iOS pin is not built yet, so `./labkit setup` without `--os android` stops at the iOS native step even when doctor counts it as a to-do |
 
 **What a fetch lab driver logs, beyond bg-forge's protocol.** `LAB app=config json=<config>` before
@@ -104,11 +104,19 @@ actions:
   - {after: {api: "scheduleTask#0"}, delay_s: 2, job: com.foo.task}  # a custom task: its jobId is the taskId's String.hashCode
   - {after: {point: host}, force_stop: true}                          # am force-stop <pkg>, then waits until no process is left
   - {after: {point: host}, delay_s: 3, job: 999, expect: absent}      # JobScheduler must answer "Could not find job"
+  - {after: {event: configure@0}, delay_s: 3, job: 999,
+     unspaced: "2026-11-09 inside the SDK's 5 s window: dropped"}      # a repeat fired inside the duplicate guard, on purpose
 ```
 
 - **`job:`** must wait `delay_s: 1.5` or more after its conditions, because FetchJobService ignores a
   run less than 1 s after scheduling. A repeat of the same job on one device waits out the SDK's 5 s
   duplicate guard, and the step's window is budgeted for that wait.
+- **`unspaced:`** (WO-002 Tier 1) fires a repeat without that wait, inside the SDK's duplicate guard, on
+  purpose: firing inside the guards to get a delivery is a shortcut WO-002 rejects (the drop reads as an SDK
+  defect), so it is a measurement only. It is a dated reason (`"YYYY-MM-DD <why>"`), only on a repeat of a
+  job fired earlier in the step, never with `expect: absent`, and only in a step whose expect states
+  `duplicateJobs` as a number. Its mark carries `unspaced since_ms=<ms since the same job last ran>`.
+  `events-duplicate` is the one user.
 - **`expect:`** says what the step expects of the job: `present` (the default: it runs) or `absent`
   (JobScheduler holds no such job). The other answer is a scored miss, `actionsDone:
   action<i>=missed(no-job)` or `missed(present)`; the step still runs. JobScheduler's answer rides in
@@ -121,8 +129,8 @@ actions:
   after every step, so each step configures again, and no job carries across a step boundary except
   through a `process: live` step.
 - **`jobscheduler.txt`.** At the end of every Android step, before run.py's own end-of-step force-stop,
-  the host reads `dumpsys jobscheduler <pkg>` into the capture. The `jobIds` metric lists the job ids
-  registered there.
+  the host reads `dumpsys jobscheduler <pkg>` into the capture, its header carrying the host's clock
+  (`host_ms=`). The `jobIds` metric lists the job ids registered there; `jobStops` reads its `Job history:`.
 - **How it is wired.** `job` and `force_stop` are two of labkit's own action kinds (`ACTION_HANDLERS`, bg-forge
   WO-191), registered by the pack: the vendored `_validate_moves` checks them (fetch's rules in the kind's
   `validate`) and the vendored `run_host` runs them. One loop runs every action and move of a step, so a slow
@@ -140,6 +148,20 @@ log: `configureOutcome` (`ok`, `-` when no configure() was made, else `<source>=
 `am force-stop` delivers BOOT_COMPLETED, and run.py force-stops before every step), and `foreignLines`.
 bg-forge's generic metrics (`crashes`, `apiAssertions`, `eventAssertions`, `actionsDone`, …) apply as
 they are.
+
+Added for Tier 1 (WO-002, react-native Android), each from the app's own processes in the window:
+
+| Metric | Reads |
+|---|---|
+| `jobStops` | JobScheduler's `Job history:` STOP rows for the app, `<jobId>:<reason>=n` (`999:onStartJob_returned_false=1`: a run the SDK ignored, which it logs nothing about; `app_called_jobFinished`: a delivered one). Kept from the step's `measure_from` mark (launch or trigger) on; `no-epoch` where a capture cannot place them |
+| `jobsCancelled` | the jobIds of the SDK's `- cancel taskId=…, jobId=N` (stop(), stopOnTerminate's lazy stop, a reschedule) |
+| `rnHeadlessInit`, `rnHeadlessStarts`, `rnHeadlessEnds`, `rnHeadlessErrors` | React Native's HeadlessTask: a ReactContext built (the cold path), each JS task started and ended, and its error lines |
+| `headlessNoTask` | React Native's `No task registered for key BackgroundFetch` (the 4.4.2 cold-start race) |
+| `headlessLatencyMs` | the slowest hand-over, ms from the SDK's receipt to the headless task's `point=headless event=fetch` (a headless timeout is not one) |
+| `driverEvents`, `driverFinishes` | the foreground driver's own deliveries (`fetch=1,timeout=1`) and how it finished them (`fetch:withheld=1,timeout:ok=1`) |
+| `appProcesses` | the app's processes started in the window (`point=appCreate`) |
+| `fetchTimeoutSkewMs` | how far `[BGTask] timeout:` landed from 60 s after its receipt |
+| `lifecycleTally` | the SDK's LifecycleManager lines, sorted (`headless:true=2,onStart=1`) |
 
 **Which process is the app's.** Logcat is device-wide, and bg-forge's lab apps link TSBackgroundFetch
 too. An SDK line counts only from a process tied to the capture's package: a `point=appCreate
@@ -190,8 +212,10 @@ Both labs use the same machine-wide claims directory and sweep lock
 (`~/Library/Caches/transistorsoft-lab/claims`). A fetch sweep and a bg-forge sweep therefore queue; they
 never run side by side. Never set `LAB_CLAIMS_DIR` and never use a separate device.
 
-Each lab evicts only its own `platforms()` (run.py:708-714). Evicting every Transistor lab app by
-package prefix needs a bg-forge work order (WO-002, "Lab devices").
+Since bg-forge WO-191 each lab's first step evicts every other lab app on the device by package prefix
+(`com.transistorsoft.labs.*`, `com.transistorsoft.fetchlab.*`), and on Android force-stops every other
+Transistor app too (`labkit.evictions`, run.py:710-716): verified on both OSes and by back-to-back sweeps
+(WO-002 Log, 2026-11-09).
 
 A capture's path has no device in it (`captures/<platform>/<scenario>/<variant>/<step>`, bg-forge's
 layout), so the last run of a cell overwrites the one before it. To keep a run, copy its step

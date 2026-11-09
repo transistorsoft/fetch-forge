@@ -1,0 +1,91 @@
+name: stop-on-terminate
+description: >
+  (WO-002, Tier 1) stopOnTerminate: true — the default — stops the fetch task once the app is terminated.  The SDK has
+  no termination hook: the stop is lazy.  The next run of the job, while LifecycleManager says headless, takes doFetch's
+  stopOnTerminate branch (BackgroundFetch.java:276-278): `- Stopping on terminate`, stop(taskId) — `- stop: <taskId>`,
+  the BGTask finished (`- jobFinished`, no `- finish:`), `- cancel taskId=<taskId>, jobId=999` (BGTask.java:268) —
+  and nothing reaches JS.  So each step terminates the app, then fires the job, then fires it again to find it gone.
+
+  THE 2020 FIX (786b557) HAS TWO HALVES, AND ONE HIDES THE OTHER.  Before it, BackgroundFetchConfig.save() skipped a
+  stopOnTerminate:true config, so the new process found none and the job lived on.  The fix saves it; it also added a
+  fallback — no config: cancel the job by its id, silently (BackgroundFetch.java:267-270) — so "the job is gone" alone
+  passes a revert of the save half.  The SDK's own line, stoppingOnTerminate 1, and a prompt jobFinished 1 (the
+  fallback finishes nothing until the 60 s timeout) pin the save half; jobIds `-` pins the cancel.
+
+  Two terminations, as termination-calibration splits its two (never `am force-stop`: it cancels the job itself,
+  MEASURED, and the step would test nothing):
+    kill — `run-as kill -9` (the low-memory killer's death; the job survives it, MEASURED): the job's run starts a new
+      process (appProcesses 2), LifecycleManager starts headless (LifecycleManager.java:40).
+    finish — the Activity finished (finishNow), the process alive: React Native's onHostDestroy calls
+      LifecycleManager.setHeadless(true) (RNBackgroundFetchModule.java:113-117; RN 3540808, 4.2.0) and the run lands
+      in the same process (appProcesses 1).  Cordova 7.1.3 fixed the same mechanism in its bridge.
+
+  WHAT EACH STEP READS (from the launch):
+    * the first `job: 999` runs (actionsDone: JobScheduler still held it), the second, after the host's 5.5 s, is
+      `expect: absent` (`Could not find job 999`); jobIds `-` at the end; jobsRegistered 999.
+    * fetchReceived 1, stoppingOnTerminate 1, jobsCancelled 999, jobFinished 1, fetchFinished 0, fetchTimeouts 0.
+    * headlessEvents.fetch 0 and driverEvents `-`: no task, headless or foreground, ever saw the event.
+    * jobStopped and jobStops: recorded (the cancel lands while JobScheduler still runs the job: its stop reason is
+      not measured yet).
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-09 — iOS has no headless mode and stopOnTerminate is a no-op there (TSBackgroundFetch.m:388-393);
+    `actions:` are Android's."
+stopOnTerminate: true
+config: {stopOnTerminate: true, enableHeadless: true, minimumFetchInterval: 15, startOnBoot: false}
+measure_from: launch
+steps:
+  - name: kill
+    settle: 10
+    after: 35
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 3, kill: true}
+      # `point: host` matches ANY host mark: here the kill's, the only one before the first job.  The second job is
+      # held from the same mark and fires 5.5 s after the first (the host's repeat wait).
+      - {after: {point: host}, delay_s: 3, job: 999}
+      - {after: {point: host}, delay_s: 3, job: 999, expect: absent}
+    expect:
+      crashes: 0
+      jobsRegistered: "999"
+      fetchReceived: 1
+      stoppingOnTerminate: 1
+      jobsCancelled: "999"
+      jobFinished: 1
+      fetchFinished: 0
+      fetchTimeouts: 0
+      headlessEvents.fetch: 0
+      driverEvents: "-"
+      appProcesses: 2
+      headlessTaskErrors: 0
+      jobIds: "-"
+      jobStopped: any
+      jobStops: any
+      bootBroadcasts: any
+  - name: finish
+    settle: 10
+    after: 35
+    trigger: finish
+    actions:
+      - {after: {point: onDestroy}, delay_s: 3, job: 999}
+      - {after: {point: onDestroy}, delay_s: 3, job: 999, expect: absent}
+    expect:
+      crashes: 0
+      jobsRegistered: "999"
+      fetchReceived: 1
+      stoppingOnTerminate: 1
+      jobsCancelled: "999"
+      jobFinished: 1
+      fetchFinished: 0
+      fetchTimeouts: 0
+      headlessEvents.fetch: 0
+      driverEvents: "-"
+      appProcesses: 1
+      headless: true
+      headlessTaskErrors: 0
+      jobIds: "-"
+      jobStopped: any
+      jobStops: any
+      bootBroadcasts: any

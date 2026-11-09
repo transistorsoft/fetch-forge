@@ -1,0 +1,61 @@
+name: headless-activity-destroyed
+description: >
+  (WO-002, Tier 1; suspected defect 4's control) The Activity is finished while the process lives, then the fetch job
+  runs.  On React Native the plugin is a LifecycleEventListener whose onHostDestroy calls
+  LifecycleManager.setHeadless(true) (RNBackgroundFetchModule.java:113-117; RN 3540808, 4.2.0 — between 4.1.3 and it RN
+  had no such hook).  So the run takes doFetch's headless branch in the SAME process: the plugin's HeadlessTask finds
+  the live ReactContext — no `initializing ReactContext` — and, the context no longer RESUMED, starts the headless task
+  in the JS runtime the Activity left (HeadlessTask.java:58-76).  The foreground onEvent never sees it.  Capacitor has
+  no such hook (suspected defect 4): its run would go to a foreground listener with no Activity.  React Native is
+  the control.
+
+  Caused with `trigger: finish` (finishNow: the Activity's own finish()), never the back key: on Android 12+ Back on a
+  root launcher Activity moves the task to the back without destroying it (INFERRED; WO-002 corrected).  The job is
+  fired 3 s after `point=onDestroy`.
+
+  WHAT THE STEP READS (from the launch):
+    * configure@0 (the boot configure): no delivery.  driverEvents `-`: the driver's own onEvent saw nothing either.
+    * fetchReceived 1, headlessEvents.fetch 1, headlessCalls `finish:ok=1`, fetchFinished 1, jobFinished 1.
+    * rnHeadlessInit 0 (the context was reused), rnHeadlessStarts 1, rnHeadlessEnds 1; appProcesses 1; headless true.
+    * stoppingOnTerminate 0, fetchTimeouts 0; jobIds 999 at the end.
+  NOT CHECKED: whether React Native 0.88's JS timers run after its Activity is destroyed (bg-forge left it unchecked
+  too).  The headless task finishes after finishDelayMs (1000 ms, a setTimeout): if timers are paused, headlessCalls
+  reads `-` and the BGTask waits for the SDK's 60 s timeout — which this step measures.
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-09 — iOS has no headless mode (TSBackgroundFetch.m:388-393); `actions:` are Android's."
+stopOnTerminate: false
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 35
+    trigger: finish
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: false, enableHeadless: true, startOnBoot: false}
+        min: 0
+        max: 0
+    actions:
+      - {after: {point: onDestroy}, delay_s: 3, job: 999}
+    expect:
+      crashes: 0
+      jobsRegistered: "999"
+      fetchReceived: 1
+      headlessEvents.fetch: 1
+      headlessEvents.timeout: 0
+      headlessCalls: "finish:ok=1"
+      fetchFinished: 1
+      jobFinished: 1
+      rnHeadlessInit: 0
+      rnHeadlessStarts: 1
+      rnHeadlessEnds: 1
+      rnHeadlessErrors: 0
+      driverEvents: "-"
+      appProcesses: 1
+      headless: true
+      stoppingOnTerminate: 0
+      fetchTimeouts: 0
+      jobIds: "999"
+      headlessTally: any
+      bootBroadcasts: any

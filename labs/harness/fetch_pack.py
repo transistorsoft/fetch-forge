@@ -58,14 +58,21 @@ FETCH_JOB_ID = 999                                  # BackgroundFetchConfig.java
 # taskId within 5000 ms.  A `job:` action keeps outside both, with margin.
 JOB_SETTLE_S = 1.5
 JOB_REPEAT_S = 5.5
+# (WO-002 Tier 1) A job a step fires inside the SDK's 5 s guard ON PURPOSE (events-duplicate) carries a dated reason,
+# as bg-forge's `invalid:` does: `unspaced: "2026-11-09 <why>"`.  Only where the step states how many runs are dropped.
+UNSPACED = re.compile(r"^\d{4}-\d\d-\d\d \S")
+BGTASK_TIMEOUT_MS = 60000                           # BGTask.java:28 MAX_TIME, posted in the BGTask constructor (:85)
 JOBSCHEDULER = "jobscheduler.txt"                   # the capture's `dumpsys jobscheduler <pkg>`, at the step's end
 FETCH_ACTIONS = ("job", "force_stop")
 # The names a fetch headless task is handed, by the lab's convention: a fetch lab driver writes `event=fetch` for a
 # HeadlessEvent whose `timeout` is false and `event=timeout` for one whose `timeout` is true (fetch's HeadlessEvent is
 # {taskId, timeout}, with no name).  labkit.HEADLESS_NAMES (WO-191) generates a headlessEvents.<name> metric per name.
 HEADLESS_NAMES = ("fetch", "timeout")
-# The first slice's suite (WO-002 Log, 2026-11-05).  A name with no scenario file yet is refused by sweep as usual.
-SUITE = ["termination-calibration", "api-smoke", "events-fetch-android"]
+# The first slice's suite (WO-002 Log, 2026-11-05), then Tier 1 on react-native Android (2026-11-09).  A name with no
+# scenario file yet is refused by sweep as usual.
+SUITE = ["termination-calibration", "api-smoke", "events-fetch-android",
+         "api-constants", "events-initial-ignored", "events-duplicate", "events-task-android", "events-timeout-sdk",
+         "stop-on-terminate", "headless-kill", "headless-activity-destroyed", "recreate-foreground-android"]
 LISTS = {}
 
 OVERRIDES = []                                      # (symbol, kind, seam, why) — the Phase B cut list
@@ -257,10 +264,12 @@ def _backends(m):
     _rebind(m.Simctl, "native_resolved", native_resolved)
 
     # The fetch host actions' device primitives, run by labkit.ACTION_HANDLERS' `job` and `force_stop` (register()).
-    def job(self, plat, value, expect="present"):
+    def job(self, plat, value, expect="present", unspaced=None):
         """`cmd jobscheduler run -f <pkg> <jobId>`, outside the SDK's guards: a repeat of the same job on this device
-        waits out JOB_REPEAT_S from the last one (FetchJobService.java:38-51); JOB_SETTLE_S after scheduling is the
-        action's `delay_s`, held at load.  Returns the mark's text after `action=`.  What the step expects of the
+        waits out JOB_REPEAT_S from the last one (FetchJobService.java:38-51); JOB_SETTLE_S after the action's own
+        conditions is its `delay_s`, held at load.  (WO-002 Tier 1) An `unspaced:` job does not wait: it is fired
+        inside the duplicate guard on purpose, and the mark carries `unspaced since_ms=<ms since the same job last
+        ran here>` (events-duplicate).  Returns the mark's text after `action=`.  What the step expects of the
         job is the action's `expect:` — `present` (the default: it runs) or `absent` (JobScheduler holds no such job,
         termination-calibration's force-stop step).  The other answer is a scored miss (`missed=no-job`,
         `missed=present`; actionsDone), not a refused step: whether the job is there is the SDK's doing
@@ -271,8 +280,10 @@ def _backends(m):
         jid = job_id(value)
         fired = self.__dict__.setdefault("_fetch_jobs_fired", {})
         key = (plat["package"], jid)
-        waited = 0.0
-        if key in fired and time.time() - fired[key] < JOB_REPEAT_S:
+        waited, since = 0.0, None
+        if unspaced:
+            since = int((time.time() - fired[key]) * 1000) if key in fired else None
+        elif key in fired and time.time() - fired[key] < JOB_REPEAT_S:
             waited = JOB_REPEAT_S - (time.time() - fired[key])
             time.sleep(waited)
         r = labkit.device_call(["adb", "-s", self.serial, "shell", "cmd", "jobscheduler", "run", "-f",
@@ -288,9 +299,11 @@ def _backends(m):
         else:
             raise SystemExit("job: `cmd jobscheduler run -f %s %d` answered %r (exit %d)"
                              % (plat["package"], jid, said[:200], r.returncode))
-        return "job %d%s%s%s said=%s" % (jid, " expect=absent" if expect == "absent" else "",
-                                         " waited_ms=%d" % (waited * 1000) if waited else "",
-                                         " missed=%s" % missed if missed else "",
+        return "job %d%s%s%s%s said=%s" % (jid, " expect=absent" if expect == "absent" else "",
+                                           " waited_ms=%d" % (waited * 1000) if waited else "",
+                                           " unspaced since_ms=%s" % ("-" if since is None else since) if unspaced
+                                           else "",
+                                           " missed=%s" % missed if missed else "",
                                          re.sub(r"\W+", "_", said).strip("_")[:60] or "-")
     _extend(m.Adb, "job", job)
 
@@ -457,16 +470,20 @@ def _register(m):
         if dev.os != "android":
             return
         r = m.device_call(["adb", "-s", dev.serial, "shell", "dumpsys", "jobscheduler", plat["package"]], timeout=30)
+        # (WO-002 Tier 1) host_ms: the host's clock when the dump came back — `Job history:` ages are relative to the
+        # dump, and jobStops places them against run.json's launch mark (the same host clock).
+        host_ms = int(time.time() * 1000)
         with open(os.path.join(out, JOBSCHEDULER), "w") as f:
-            f.write("# adb -s %s shell dumpsys jobscheduler %s  (exit %d, read %s)\n%s%s"
-                    % (dev.serial, plat["package"], r.returncode, time.strftime("%Y-%m-%d %H:%M:%S"), r.stdout, r.stderr))
+            f.write("# adb -s %s shell dumpsys jobscheduler %s  (exit %d, read %s, host_ms=%d)\n%s%s"
+                    % (dev.serial, plat["package"], r.returncode, time.strftime("%Y-%m-%d %H:%M:%S"), host_ms,
+                       r.stdout, r.stderr))
     _rebind(m, "CAPTURE_EXTRAS", capture_extras)
 
     # fetch's host actions, as two kinds of labkit's own (ACTION_HANDLERS): validated and run by the vendored
     # _validate_moves and run_host, scored by actionsDone.  `expect:` is the job's (both declare it, so an `expect:`
     # on a force_stop is refused in fetch's own words, below).  Android's only (the default `oses`).
     _extend(m.ACTION_HANDLERS, "job", m.ActionHandler(_job_ok, lambda dev, item, plat, server: dev.job(
-        plat, item["job"], item.get("expect", "present")), keys=("expect",)))
+        plat, item["job"], item.get("expect", "present"), item.get("unspaced")), keys=("expect", "unspaced")))
     _extend(m.ACTION_HANDLERS, "force_stop", m.ActionHandler(
         _force_stop_ok, lambda dev, item, plat, server: dev.force_stop(plat), keys=("expect",)))
 
@@ -515,6 +532,25 @@ def _job_ok(at, item, step):
     actions = step.get("actions") or []
     i = next(j for j, a in enumerate(actions) if a is item)
     earlier = [job_id(a["job"]) for a in actions[:i] if isinstance(a, dict) and "job" in a]
+    if "unspaced" in item:
+        # (WO-002 Tier 1) Firing inside the SDK's guards is a shortcut WO-002 rejects for a delivery — the drop reads
+        # as an SDK defect — and a measurement when the step asserts the drop.  So: dated, a repeat of a job fired
+        # earlier in the step, never `expect: absent`, and only where the step's expect states duplicateJobs.
+        unspaced, dup = item["unspaced"], (step.get("expect") or {}).get("duplicateJobs")
+        if not (isinstance(unspaced, str) and UNSPACED.match(unspaced)):
+            raise SystemExit("%s: `unspaced:` is a dated reason, \"YYYY-MM-DD <why>\": the host fires this job without "
+                             "waiting out the SDK's 5 s duplicate guard, on purpose — not %r" % (at, unspaced))
+        if item.get("expect") == "absent":
+            raise SystemExit("%s: an `unspaced:` job is fired for the SDK to deliver or drop — `expect: absent` is a "
+                             "job JobScheduler no longer holds, which no guard is about" % at)
+        if job_id(value) not in earlier:
+            raise SystemExit("%s: `unspaced:` waives the wait after an earlier run of the same job in this step, and "
+                             "no earlier action fires job %d" % (at, job_id(value)))
+        if isinstance(dup, bool) or not isinstance(dup, int):
+            raise SystemExit("%s: a step with an `unspaced:` job states how many runs the SDK drops — "
+                             "`duplicateJobs: <n>` in its expect, not %r (WO-002, \"Not an acceptable shortcut\")"
+                             % (at, dup))
+        return 0
     return JOB_REPEAT_S if job_id(value) in earlier else 0
 
 
@@ -553,21 +589,22 @@ seam("labkit.IOS_GRACE_S", "none", "labkit.py:4619, ios_grace :4650",
 seam("labkit.SDK_LOG", "hook", "labkit.py:3386-3412",
      "reads TSBackgroundFetch lines from the log on both OSes, never transistor_log.db")
 seam("labkit.ACTION_HANDLERS", "hook", "labkit.py:1773",
-     "`job:` and `force_stop:`, two action kinds of labkit's own")
+     "`job:` (with `expect:` and, Tier 1, a dated `unspaced:`) and `force_stop:`, two action kinds of labkit's own")
 seam("labkit._validate_hooks", "wrap", "labkit.py:1270-1282 (a property probe's `$` is function|object)",
      "a probe of a constant (STATUS_*, NETWORK_TYPE_*: numbers) may assert its type and value — seam: "
      "`allowed |= wire_of(member)` for a property whose return has a `wire`")
 seam("labkit.HEADLESS_NAMES", "hook", "labkit.py:3587-3592",
      "fetch and timeout (HEADLESS_NAMES): the vocabulary carries no Event enum any more")
 seam("labkit.METRICS", "extend", "labkit.py:3419-3425 (the registry: no override)",
-     "fetch's metrics: SDK-line counts, fetchTally, jobIds, jobsRegistered, configureOutcome")
+     "fetch's metrics: SDK-line counts, fetchTally, jobIds, jobsRegistered, configureOutcome; (Tier 1) jobStops, "
+     "jobsCancelled, React Native HeadlessTask counts, driverEvents/driverFinishes, appProcesses, timing metrics")
 seam("labkit.IMPLICIT / EARLY_METRICS", "hook", "labkit.py:4522, :4545",
      "adds `configureOutcome: ok` and `foreignLines: 0` to every step that expects anything, both early (whole-log) "
      "metrics, in place")
 seam("labkit.EVIDENCE", "hook", "labkit.py:4890",
      "not complete while a configure() the driver made is unsettled")
 seam("labkit.CAPTURE_EXTRAS", "hook", "run.py:601-614 (end_capture_log)",
-     "the host's `dumpsys jobscheduler <pkg>` read as jobscheduler.txt (Android)")
+     "the host's `dumpsys jobscheduler <pkg>` read as jobscheduler.txt (Android), its header carrying host_ms")
 seam("labkit.NATIVE", "hook", "labkit.py:275; lab_setup.py:236-242, :414-429; inventory.py:30",
      "tsbackgroundfetch / TSBackgroundFetch.xcframework; fetch's own Android slot (publish_native_fetch.sh) and an "
      "iOS slot that stops at the pin")
@@ -588,6 +625,38 @@ SDK_COUNTS = {
     "stoppingOnTerminate": ("%- Stopping on terminate%", "BackgroundFetch.java:277"),
     "headlessTaskErrors": ("%Headless task error: %", "BGTask.java:219, BackgroundFetch.java:283"),
 }
+# (WO-002 Tier 1) React Native's HeadlessTask (react-native/background-fetch android HeadlessTask.java), which logs under
+# the SDK's tag: the cold path builds a ReactContext (bridgeless: 4.2.6), each JS task starts and ends (4.2.7's names),
+# and its errors.  Another bridge logs none of these: its scenarios state them per platform (platform_expect).
+RN_HEADLESS_COUNTS = {
+    "rnHeadlessInit": ("%[HeadlessTask] initializing ReactContext%", "HeadlessTask.java:127"),
+    "rnHeadlessStarts": ("%[HeadlessTask] start taskId: %", "HeadlessTask.java:76"),
+    "rnHeadlessEnds": ("%[HeadlessTask] end taskId: %", "HeadlessTask.java:80"),
+}
+RN_HEADLESS_ERRORS = ("%[HeadlessTask] Failed invoke HeadlessTask%",              # HeadlessTask.java:44
+                      "%[HeadlessTask] task attempted to run in the foreground%",  # :86
+                      "%[HeadlessTask] Reflection error%",                         # :106, :119
+                      "%[HeadlessTask] reflection error%")                         # :140, :151
+# React Native's own warning when a headless task starts before the bundle registered it: RN 4.4.2's cold-start race
+# (61695d4), AppRegistryImpl.js:309.  Tag ReactNativeJS, not the SDK's.
+RN_NO_TASK = "No task registered for key BackgroundFetch"
+# `dumpsys jobscheduler` `Job history:` rows (AOSP JobPackageTracker; read on the lab image, Android 16):
+#   `     -40s555ms  STOP-P: #u0a213/999 <pkg>/<service> onStartJob returned false`.  START rows carry no reason.
+HISTORY_ROW = re.compile(r"^\s+(-[0-9dhms]+)\s+(START|STOP)(?:-P)?: #\S+?/(-?\d+) ([\w.]+)/\S+(?: (.*))?$")
+HISTORY_AGE = re.compile(r"^-(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m(?!s))?(?:(\d+)s)?(?:(\d+)ms)?$")
+
+
+def history_age_ms(text):
+    """A `Job history:` age (`-2h26m50s884ms`, `-2m09s691ms`, `-40s597ms`, `-884ms`) in ms, or None."""
+    hit = HISTORY_AGE.match(text)
+    if not hit or text == "-":
+        return None
+    d, h, mi, s, ms = (int(x or 0) for x in hit.groups())
+    return (((d * 24 + h) * 60 + mi) * 60 + s) * 1000 + ms
+
+
+def tally(keys):
+    return ",".join("%s=%d" % (k, keys.count(k)) for k in sorted(set(keys))) or "-"
 
 
 def scheduled_jobs(text, package):
@@ -609,7 +678,7 @@ def scheduled_jobs(text, package):
 
 
 def _fetch_metrics(m):
-    for name, (like, where) in SDK_COUNTS.items():
+    for name, (like, where) in list(SDK_COUNTS.items()) + list(RN_HEADLESS_COUNTS.items()):
         def count(c, like=like):
             return len(c.sdk(like))
         count.__name__ = name
@@ -692,7 +761,138 @@ def _fetch_metrics(m):
         return sum(1 for l in c.lines if m.line_pid(l) not in own and (
             SDK_LINE.match(l) or m.TAG + " point=headless" in c.norm[l] or m.TAG + " point=task-" in c.norm[l]))
 
-    for fn in (fetchTally, jobIds, jobsRegistered, configureOutcome, jobsAtForceStop, bootBroadcasts, foreignLines):
+    # ---- (WO-002 Tier 1, react-native Android) -------------------------------------------------------------------
+
+    def own_window(c):
+        """The window's lines from the app's own processes, with their normalized text."""
+        own = _own_pids(m, c)
+        return [(l, c.norm[l]) for l in c.window if m.line_pid(l) in own]
+
+    def jobStops(c):
+        """(WO-002 Tier 1) JobScheduler's own word on how each run of the app's jobs ended, inside the step: the
+        `Job history:` STOP rows of jobscheduler.txt, `<jobId>:<reason>=n,…` (non-word runs as `_`), sorted by jobId
+        then reason; '-' for none.  The SDK logs nothing when it ignores a run < 1 s after scheduling
+        (FetchJobService.java:26-31) — JobScheduler records `onStartJob returned false` — and a delivered run reads
+        `app called jobFinished`.  A row's age is relative to the dump; it is placed on the host clock from the
+        header's `host_ms` (else run.json's capture_extras phase) and kept from the step's measure_from mark (launch
+        or trigger, run.json timings) on: the history spans the device's life.  `no-read` / `unread` as jobIds;
+        `no-epoch` for a capture that cannot place a row (written before this metric, or another measure_from)."""
+        path = os.path.join(c.path, JOBSCHEDULER)
+        if not os.path.exists(path):
+            return "no-read"
+        text = open(path, errors="replace").read()
+        head = text.split("\n", 1)[0]
+        code = re.search(r"\(exit (-?\d+),", head)
+        if code and code.group(1) != "0":
+            return "unread"
+        timings = (c.meta or {}).get("timings") or {}
+        phases, t0 = timings.get("phases") or {}, timings.get("t0")
+        stamp = re.search(r"\bhost_ms=(\d+)", head)
+        dump = (int(stamp.group(1)) if stamp else
+                (t0 + phases["capture_extras"]) * 1000 if t0 is not None and "capture_extras" in phases else None)
+        mark = {"launch": "launch_mark", "trigger": "trigger"}.get((c.meta or {}).get("measure_from", "trigger"))
+        if dump is None or t0 is None or phases.get(mark) is None:
+            return "no-epoch"
+        start, package, rows, inside = (t0 + phases[mark]) * 1000, _package_of(c), [], False
+        for line in text.splitlines():
+            if re.match(r"^\s*Job history:", line):
+                inside = True
+                continue
+            if inside and line.strip() and not HISTORY_ROW.match(line) and not line.startswith("     "):
+                inside = False
+            hit = HISTORY_ROW.match(line) if inside else None
+            if not hit or hit.group(2) != "STOP" or hit.group(4) != package:
+                continue
+            age = history_age_ms(hit.group(1))
+            if age is not None and dump - age >= start:
+                rows.append((int(hit.group(3)), re.sub(r"\W+", "_", hit.group(5) or "-").strip("_") or "-"))
+        return ",".join("%d:%s=%d" % (j, r, rows.count((j, r))) for j, r in sorted(set(rows))) or "-"
+
+    def jobsCancelled(c):
+        """(WO-002 Tier 1) The jobIds the SDK cancelled in the window, from `- cancel taskId=<t>, jobId=<n>`
+        (BGTask.java:268: stop(), stopOnTerminate's lazy stop, a reschedule), sorted, each once; '-' for none."""
+        ids = {int(hit.group(1)) for hit in (re.search(r"\bjobId=(-?\d+)", line)
+                                              for line in c.sdk("%- cancel taskId=%")) if hit}
+        return ",".join(map(str, sorted(ids))) or "-"
+
+    def rnHeadlessErrors(c):
+        """(WO-002 Tier 1) React Native HeadlessTask's error lines in the window (HeadlessTask.java:44, :86, :106,
+        :119, :140, :151): a failed invoke, a task refused in the foreground, the bridgeless reflection errors."""
+        return sum(len(c.sdk(like)) for like in RN_HEADLESS_ERRORS)
+
+    def headlessNoTask(c):
+        """(WO-002 Tier 1) React Native's `No task registered for key BackgroundFetch` from the app's processes in
+        the window: a headless task started before the JS bundle registered it (RN 4.4.2's cold-start race)."""
+        return sum(1 for _, n in own_window(c) if RN_NO_TASK in n)
+
+    def driverEvents(c):
+        """(WO-002 Tier 1) The foreground driver's deliveries from configure()'s callbacks, `fetch=n,timeout=n`
+        ('-' none): its `app=event=<fetch|timeout> n=<k> taskId=<id>` lines (index.js onDelivery).  A headless
+        delivery is never one (headlessEvents counts those)."""
+        return tally([hit.group(1) for hit in (re.search(m.TAG + r" app=event=(fetch|timeout) ", n)
+                                               for _, n in own_window(c)) if hit])
+
+    def driverFinishes(c):
+        """(WO-002 Tier 1) How the foreground driver finished each delivery, `<fetch|timeout>:<outcome>=n` ('-'
+        none): its `app=finish taskId=… timeout=<bool> … outcome=<ok|withheld|threw>` lines (index.js onDelivery;
+        the knobs withholdFinish / finishOnTimeout decide)."""
+        return tally(["%s:%s" % ("timeout" if c.field(n, "timeout") == "true" else "fetch", c.field(n, "outcome"))
+                      for _, n in own_window(c) if m.TAG + " app=finish " in n])
+
+    def appProcesses(c):
+        """(WO-002 Tier 1) How many processes of the app started in the window: its `point=appCreate` lines
+        (MainApplication), one per process.  A kill then a job reads 2; a job into the process the finished
+        Activity left reads 1."""
+        return len({m.line_pid(l) for l, n in own_window(c) if m.TAG + " point=appCreate " in n})
+
+    def fetchTimeoutSkewMs(c):
+        """(WO-002 Tier 1) How far the SDK's timeout landed from BGTASK_TIMEOUT_MS after the delivery it times out:
+        the largest |`[BGTask] timeout: <t>` − `- Background Fetch event received: <t>` − 60000| ms in the window,
+        each timeout against the latest receipt of its taskId before it; '-' for none.  The timer is posted just
+        before the receipt is logged (BGTask.java:85, FetchJobService.java:57-58), so a sound run reads a few ms."""
+        received, skews = {}, []
+        for l, n in own_window(c):
+            if not SDK_LINE.match(l):
+                continue
+            got = re.search(r"- Background Fetch event received: (\S+)", n)
+            if got:
+                received[got.group(1)] = c._ts(l)
+                continue
+            out = re.search(r"\[BGTask\] timeout: (\S+)", n)
+            if out and received.get(out.group(1)) is not None:
+                skews.append(int(round(abs(c._ts(l) - received[out.group(1)] - BGTASK_TIMEOUT_MS))))
+        return max(skews) if skews else "-"
+
+    def headlessLatencyMs(c):
+        """(WO-002 Tier 1) The slowest hand-over to a headless task: ms from the SDK's `- Background Fetch event
+        received: <t>` to the driver's `point=headless event=fetch … taskId=<t>`, each headless line against the
+        latest receipt of its taskId before it; '-' for none.  A headless `event=timeout` is not a hand-over of a
+        receipt (BGTask.onTimeout fires it 60 s later): headlessEvents.timeout and fetchTimeoutSkewMs read those.
+        RN 4.4.2 (61695d4) replaced a postDelayed(500) on the cold path with runOnJSQueueThread: MEASURED 69-75 ms
+        since (termination-calibration, both Lab AVDs)."""
+        received, waits = {}, []
+        for l, n in own_window(c):
+            got = re.search(r"- Background Fetch event received: (\S+)", n) if SDK_LINE.match(l) else None
+            if got:
+                received[got.group(1)] = c._ts(l)
+            elif m.TAG + " point=headless event=fetch " in n and received.get(c.field(n, "taskId")) is not None:
+                waits.append(int(round(c._ts(l) - received[c.field(n, "taskId")])))
+        return max(waits) if waits else "-"
+
+    def lifecycleTally(c):
+        """(WO-002 Tier 1) The SDK's LifecycleManager lines in the window (LifecycleManager.java: `☯️  onStart`,
+        `onResume`, …, `☯️  HeadlessMode? <bool>` as `headless:<bool>`), tallied: why the SDK thought the app
+        headless, or not, around a recreation (recreate-foreground-android)."""
+        keys = []
+        for line in c.sdk("%☯️%"):
+            hit = re.search(r"☯️\s+(HeadlessMode\? (\w+)|(on\w+))", line)
+            if hit:
+                keys.append("headless:%s" % hit.group(2) if hit.group(2) else hit.group(3))
+        return tally(keys)
+
+    for fn in (fetchTally, jobIds, jobsRegistered, configureOutcome, jobsAtForceStop, bootBroadcasts, foreignLines,
+               jobStops, jobsCancelled, rnHeadlessErrors, headlessNoTask, driverEvents, driverFinishes, appProcesses,
+               fetchTimeoutSkewMs, headlessLatencyMs, lifecycleTally):
         _extend(m.METRICS, fn.__name__, fn)
 
 

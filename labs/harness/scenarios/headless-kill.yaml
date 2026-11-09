@@ -1,0 +1,73 @@
+name: headless-kill
+description: >
+  (WO-002, Tier 1) A killed app's fetch runs headless: stopOnTerminate false, enableHeadless true; `run-as kill -9`
+  (the job survives it: termination-calibration, MEASURED), then the job, twice.  termination-calibration's kill step
+  established the path; this scenario pins React Native's half of it, which three RN releases fixed:
+    * 4.2.6 (340ea10): bridgeless headless — the HeadlessTask finds the ReactHost by reflection and, in a new process,
+      starts it: `[HeadlessTask] initializing ReactContext` (HeadlessTask.java:127).  The lab app is new-architecture,
+      so the bridgeless branch is the one that runs.  It also wired finish() to RN's finishTask, as a second
+      completion handler on the BGTask beside the SDK's own `- jobFinished` (native c2c46a5: added, not replaced).
+    * 4.4.2 (61695d4): the cold-start race — the task was started 500 ms after the context (postDelayed) and could
+      find no task registered (`No task registered for key BackgroundFetch`, RN's AppRegistryImpl).  It is now queued
+      on the JS thread: MEASURED 69-75 ms from the SDK's receipt to the headless task's first line.
+    * 4.2.7 (b640726): each JS task logs `[HeadlessTask] start taskId: N` and `[HeadlessTask] end taskId: N`
+      (:76, :80) — a revert reads rnHeadlessStarts / rnHeadlessEnds 0 — and an isTaskRunning guard before
+      finishTask, whose BEHAVIOUR is not pinnable on the lab's RN 0.88: its HeadlessJsTaskContext.finishTask ignores
+      an id it does not run (HeadlessJsTaskContext.kt:141-152), guard or no guard.
+
+  THE RUNS: the kill at status() + 3 s; job 999 3 s after it — the cold path, a new process (appProcesses 2); job 999 6 s
+  after the first headless delivery — the warm path, the same headless process, no second ReactContext.  6 s from the
+  delivery keeps the second run clear of the SDK's 5 s duplicate window, which counts from the first run's onStartJob
+  (a cold start reaches it ~0.2 s after the host's command; the host's own 5.5 s would leave ~0.3 s).
+
+  WHAT THE STEP READS (from the launch):
+    * fetchReceived 2, headlessEvents.fetch 2 (timeout 0), headlessCalls `finish:ok=2`, fetchFinished 2, jobFinished 2.
+    * rnHeadlessInit 1 (cold once), rnHeadlessStarts 2, rnHeadlessEnds 2, rnHeadlessErrors 0, headlessNoTask 0.
+    * headlessLatencyMs < 500 (receipt to `point=headless event=fetch`): a revert of 4.4.2's queueing adds 500 ms to
+      the cold hand-over.
+    * appProcesses 2, headless true (the task's probe); duplicateJobs 0, stoppingOnTerminate 0, headlessTaskErrors 0,
+      fetchTimeouts 0; jobIds 999 at the end (a headless finish keeps the periodic job).
+    * jobStops `999:app_called_jobFinished=2,999:onStartJob_returned_false=1`.
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-09 — iOS has no headless mode (TSBackgroundFetch.m:388-393); `actions:` are Android's."
+stopOnTerminate: false
+config: {stopOnTerminate: false, enableHeadless: true, minimumFetchInterval: 15, startOnBoot: false}
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 40
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 3, kill: true}
+      # `point: host` matches ANY host mark: here the kill's, the only one before it.
+      - {after: {point: host}, delay_s: 3, job: 999}
+      - {after: {headless: fetch}, delay_s: 6, job: 999}
+    expect:
+      crashes: 0
+      jobsRegistered: "999"
+      fetchReceived: 2
+      headlessEvents.fetch: 2
+      headlessEvents.timeout: 0
+      headlessCalls: "finish:ok=2"
+      fetchFinished: 2
+      jobFinished: 2
+      rnHeadlessInit: 1
+      rnHeadlessStarts: 2
+      rnHeadlessEnds: 2
+      rnHeadlessErrors: 0
+      headlessNoTask: 0
+      headlessLatencyMs: "<500"
+      appProcesses: 2
+      headless: true
+      duplicateJobs: 0
+      stoppingOnTerminate: 0
+      headlessTaskErrors: 0
+      fetchTimeouts: 0
+      jobIds: "999"
+      jobStops: "999:app_called_jobFinished=2,999:onStartJob_returned_false=1"
+      headlessTally: any
+      bootBroadcasts: any

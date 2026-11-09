@@ -1,0 +1,55 @@
+name: recreate-foreground-android
+description: >
+  (WO-002, suspected defect 10 — a measurement, PREDICTED RED) A configuration-change recreation must leave the app in
+  the foreground as far as the SDK knows.  From the code it does not:
+    * React Native destroys the old Activity's host on a recreation — ReactActivityDelegate.onDestroy →
+      ReactHostImpl.onHostDestroy (the old Activity is still current) → ReactContext.onHostDestroy — with no
+      isChangingConfigurations check, and the plugin's onHostDestroy calls LifecycleManager.setHeadless(true)
+      (RNBackgroundFetchModule.java:113-117).
+    * Nothing sets it back: the plugin's onHostResume does not (:98-103); LifecycleManager returns to false only on
+      ProcessLifecycleOwner's ON_START / ON_RESUME (LifecycleManager.java:142-159, :185-194), which it does not send
+      when the new Activity resumes within 700 ms of the old one pausing — a recreation (bg-forge's RN capture of
+      recreate-bold-no-stop-on-terminate: ~50 ms).
+  So the next fetch, with the app on screen, takes doFetch's headless branch: with stopOnTerminate true (the default)
+  `- Stopping on terminate` cancels the job; with false, the HeadlessTask returns silently because RN is RESUMED
+  (HeadlessTask.java:68-70) and the BGTask is stranded.  bg-forge pins background-geolocation's version of this.
+
+  Caused with `trigger: bold` (the system bold-text setting: the lab template's configChanges omit fontWeightAdjustment,
+  so the Activity is recreated); the job 4 s after the trigger mark, the app in the foreground.
+
+  WHAT THE STEP READS (from the launch) — the values a sound SDK gives:
+    * configure@0: exactly one delivery, `react-native-background-fetch`; driverEvents `fetch=1`.
+    * fetchReceived 1, fetchFinished 1, jobFinished 1, stoppingOnTerminate 0, jobsCancelled `-`; jobIds 999 at the end.
+    * headless false: the last probe after the recreation (the new Activity's ticks) reads LifecycleManager's flag.
+    * lifecycleTally: recorded — the SDK's `☯️` lines, so a green reads "ProcessLifecycleOwner reset it this time"
+      (an `onStart` after the trigger) and a red "the flag stuck" (`headless:true`, no `onStart`).
+  A red here gets its own work order (WO-002: each confirmed suspected defect).
+platforms: [react-native]
+not_applicable:
+  ios: "2026-11-09 — iOS has no headless mode; `job:` and the bold trigger's recreation are Android's."
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 30
+    trigger: bold
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 1
+        max: 1
+        returns: {$: {type: string, equals: react-native-background-fetch}}
+    actions:
+      - {after: {point: trigger}, delay_s: 4, job: 999}
+    expect:
+      crashes: 0
+      driverEvents: "fetch=1"
+      fetchReceived: 1
+      fetchFinished: 1
+      jobFinished: 1
+      stoppingOnTerminate: 0
+      jobsCancelled: "-"
+      headless: false
+      jobIds: "999"
+      lifecycleTally: any
+      bootBroadcasts: any
