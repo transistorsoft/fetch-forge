@@ -23,7 +23,13 @@ description: >
     * headless false: the last probe after the recreation (the new Activity's ticks) reads LifecycleManager's flag.
     * lifecycleTally: recorded — the SDK's `☯️` lines, so a green reads "ProcessLifecycleOwner reset it this time"
       (an `onStart` after the trigger) and a red "the flag stuck" (`headless:true`, no `onStart`).
-  A red here gets its own work order (WO-002: each confirmed suspected defect).
+  A red here gets its own work order (WO-002: each confirmed suspected defect).  It did: WO-003 (MEASURED red
+  2026-11-09, Lab1).
+
+  (WO-003) The step `stop-on-terminate-false` is the same recreation with stopOnTerminate false and enableHeadless true:
+  the branch where doFetch hands the fetch to the headless path (BackgroundFetch.java:272-285) and React Native's
+  HeadlessTask returns at once because the app is RESUMED (HeadlessTask.java:67-70).  A sound plugin delivers it to the
+  driver as in `run`; the defect strands it (PREDICTED before the fix: no driver event, no finish, no headless JS task).
 platforms: [react-native]
 not_applicable:
   ios: "2026-11-09 — iOS has no headless mode; `job:` and the bold trigger's recreation are Android's."
@@ -48,6 +54,35 @@ steps:
       fetchFinished: 1
       jobFinished: 1
       stoppingOnTerminate: 0
+      jobsCancelled: "-"
+      headless: false
+      jobIds: "999"
+      lifecycleTally: any
+      bootBroadcasts: any
+  # (WO-003) The stopOnTerminate false branch of the same defect.
+  - name: stop-on-terminate-false
+    settle: 10
+    after: 30
+    trigger: bold
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: false, enableHeadless: true, startOnBoot: false}
+        min: 1
+        max: 1
+        returns: {$: {type: string, equals: react-native-background-fetch}}
+    actions:
+      - {after: {point: trigger}, delay_s: 4, job: 999}
+    expect:
+      crashes: 0
+      driverEvents: "fetch=1"
+      fetchReceived: 1
+      fetchFinished: 1
+      jobFinished: 1
+      headlessEvents.fetch: 0
+      rnHeadlessStarts: 0
+      rnHeadlessErrors: 0
+      stoppingOnTerminate: 0
+      fetchTimeouts: 0
       jobsCancelled: "-"
       headless: false
       jobIds: "999"
