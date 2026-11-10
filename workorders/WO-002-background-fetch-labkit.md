@@ -753,3 +753,19 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - **Selftest** 165 PASS (the new variant loads), `vendor_check` PASS. The plugin checkout stays clean (`git status` empty).
   - **Not done:** iOS scenarios (phase 2a step 4). Every scenario still excuses iOS, so neither channel has a scored run yet. A sweep can't run `FIX` or `FIX-SPM` on the Lab Simulators until one does.
   - **bg-forge WO-192:** its last box ("fetch re-vendors, and its `FIX-SPM` React Native iOS build runs through SwiftPM") is now MEASURED. Its status change is a bg-forge commit, waiting on Chris.
+- 2026-11-10 — **A bug in slice 2b's `build.sh`, found by Chris's `./labkit setup --os ios --variant FIX-SPM`, and fixed** on Chris's approval of the plan ("Yes, fix it"). Branch `fix/WO-002-tracked-sums-symlink`, from `master` `2d40109` (uncommitted, awaiting Chris's diff review).
+  - **The bug (MEASURED):** `tracked_sums` hashed every tracked path with `shasum`. Once `ios-spm` was committed, `git ls-files` listed `ios-spm/FetchLab`, a symlink to a directory. `shasum` followed it and exited 1 (`Is a directory`), and `set -euo pipefail` ended the build. That stopped every iOS build, CocoaPods too, since both guards pass `ios`.
+    - Reproduced in this worktree through `run.py --build-only` (exit 2, the same two lines as Chris's run).
+    - My earlier proofs missed it because every SwiftPM build ran while `ios-spm` was still untracked, and none ran after the commit.
+  - **The fix:**
+    - `tracked_sums` reads a symlink as `link:<target>` (never followed), a missing tracked file as `missing`, and a regular file by its sha1, as before.
+    - `refuse_rewrites` takes the path after the state's two spaces whatever the state, so a retargeted symlink or a deleted file is caught and named, not silently passed.
+    - Its callers are unchanged: the `pod install` guard and the SwiftPM guard.
+  - **Proof (MEASURED):**
+    - `FIX-SPM` then `FIX` through `run.py --build-only`: both build and pass every proof.
+    - Three refusals, each naming the path:
+      - a `pod install` forced over the template-order privacy manifest (`ios/FetchLab/PrivacyInfo.xcprivacy`), through the real CocoaPods path;
+      - `ios-spm/FetchLab` retargeted;
+      - `ios-spm/lab-config.js` moved away.
+      The last two used `build.sh`'s own two functions, extracted verbatim, around each change, restored by git. An unchanged tree passes.
+    - Selftest 165 PASS.
