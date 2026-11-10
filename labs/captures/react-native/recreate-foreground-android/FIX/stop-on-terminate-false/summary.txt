@@ -1,0 +1,21 @@
+   crashes                          0                      expected 0            ok
+   driverEvents                     fetch=1                expected fetch=1      ok
+   fetchReceived                    1                      expected 1            ok
+   fetchFinished                    1                      expected 1            ok
+   jobFinished                      1                      expected 1            ok
+   headlessEvents.fetch             0                      expected 0            ok
+   rnHeadlessStarts                 0                      expected 0            ok
+   rnHeadlessErrors                 0                      expected 0            ok
+   stoppingOnTerminate              0                      expected 0            ok
+   fetchTimeouts                    0                      expected 0            ok
+   jobsCancelled                    -                      expected -            ok
+   headless                         false                  expected False        ok
+   jobIds                           999                    expected 999          ok
+   lifecycleTally                   onCreate=1,onResume=1,onStart=1 expected any          ok
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   eventAssertions                  ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => PASS
