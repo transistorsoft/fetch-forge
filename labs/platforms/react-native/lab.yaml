@@ -1,8 +1,7 @@
 # React Native platform manifest — fetch lab (WO-002).  Modelled on bg-forge's
 # labs/platforms/react-native (bg-forge 49d38d47f): the same RN 0.88.0 skeleton reduced to a scenario
-# driver, here driving react-native-background-fetch.  Android only in this slice: there is no `ios:`
-# block, so labkit.hosts() lists android alone and labkit.platform(name, "ios") refuses with
-# "no lab host for that OS".
+# driver, here driving react-native-background-fetch.  Android, and (WO-002 phase 2) the iOS Simulator: the
+# `ios:` block below.
 name: react-native
 # (WO-143 in bg-forge) Its column on a board, and its place in a sweep's queue and build pass.
 column: 2
@@ -25,6 +24,23 @@ plugins:
 # plugin commit invalidates the installed app instead of passing for it.
 default_checkout: "{repo}/react-native/background-fetch"
 
+# (WO-002 phase 2) The Simulator half, overlaid onto the top level by labkit.platform(name, "ios"), as bg-forge's
+# React Native manifest's is: `package` is the bundle id, `build` the .app build (build.sh's iOS branch), `supports`
+# what the Simulator can express.  app/ios is committed (D5): React Native 0.88.0's template plus the lab's edits.
+ios:
+  package: com.transistorsoft.fetchlab.react
+  build:
+    cwd: platforms/react-native
+    cmd: ["./build.sh", "{native}", "{plugin}"]
+    app: platforms/react-native/app/ios/build/Build/Products/Debug-iphonesimulator/FetchLab.app
+    env:
+      LAB_OS: ios
+      LAB_BUNDLE: com.transistorsoft.fetchlab.react
+      LAB_XCFRAMEWORKS: "{labs}/xcframeworks"       # labs/harness/publish_native_fetch_ios.sh writes it
+  supports:
+    triggers: [none]
+    calls: []
+
 supports:
   # The template's android:configChanges omits fontScale and fontWeightAdjustment, so bold and
   # fontscale recreate the Activity; `finish` is the second `am start --ez finishNow true`.
@@ -45,3 +61,6 @@ notes:
   - "(WO-002) Native pin: build.sh <label> resolves com.transistorsoft:tsbackgroundfetch:<label> ONLY from labs/m2 (an exclusiveContent repository in android/build.gradle; the label is required — no fallback to the plugin's own `4.1.+`), then refuses an APK whose resolved version is not the label or whose resolved AAR is not byte-identical to labs/m2's."
   - "(WO-002) The plugin is STAGED, not linked: build.sh copies the checkout's working-tree files (git ls-files -co --exclude-standard, minus example/) into labs/platforms/react-native/.stage/react-native-background-fetch (gitignored) and app/package.json links that, so the Gradle build's android/build/ lands in the stage and never in the plugin checkout. The stage's .lab-source records the checkout, its HEAD, dirty flag and a content hash, and build.sh refuses a node_modules link that does not resolve to the stage of the checkout it was given."
   - "Debug build with a pre-made `--dev false` JS bundle; MainApplication passes useDevSupport = false so no Metro server is needed. JS lines reach logcat under the tag ReactNativeJS. ABIs arm64-v8a and x86_64 only (the Lab AVDs are arm64-v8a)."
+  - "(WO-002 phase 2, iOS) The args arrive as argv `--key=value` (simctl launch), read by LabModule.m (a local pod, app/ios/LabModule) with the same keys as LabModule.kt; knobs() is the launch's own (iOS has no headless mode). The probe reads the SDK's public state: `headless=- sdkBuild= configured= active= stopOnTerminate= subscribers= tasks= pendingFetch= bgTask=`. sdkBuild is read from the SDK's version string, which LabModule.m references so the static slice's version object is linked at all (the PROJECT:TSBackgroundFetch-<build> string build.sh and the harness read)."
+  - "(WO-002 phase 2, D3) Fetch events on the Simulator are UIKit's legacy background fetch, which `xcrun simctl push <udid> <bundle>` with {\"aps\":{\"content-available\":1}} makes SpringBoard deliver in any app state. AppDelegate.swift forwards application(_:performFetchWithCompletionHandler:) to TSBackgroundFetch (`LAB point=legacyFetch state= remaining=`, then `LAB point=legacyFetchComplete result=newData|noData|failed`); the plugin's own RNBackgroundFetch+AppDelegate.m is not compiled by its podspec. The SDK calls setMinimumBackgroundFetchInterval itself on the Simulator, which UIKit needs before it delivers."
+  - "(WO-002 phase 2, iOS) Debug build with the embedded `--dev false` main.jsbundle (FORCE_BUNDLING, EXTRA_PACKAGER_ARGS); SceneDelegate.swift always loads it, so a running Metro is never used. build.sh refuses an app whose linked TSBackgroundFetch slice is not the label's (sha256_sim, marketing, the PROJECT:TSBackgroundFetch-<build> string in FetchLab.debug.dylib) or that lacks the legacy-fetch forward."

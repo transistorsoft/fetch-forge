@@ -676,3 +676,37 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - **Selftest:** 164 checks PASS with `types/background-fetch` checked out. One expectation changed: the iOS slot now builds instead of stopping. `slots_selftest` and `vendor_check` pass.
   - **Not covered offline:** the script itself, which needs Xcode (the Android script isn't selftested either). The run above is its proof.
   - **Next (2a step 2):** the RN iOS app (`app/ios` from RN 0.88's template, AppDelegate forwarding the legacy fetch, Podfile `:path` pin, the `build.sh` iOS branch).
+- 2026-11-10 — **Phase 2a, step 2: the React Native iOS app builds and receives fetches from `simctl push` (MEASURED)** (uncommitted, awaiting Chris's diff review). Branch `feat/WO-002-ios-react-native`, from `master` `273af07`.
+  - **`app/ios` is committed (D5):** `@react-native-community/template@0.88.0` (from the local npm cache), renamed FetchLab as `init` does; `ios/.lab-template` records it. It is staged as its own first commit, so the lab's edits read as a diff against it:
+    - `AppDelegate.swift`:
+      - a `LAB point=didFinishLaunching` line;
+      - `TSBackgroundFetch.sharedInstance().didFinishLaunching()`, as the plugin's install docs say (the SDK's `launched` flag makes its `+load` path and this one call);
+      - the legacy-fetch forward (D3), with `LAB point=legacyFetch` and `legacyFetchComplete` lines.
+    - `SceneDelegate.swift`: a `LAB point=sceneWillConnect` line, no dev-loading view, and the embedded bundle always, as bg-forge's host does.
+    - `Info.plist`: UIBackgroundModes `fetch` and `processing`; BGTask ids `com.transistorsoft.fetch` and `com.transistorsoft.fetchlab.task`; display name "Fetch RN Lab".
+    - The bundle id `com.transistorsoft.fetchlab.react`.
+    - `Podfile`: `pod 'TSBackgroundFetch', :path => ENV.fetch('LAB_TSBF')`, `pod 'LabModule'`, and bg-forge's fmt-as-C++17 fix (MEASURED there on Xcode 26.4+, not re-measured here).
+    - `LabModule/`: argv args with Android's keys, `knobs()`, the probe, the verdict, and the fatal-JS-error abort.
+  - **`build.sh`'s iOS branch** checks the committed host and edits no tracked file:
+    - the template's React Native version against `node_modules`;
+    - the plist's modes and ids, and the bundle id;
+    - the Podfile's pin;
+    - `pod install` when the lock, sandbox, Podfile or development pods differ (bg-forge's rule);
+    - `xcodebuild` with `FORCE_BUNDLING`;
+    - then the proofs: the linked slice's sha256 and version against the provenance; the lock's EXTERNAL SOURCES; `PROJECT:TSBackgroundFetch-<build>` and the legacy-fetch forward in `FetchLab.debug.dylib`; the bundle id; a `--dev false` `main.jsbundle`.
+    - `lab.yaml` gains the `ios:` block; `labkit.hosts("react-native")` is now `[android, ios]`.
+  - **Found on the way (MEASURED):**
+    - **The version string was missing.** TSBackgroundFetch's slice is a static archive, and nothing in the SDK references its own version string. So the app linked 72 TSBackgroundFetch symbols and no `PROJECT:TSBackgroundFetch-4200`, which the harness's `assert_native` (via `fetch_pack.Simctl.native_resolved`) reads for every iOS run. `LabModule.m` now references `TSBackgroundFetchVersionString` and reports it as the probe's `sdkBuild=`.
+    - **An apostrophe in `"${VAR:?…}"` is a quote in bash.** Two of them in `build.sh`'s messages paired up and swallowed an assignment, and `bash -n` passed. The messages were reworded.
+  - **The build:** 71 s for the first one (`pod install` and a clean `xcodebuild`), 8 s for an incremental one.
+  - **On a scratch iPhone 17 Pro Simulator (iOS 27.2, deleted after; the shared Lab devices untouched),** launched with `--scenario --nativeLabel --finishDelayMs=1000`:
+    - **Boot:** `configure … outcome=ok status=2`. The probe reads `sdkBuild=4200 configured=true subscribers=react-native-background-fetch`.
+    - **Foreground push:** `SBBackgroundFetchTask` Executing, then `legacyFetch state=active remaining=30.0`, then the SDK's `performFetchWithCompletionHandler`, then `LAB app=event=fetch n=1`. `finish … after_ms=1000 outcome=ok` came 1.0 s later, then `legacyFetchComplete result=newData`, `[TSBackgroundFetch finish] … (1 of 1)` and SpringBoard `with result: RetrievedNewData`.
+    - **Suspended push:** the same, with `state=background` and the probe's `pendingFetch=true` during the second.
+    - **Not running** (after `simctl terminate`): a background launch (`didFinishLaunching state=background`, `argv=[]`). `legacyFetch` came at +0.03 s, before JavaScript booted at +0.05 s. The fetch was still delivered and finished 1.0 s later: the subscriber the SDK reloads at `+load` (`TSBGAppRefreshSubscriber load`) held it until the driver configured.
+  - **`pod install` writes into the committed host (MEASURED, found after the build).** React Native's `react_native_post_install` rewrote the tracked `project.pbxproj` (a `PrivacyInfo.xcprivacy` resource, `OTHER_CFLAGS -DRCT_REMOVE_LEGACY_ARCH=1`, `REACT_NATIVE_PATH`, `USE_HERMES`, `PODFILE_DIR`, the Debug compilation condition) and reordered `PrivacyInfo.xcprivacy`'s entries. bg-forge never sees this because its `ios/` is gitignored. Done:
+    - That output is committed as part of the host.
+    - A second `pod install` changed neither file (MEASURED).
+    - `build.sh` now hashes the tracked `ios/` files around `pod install` and refuses one that rewrites any, naming the file. Tested both ways: with the privacy manifest put back to the template's order it refused (`pod install rewrote tracked files under app/: ios/FetchLab/PrivacyInfo.xcprivacy`); on the committed state it built and passed every proof.
+  - **Noise, not a defect:** a Debug React Native app asks `localhost:8081/status` once at launch and logs `-1004 Could not connect`, although the bundle is embedded.
+  - **Not done yet (2a steps 3–6):** the pack's `fire` action and the SpringBoard lines in the log tap; the scenarios; a sweep on the Lab Simulators.
