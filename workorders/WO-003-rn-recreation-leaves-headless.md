@@ -1,7 +1,7 @@
 ---
 id: WO-003
 title: A configuration-change recreation of the React Native Activity leaves TSBackgroundFetch headless, so the next fetch with the app on screen is stopped (stopOnTerminate true) or stranded (false)
-status: verify
+status: done
 created: 2026-11-09
 platforms: [android]
 submodules: [react-native/background-fetch, cordova/background-fetch]
@@ -175,3 +175,6 @@ Change 2 alone would leave a window of about 5–10 ms between the old Activity'
 - 2026-11-10 — **Committed** after Chris's diff review ("Yes, commit all seven"). Status `verify` until the re-run on the committed fix.
   - `react-native/background-fetch` `cffcbb1` and `cordova/background-fetch` `8017279`, each on `fix/WO-003-recreation-leaves-headless`, not merged.
   - In the parent repo, branch `fix/WO-003-recreation-leaves-headless` (from `master` `273af07`): the scenario's new step and this Log. The submodule pointers are not bumped until the plugin branches merge.
+- 2026-11-10 — **Re-run on the committed fix, Lab1: both steps PASS** (96 s). Both `run.json` record plugin `cffcbb157037`, dirty no, and native `5de52423e1c5`, dirty no. These two steps' `summary.txt` + `run.json` replace the board's 2026-11-09 `run` capture (FAIL on `a3c6996`) and add `stop-on-terminate-false`. The board's other cells stay 2026-11-09's.
+  - **Status `done`:** every Verification box is ticked.
+  - **Not done here (release work, each its own approval):** merging the two plugin branches into their `master`s, bumping the parent's submodule pointers, and releasing the plugins.
