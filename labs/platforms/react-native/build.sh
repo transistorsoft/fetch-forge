@@ -195,12 +195,24 @@ if [ "$OS" = ios ]; then
   # as LAB_CHANNEL; lab.yaml's ios: block declares both).  Empty is this view's default, CocoaPods.
   CHANNEL="${LAB_CHANNEL:-pods}"
   plugin_real="$(cd node_modules/react-native-background-fetch && pwd -P)"
-  # tracked_sums <dir>…: the content of every tracked file under them, so a step that rewrites one is caught.
-  tracked_sums() { git ls-files -z "$@" | xargs -0 shasum -a 1; }
+  # tracked_sums <dir>…: one line per tracked path under them, `<state>  <path>`, so a step that changes one is caught.
+  # The state of a symlink is its target, never followed: ios-spm/FetchLab is a tracked symlink to a directory, which
+  # `shasum` cannot read (MEASURED 2026-11-10: `shasum: ios-spm/FetchLab: Is a directory` stopped every iOS build
+  # once ios-spm was committed).  A tracked file that is gone reads `missing`.
+  tracked_sums() {
+    local f
+    git ls-files -z "$@" | while IFS= read -r -d '' f; do
+      if [ -L "$f" ]; then printf 'link:%s  %s\n' "$(readlink "$f")" "$f"
+      elif [ -f "$f" ]; then shasum -a 1 "$f"
+      else printf 'missing  %s\n' "$f"
+      fi
+    done
+  }
   refuse_rewrites() {   # <before> <what ran> <dir>…
     local before="$1" what="$2"; shift 2
     local rewritten
-    rewritten="$(diff <(echo "$before") <(tracked_sums "$@") | sed -n 's/^> [0-9a-f]*  //p' | tr '\n' ' ' || true)"
+    # The path is what follows the state's two spaces, whatever the state (digest, link:<target>, missing).
+    rewritten="$(diff <(echo "$before") <(tracked_sums "$@") | sed -n 's/^> .*  //p' | sort -u | tr '\n' ' ' || true)"
     [ -z "$rewritten" ] || die "$what rewrote tracked files under app/: ${rewritten}— review and commit what it wrote, then build again"
   }
 
