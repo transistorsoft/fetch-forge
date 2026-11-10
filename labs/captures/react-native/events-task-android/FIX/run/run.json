@@ -1,0 +1,350 @@
+{
+ "label": "react-native.events-task-android.FIX.run",
+ "platform": "react-native",
+ "os": "android",
+ "package": "com.transistorsoft.fetchlab.react",
+ "scenario": "events-task-android",
+ "variant": "FIX",
+ "step": "run",
+ "serial": "emulator-5580",
+ "evicted": [
+  "com.transistorsoft.backgroundgeolocation.react"
+ ],
+ "foreignTransistorApps": [
+  "com.transistorsoft.backgroundgeolocation.react"
+ ],
+ "native": "4.1.1-master-5de5242",
+ "native_source": {
+  "branch": "",
+  "commit": "5de52423e1c5388afffa3d520f97dcb9b287ed29",
+  "dirty": "no"
+ },
+ "native_resolved": null,
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "react-native/background-fetch",
+  "commit": "a3c6996e71b4b6b3e2be5e3e4ff0e6041eefdbbd",
+  "dirty": "no"
+ },
+ "device": {
+  "avd": "Lab1",
+  "model": "sdk_gphone64_arm64",
+  "os": "Android 16",
+  "sdk": "36",
+  "data_free_mb": 2488,
+  "display": "awake",
+  "fgs_timeout_ms": null,
+  "play_services": 263635035
+ },
+ "activity": ".MainActivity",
+ "process": null,
+ "settle": 10,
+ "after": 30,
+ "end": {
+  "policy": "window",
+  "ended": "window"
+ },
+ "timings": {
+  "install_s": 0.1,
+  "step_s": 41.6,
+  "t0": 1794242230.759,
+  "phases": {
+   "terminated": 0.024,
+   "others_stopped": 0.069,
+   "reset": 0.094,
+   "swept": 0.121,
+   "neutral_pre": 0.185,
+   "accuracy": 0.229,
+   "permissions": 0.229,
+   "sleep_end": 0.229,
+   "log_begun": 0.348,
+   "launch_mark": 0.365,
+   "verdict_cleared": 0.386,
+   "launch": 0.758,
+   "settle_end": 10.763,
+   "trigger": 10.798,
+   "end": 41.505,
+   "runner_joined": 41.506,
+   "capture_mark": 41.542,
+   "pusher_joined": 41.542,
+   "log_ended": 41.566,
+   "log_written": 41.566,
+   "capture_extras": 41.59,
+   "db_pulled": 41.59,
+   "run_json": 41.631,
+   "judged": 41.654,
+   "verdict_pushed": 41.679,
+   "settled": 42.18,
+   "neutral_post": 42.257,
+   "terminated_post": 42.283
+  },
+  "calls": {
+   "_adb": {
+    "n": 20,
+    "s": 0.704,
+    "bg_n": 2,
+    "bg_s": 0.092
+   },
+   "_stop_stream": {
+    "n": 2,
+    "s": 0.002,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.118,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.026,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.024,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "evict": {
+    "n": 1,
+    "s": 0.021,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "installed": {
+    "n": 1,
+    "s": 0.023,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "job": {
+    "n": 2,
+    "s": 2.254,
+    "bg_n": 2,
+    "bg_s": 2.254
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.371,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "location_accuracy": {
+    "n": 2,
+    "s": 0.045,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 5,
+    "s": 0.132,
+    "bg_n": 2,
+    "bg_s": 0.043
+   },
+   "native_resolved": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "network_default": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.14,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 67,
+    "s": 0.039,
+    "bg_n": 67,
+    "bg_s": 0.039
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 4,
+    "s": 0.137,
+    "bg_n": 2,
+    "bg_s": 0.092
+   },
+   "reset_app": {
+    "n": 1,
+    "s": 0.026,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.704,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 3,
+    "s": 0.071,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": -0.176,
+  "clock_offset_rtt_s": 0.018,
+  "log_phases": {
+   "boot": 0.955
+  }
+ },
+ "measure_from": "launch",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": true,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": [
+  {
+   "after": [
+    {
+     "api": "scheduleTask#1"
+    }
+   ],
+   "delay_s": 3,
+   "job": "com.transistorsoft.fetchlab.task"
+  },
+  {
+   "after": [
+    {
+     "event": "configure@0"
+    }
+   ],
+   "delay_s": 3,
+   "job": "com.transistorsoft.fetchlab.task",
+   "expect": "absent"
+  }
+ ],
+ "host": {
+  "error": null,
+  "held_s": {
+   "action0": 0.253,
+   "action1": 3.62
+  },
+  "sent_s": {
+   "action0": 3.305,
+   "action1": 6.671
+  }
+ },
+ "network": {
+  "read": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "default": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "differs": [],
+  "put": false
+ },
+ "privacy": null,
+ "location_accuracy": {
+  "want": true,
+  "was": true,
+  "now": true
+ },
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [
+  {
+   "subscribe": "configure",
+   "args": {
+    "minimumFetchInterval": 15,
+    "stopOnTerminate": true,
+    "enableHeadless": false,
+    "startOnBoot": false
+   },
+   "min": 1,
+   "max": 1,
+   "returns": {
+    "$": {
+     "type": "string",
+     "equals": "com.transistorsoft.fetchlab.task"
+    }
+   }
+  }
+ ],
+ "hooks": [
+  {
+   "api": "status",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "api": "scheduleTask",
+   "args": {
+    "taskId": "com.transistorsoft.fetchlab.task",
+    "delay": 600000,
+    "periodic": false
+   },
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-09 11:37:52"
+}

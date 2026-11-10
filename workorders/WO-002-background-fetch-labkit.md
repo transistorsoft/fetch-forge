@@ -67,7 +67,7 @@ Each one that a scenario confirms becomes its own work order.
 7. **iOS reconfigure is ignored:** a new `minimumFetchInterval` is dropped by the `fetchScheduled` guard (`TSBackgroundFetch.m:104`). Flutter's Dart `configure` also binds its callbacks only once (`lib/background_fetch.dart:442`).
 8. **The Swift API's `@discardableResult` `onFetch`/`scheduleTask`** remove the listener or stop the task at once if the caller doesn't keep the result (`SwiftInterface/BackgroundFetch.swift:132,147-149,189,210-212`).
 9. **A `delay` above 2³¹−1 ms** breaks the `getInt`/`getInteger`/`Integer` casts in RN, Capacitor and Flutter.
-10. **RN: a configuration-change recreation leaves the SDK headless** (added 2026-11-09, INFERRED from code). React Native runs the old Activity's `onHostDestroy` on a recreation, and the plugin calls `LifecycleManager.setHeadless(true)` (`RNBackgroundFetchModule.java:113-117`). Nothing resets it: `onHostResume` does not (`:98-103`), and `ProcessLifecycleOwner` sends no ON_START/ON_RESUME when the new Activity resumes within 700 ms. The next fetch, with the app on screen, is then stopped (`stopOnTerminate: true`, the default: `- Stopping on terminate`) or silently stranded (`false`: `HeadlessTask.java:68-70`). `recreate-foreground-android` measures it.
+10. **RN: a configuration-change recreation leaves the SDK headless** (added 2026-11-09, INFERRED from code). React Native runs the old Activity's `onHostDestroy` on a recreation, and the plugin calls `LifecycleManager.setHeadless(true)` (`RNBackgroundFetchModule.java:113-117`). Nothing resets it: `onHostResume` does not (`:98-103`), and `ProcessLifecycleOwner` sends no ON_START/ON_RESUME when the new Activity resumes within 700 ms. The next fetch, with the app on screen, is then stopped (`stopOnTerminate: true`, the default: `- Stopping on terminate`) or silently stranded (`false`: `HeadlessTask.java:68-70`). `recreate-foreground-android` measures it. **MEASURED** red 2026-11-09 on Lab1 (`Stopping on terminate` with the app on screen): **WO-003**.
 
 ### How events can be forced (PROVEN from source; each device command is INFERRED until a lab has run it — those marked MEASURED have, see the Log)
 
@@ -541,3 +541,138 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
       - the check count.
     - **Mutation testing:** 30 mutants of the new pack code, each in its own scratch copy of the harness, and each fails the selftest. They cover every `unspaced` rule, the no-wait primitive and the handler, the `host_ms` header, `jobStops`' window, row, package, block, mark and clock rules, the age parser, and each other new metric's scoping, pairing and arithmetic. The baseline passes.
   - **Next:** Chris's device run, `./labkit sweep --os android --devices 1 --build stale` (twelve scenarios, about 12 minutes; the first three took 184 s on 2026-11-09).
+- 2026-11-09 — **The first board column: React Native on Android, Lab1.** Chris ran the sweep from the main checkout, 11:33–11:43, after the Tier 1 merge (`303a51f`).
+  - **Inputs:** Lab1 `emulator-5580`, Android 16 / API 36, Play services 263635035. Native `4.1.1-master-5de5242` (`5de52423e1c5`, clean); react-native plugin `a3c6996` (clean).
+  - **Result: 13 of 14 steps PASS** (12 scenarios). `recreate-foreground-android` FAILs, as predicted.
+  - **The Log's PREDICTED items, now MEASURED:**
+    - **The dropped duplicate's stop reason** is `onStartJob returned false`. `events-duplicate` reads `jobStops 999:onStartJob_returned_false=2` (configure's immediate run and the +3 s repeat), with `duplicateJobs 1` and three deliveries.
+    - **The one-shot task's job is gone after its finish.** `events-task-android` ends holding only `999`. The task (`-1681675378`) was finished 1.005 s after delivery.
+    - **RN 0.88's JS timers run after its Activity is destroyed.** In `headless-activity-destroyed`, the headless task's finish came at `after_ms=1000` (delivery 11:42:09.733, finish 10.751), on the warm context (`rnHeadlessInit 0`).
+    - **The first `[BGTask] timeout` line:** `events-timeout-sdk`, 11:38:57.682, 60.001 s after delivery (`fetchTimeoutSkewMs 1`). The driver finished on the timeout (`timeout:ok=1`).
+    - **`recreate-foreground-android` is red: suspected defect 10 is confirmed.**
+      - Bold text recreates the Activity (`isChangingConfigurations=true`) and logs `☯️  HeadlessMode? true`, with no `☯️` line after it.
+      - The job 4 s later is stopped with the app on screen: `Stopping on terminate`, `cancel … jobId=999`, `configure@0=never-fired`.
+      - Its work order is **WO-003** (draft).
+  - **Also measured:** `headless-kill` `headlessLatencyMs 69` (< 500, so 4.4.2 is pinned) over a cold and a warm job: `rnHeadlessInit 1`, `Starts`/`Ends` 2/2. `stop-on-terminate`: both steps stopped the fetch and cancelled job 999.
+  - **Kept:**
+    - The 14 steps' `summary.txt` + `run.json` are committed. The four steps captured before replace their 2026-11-05 run.json files; their summary.txt files are unchanged.
+    - The full-window set is in `labs/baselines/2026-11-09-tier1-react-native-android-lab1` (main checkout, gitignored, 98 files). The WO-003 fix run will overwrite these capture paths.
+  - **Not run:** Lab2 for these scenarios; the board's other nine cells.
+  - **Verification:**
+    - The Tier 1 box stays unticked (1 of 10 cells).
+    - Defect 10 has its work order (WO-003). "Each confirmed suspected defect" stays open while the board grows.
+  - **Next:** the iOS host (phase 2: the iOS native pin, the D3 hook, the D4 channel), planned for Chris's approval.
+- 2026-11-10 — **Phase 2 planned: React Native on iOS. Chris approved the plan ("Approve the plan").** One read-only research agent covered the harness's iOS paths, bg-forge's RN iOS host and native iOS publish, and the fetch plugin's iOS bridge. Nothing is built yet.
+  - **What exists (source):**
+    - the harness's Simulator backend (install, launch with argv, the log stream, prefix eviction);
+    - the pack's retag of `[TSB…` NSLog lines to `SDK_TAG` (`fetch_pack.py:50-52,200-214`).
+  - **What is missing:**
+    - the iOS pin (`fetch_pack._native_ios` stops at "WO-002 phase 2", `:575-580`);
+    - an iOS app;
+    - a host action that fires an event in the running app;
+    - every iOS scenario (all twelve excuse iOS).
+  - **Not usable as the template:** fetch's RN example is RN 0.85, an orphan gitlink, with no SceneDelegate.
+  - **Slice 2a, CocoaPods channel:**
+    1. **The iOS pin.** `_native_ios` builds a Simulator-only `TSBackgroundFetch.xcframework` from a `native/background-fetch` worktree at the variant's commit: a Release archive with `BUILD_LIBRARY_FOR_DISTRIBUTION=YES`, `CODE_SIGNING_ALLOWED=NO`, then an ad-hoc signature, as bg-forge's `build_native_ios.sh:37-59`. It publishes to `labs/xcframeworks/<label>/` with:
+       - a podspec stamped with the iOS marketing version;
+       - a `Package.swift` `binaryTarget(path:)` for 2b;
+       - a provenance file: marketing, build, `sha256_sim`, commit, dirty.
+    2. **The app.** `labs/platforms/react-native/app/ios`, from RN 0.88's template, with module `FetchLab` and bundle id `com.transistorsoft.fetchlab.react`.
+       - `native-ios/`: AppDelegate, SceneDelegate, and a `LabModule` holding the argv parse, the probe and the hook.
+       - Podfile: `TSBackgroundFetch` by `:path` to the label, and `LabModule`.
+       - Info.plist: UIBackgroundModes `fetch`/`processing`, `BGTaskSchedulerPermittedIdentifiers`, and a `fetchlab` URL scheme.
+       - An iOS branch in `build.sh`, after bg-forge RN's `build.sh:74-264`: the `pod install` guards, then post-build proofs (the linked slice's sha256, the `PROJECT:TSBackgroundFetch-<build>` string, the bundle id, a production JS bundle).
+       - An `ios:` block in `lab.yaml`.
+    3. **The fire action (D3).** A pack `ACTION_HANDLERS` `fire` with `oses=("ios",)` runs `xcrun simctl openurl <udid> fetchlab://fire?kind=fetch|timeout|task&id=…`. SceneDelegate hands the URL to `LabModule`, which calls the SDK's entry points (the Simulator rows of "How events can be forced") and logs `LAB point=fire`.
+       - **INFERRED until the spike below:** that `openurl` reaches a running app, and what it does to the scene and app state.
+       - Fallback: the 2026-11-05 launch-payload `at_s` slot (a step's `extras:` reach launch argv, `run.py:809-813`).
+    4. **The pack.**
+       - An optional `CAPTURE_EXTRAS` read of the SDK's prefs plist.
+       - iOS metrics: `finish <id> (n of m)` and the completion result.
+       - A gap to note: the plugin's own NSLogs do not open with `[TSB` (`RNBackgroundFetch.mm:57,80`, "`- … failed to start`"), so the log tap misses them.
+    5. **Scenarios.**
+       - `api-smoke` and `api-constants` stop excusing iOS.
+       - New: `ios-fetch-sim`, `ios-timeout-sim`, `ios-task-sim`; then `ios-registration` (UIScene, `+load`).
+    6. **Proof.** The selftest grows over the iOS pieces, then a sweep on the Lab1 and Lab2 iPhone 17 Pro Simulators (iOS 27.2).
+  - **Slice 2b, SwiftPM channel (D4), after 2a.**
+    - The channel reaches neither `build.sh` (whose placeholders are `{native}` and `{plugin}` only, `run.py:51-52`) nor the source stamp (`native|plugin`, `:214`). Vendored files change upstream first, so this needs a small bg-forge work order.
+    - Then:
+      - the SPM host gets its own build directory (RN's SwiftPM setup refuses a Pods xcconfig);
+      - the staged copy of the plugin's `ios/Package.swift` points `transistor-background-fetch` at the label's local package.
+    - This is the variant that exercises the plugins' `from: "4.2.0"` (WO-001).
+  - **Decisions (Chris, with the plan):**
+    - **D5:** commit an RN 0.88 template `app/ios`, as `app/android` is, rather than generating it on every build.
+    - **D6:** one label per variant, named as today (`4.1.1-master-5de5242`). Each OS's provenance records its real version. At `5de5242` that is iOS 4.2.0 (build 4200) and Android 4.1.1, and the plugin podspec's `~> 4.2` needs the iOS one.
+    - **D4 order:** CocoaPods first (2a), SwiftPM second (2b).
+  - **First:** the `openurl` spike, with a throwaway app on a scratch Simulator, not the shared Lab devices.
+- 2026-11-10 — **The D3 spike: `simctl openurl` is unusable, and `simctl push` delivers a real legacy background fetch (MEASURED).**
+  - **Setup:**
+    - A throwaway Swift app with a UIScene, UIBackgroundModes `fetch`/`processing`, and no SDK.
+    - A scratch iPhone 17 Pro Simulator on iOS 27.2 (`FetchSpike`), created for the spike and deleted after it. The shared Lab devices were not touched.
+    - The app's source and logs stayed in the session scratchpad and were not kept.
+  - **`simctl openurl <udid> fetchlabspike://…` is rejected.**
+    - iOS asks "Open in “Spike”?" for every open of a custom scheme, even with the app in front, and waits for a tap. Nothing reached `scene:openURLContexts:` in any state: foreground, suspended or not running.
+    - While the alert is up, the app is held `inactive` (SpringBoard's deactivation reason `systemModalAlert`). The alert outlived an uninstall and reinstall of the app and went only when the Simulator was rebooted, so any later step would start contaminated.
+  - **A Darwin notification** (`simctl spawn <udid> notifyutil -p <name>`) reaches a foreground app in 0.19 s (one try). A suspended app gets it only at its next resume: posted 09:42:11, delivered 09:42:15.791, when a push woke the app.
+  - **Suspension:** a backgrounded app is suspended within 1 s of `sceneDidEnterBackground` (0.26 s where runningboard logged it) (runningboard `Suspending task`; its 1 s timer stops).
+  - **`simctl push <udid> <bundle>` with `{"aps":{"content-available":1}}`:**
+    - **The sequence:**
+      - CoreSimulatorBridge asks SpringBoard to launch the app with `event_type = background_fetch`.
+      - SpringBoard sends `UIFetchContentInBackgroundAction` and runs an `SBBackgroundFetchTask`.
+      - UIKit calls `application:performFetchWithCompletionHandler:` on the app delegate, in a UIScene app too.
+      - Only then does simctl try to post the notification. It fails with exit 121, `Notification has no user visible content`, after the fetch has been delivered.
+    - **Foreground:** the delegate is called 0.10 s after the command, with `state=active` and `backgroundTimeRemaining` 30.0 s.
+    - **Suspended:** the app resumes in the background (`BG-Active`). The delegate is called after 0.11 s with `state=background` and 30.0 s, and the app is suspended again after its completion.
+    - **Not running** (after `simctl terminate`): the app is launched in the background, with no `sceneWillEnterForeground`. The delegate is called 0.31 s after the command, with 29.8 s.
+    - **Two pushes 1 s apart:** two deliveries, the second in the same wake with 28.8 s.
+    - **SpringBoard logs the completion result:** `Finished <SBBackgroundFetchTask …> with result: RetrievedNewData` (`.newData`), `NoNewDataAvailable`, or `Error` (`.failed`). That is an OS-side witness of what the app passed to the completion handler.
+    - **Requirements:** UIBackgroundModes `fetch`, and a minimum fetch interval other than Never.
+      - With Never (a fresh install that never set an interval), UIKit answered `NoNewDataAvailable` in 2 ms without calling the delegate.
+      - An interval of 900 s works as well as the minimum.
+      - Not needed, each tried both ways: `remote-notification`, an `aps-environment` entitlement, push registration.
+  - **The legacy timeout:** the completion was withheld, and a UIBackgroundTask was begun as `TSBackgroundFetch.m:186-195` does. Its expiration handler ran 26.0 s after delivery, with 4.0 s left (runningboard: `Assertions for process will expire soon`). Completing then gave `with result: Error`, and the app was suspended 5 s later.
+  - **What the SDK does with a legacy fetch** (source, at HEAD; no commit since `5de5242` touches these files):
+    - On the Simulator, `scheduleBGAppRefresh` gets `BGTaskSchedulerErrorCodeUnavailable` and calls `setMinimumFetchInterval` with configure's interval (`TSBackgroundFetch.m:117-122,154-158`). So configure itself meets the interval requirement.
+    - `performFetchWithCompletionHandler:applicationState:` (`:179-197`) reschedules, keeps the handler, and begins the UIBackgroundTask whose expiration calls `[TSBGAppRefreshSubscriber onTimeout]`.
+    - **Nothing in an RN 0.88 app forwards UIKit's delegate call to it.** The plugin's `RNBackgroundFetch+AppDelegate.m`, which does, is left out by both the podspec (`source_files`, `:22`) and `ios/Package.swift:35`, and the install docs no longer mention it. So the lab app's AppDelegate must forward the call. SUSPECTED, not measured with the plugin: a stock RN app on the Simulator never receives a fetch event.
+  - **Custom tasks still need the in-app hook.**
+    - `scheduleTask` cannot submit on the Simulator, but `TSBGTask`'s initializer has already added the task to its list (`TSBGTask.m:119-133`). So `[[TSBGTask get:id] execute]` should reach its callback (INFERRED, source).
+    - Its trigger would be the Darwin notification, with the app in the foreground.
+  - **Proposed for Chris: D3 revised.** Fetch and timeout events on the Simulator come from SpringBoard through `simctl push`, not from a lab hook.
+    - A pack `fire` action with `oses=("ios",)` runs `simctl push` with `content-available`. It accepts exit 121 only with that message.
+    - The lab AppDelegate forwards `application:performFetchWithCompletionHandler:` to the SDK, as the plugin's excluded category did.
+    - The `fetchlab://` URL scheme is dropped.
+    - SpringBoard's `SBBackgroundFetchTask` lines join the iOS log tap, so the completion result is scored from the OS's side.
+    - `ios-timeout-sim` becomes OS-driven (about 26 s).
+    - Only `ios-task-sim` keeps a hook, fired by a Darwin notification.
+    - What the Simulator still cannot exercise: the BGTaskScheduler path (`handleBGAppRefreshTask`, its expiration handler, and processing tasks). That stays the manual device tier.
+- 2026-11-10 — **D3 revised, by Chris ("Yes, use simctl push").** It replaces 2026-11-05's D3 (an `openurl`-triggered lab hook, with a launch-payload fallback).
+  - **Fetch and timeout events:** on the Simulator, they come from SpringBoard through `simctl push` with `content-available`, which the lab AppDelegate forwards to the SDK.
+  - **Custom tasks:** they keep an in-app hook, fired by a Darwin notification with the app in the foreground.
+  - Phase 2's plan (2026-11-10, above) changes to match:
+    - step 2's Info.plist gets no URL scheme;
+    - step 3's `fire` action runs `simctl push`;
+    - the SpringBoard `SBBackgroundFetchTask` lines join the iOS log tap.
+- 2026-11-10 — **Phase 2a, step 1: the iOS pin is built** (uncommitted, awaiting Chris's diff review).
+  - **`labs/harness/publish_native_fetch_ios.sh LABEL [NATIVE_DIR]`** is fetch's own. It follows bg-forge's `build_native_ios.sh` + `publish_native_ios.sh` (`0fe0eb14c`): the same layout and provenance keys, and an ad-hoc signature. Unlike bg-forge's publish, it builds from the checkout itself, as the Android script does, so `commit` is the build's.
+    - The build is the release `scripts/build-ios.sh`'s Simulator archive alone (`:131-139` at `5de5242`) with `CODE_SIGNING_ALLOWED=NO`, its derived data in a scratch directory that is removed on exit. The checkout's committed `TSBackgroundFetch.xcframework` (the last release's binary) is never read.
+    - **Checks before anything is published:**
+      - exactly one `ios-*-simulator` slice, with arm64;
+      - the slice's version and build equal `versioning/TSBackgroundFetch.properties`;
+      - a `PROJECT:TSBackgroundFetch-<build>` string;
+      - `TSBackgroundFetch.h`, `TSBGTask.h` and `TSBGAppRefreshSubscriber.h` public.
+    - **Published:**
+      - the xcframework;
+      - the checkout's podspec, its version stamped;
+      - the checkout's `Package.swift`, its binary target pointed at the label's xcframework by `path:`, with `ios/TSBackgroundFetch/SwiftInterface` copied to the path it names;
+      - the provenance, written last: commit, dirty, `built`, `slice`, marketing, build, `sha256_sim`, `swift_api`.
+  - **The pack:** `_native_ios` runs it from the `native` worktree the Android slot uses, with `LANG=en_US.UTF-8`. `assert_native`'s refusal now names the script. `FIX.yaml` gains `native_source.ios` (the same commit), and README's Pinning section covers iOS and D6.
+  - **Proof (MEASURED, in this worktree's `labs/`):**
+    - **The label:** `4.1.1-master-5de5242` from `labs/checkouts/native-5de52423e` (dirty no): slice `ios-arm64_x86_64-simulator`, 4.2.0 (4200), `sha256_sim` `cfe07435…89d`, `swift_api` 4 files. Three seconds; the checkout is still clean after it.
+    - **Rebuilt through setup's real `ensure_native`:** the label removed, then rebuilt by `_native_ios` with the same `sha256_sim`. A second call printed `ok: ios … is published` and built nothing. `TSL_TAG` (the build date) is in no `.m`/`.h`, so a rebuild on another day should give the same binary (INFERRED).
+    - **SwiftPM:** a scratch package depending on the label by `path:` built for the Simulator, compiling the `BackgroundFetch` overlay and a target that calls `TSBackgroundFetch.sharedInstance().perform(completionHandler:applicationState:)` and `TSBGTask.get(_:)`. Xcode writes a `.swiftpm/` into a path dependency's directory, which slice 2b must expect.
+    - **CocoaPods:** `pod ipc spec` reads `TSBackgroundFetch 4.2.0`, `vendored_frameworks` `TSBackgroundFetch.xcframework`, iOS 15.0, static.
+    - **`./labkit doctor --os ios`:** `native ios … (published)` and `native ios Swift API … beside the xcframework`; both Lab Simulators booted.
+    - **Selftest:** 164 checks PASS with `types/background-fetch` checked out. One expectation changed: the iOS slot now builds instead of stopping. `slots_selftest` and `vendor_check` pass.
+  - **Not covered offline:** the script itself, which needs Xcode (the Android script isn't selftested either). The run above is its proof.
+  - **Next (2a step 2):** the RN iOS app (`app/ios` from RN 0.88's template, AppDelegate forwarding the legacy fetch, Podfile `:path` pin, the `build.sh` iOS branch).

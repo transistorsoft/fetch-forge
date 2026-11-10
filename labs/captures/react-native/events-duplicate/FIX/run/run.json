@@ -1,0 +1,372 @@
+{
+ "label": "react-native.events-duplicate.FIX.run",
+ "platform": "react-native",
+ "os": "android",
+ "package": "com.transistorsoft.fetchlab.react",
+ "scenario": "events-duplicate",
+ "variant": "FIX",
+ "step": "run",
+ "serial": "emulator-5580",
+ "evicted": [
+  "com.transistorsoft.backgroundgeolocation.react"
+ ],
+ "foreignTransistorApps": [
+  "com.transistorsoft.backgroundgeolocation.react"
+ ],
+ "native": "4.1.1-master-5de5242",
+ "native_source": {
+  "branch": "",
+  "commit": "5de52423e1c5388afffa3d520f97dcb9b287ed29",
+  "dirty": "no"
+ },
+ "native_resolved": null,
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "react-native/background-fetch",
+  "commit": "a3c6996e71b4b6b3e2be5e3e4ff0e6041eefdbbd",
+  "dirty": "no"
+ },
+ "device": {
+  "avd": "Lab1",
+  "model": "sdk_gphone64_arm64",
+  "os": "Android 16",
+  "sdk": "36",
+  "data_free_mb": 2488,
+  "display": "awake",
+  "fgs_timeout_ms": null,
+  "play_services": 263635035
+ },
+ "activity": ".MainActivity",
+ "process": null,
+ "settle": 10,
+ "after": 30,
+ "end": {
+  "policy": "window",
+  "ended": "window"
+ },
+ "timings": {
+  "install_s": 0.1,
+  "step_s": 41.6,
+  "t0": 1794242188.018,
+  "phases": {
+   "terminated": 0.023,
+   "others_stopped": 0.064,
+   "reset": 0.089,
+   "swept": 0.116,
+   "neutral_pre": 0.171,
+   "accuracy": 0.215,
+   "permissions": 0.215,
+   "sleep_end": 0.215,
+   "log_begun": 0.329,
+   "launch_mark": 0.345,
+   "verdict_cleared": 0.366,
+   "launch": 0.72,
+   "settle_end": 10.725,
+   "trigger": 10.759,
+   "end": 41.47,
+   "runner_joined": 41.47,
+   "capture_mark": 41.506,
+   "pusher_joined": 41.506,
+   "log_ended": 41.532,
+   "log_written": 41.532,
+   "capture_extras": 41.555,
+   "db_pulled": 41.555,
+   "run_json": 41.595,
+   "judged": 41.62,
+   "verdict_pushed": 41.644,
+   "settled": 42.147,
+   "neutral_post": 42.216,
+   "terminated_post": 42.242
+  },
+  "calls": {
+   "_adb": {
+    "n": 20,
+    "s": 0.674,
+    "bg_n": 2,
+    "bg_s": 0.084
+   },
+   "_stop_stream": {
+    "n": 2,
+    "s": 0.002,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.114,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.028,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.026,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "evict": {
+    "n": 1,
+    "s": 0.021,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "installed": {
+    "n": 1,
+    "s": 0.02,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "job": {
+    "n": 4,
+    "s": 0.142,
+    "bg_n": 4,
+    "bg_s": 0.142
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.353,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "location_accuracy": {
+    "n": 2,
+    "s": 0.043,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 7,
+    "s": 0.165,
+    "bg_n": 4,
+    "bg_s": 0.079
+   },
+   "native_resolved": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "network_default": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.123,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 82,
+    "s": 0.045,
+    "bg_n": 82,
+    "bg_s": 0.045
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 4,
+    "s": 0.129,
+    "bg_n": 2,
+    "bg_s": 0.084
+   },
+   "reset_app": {
+    "n": 1,
+    "s": 0.025,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.704,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 3,
+    "s": 0.07,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": -0.178,
+  "clock_offset_rtt_s": 0.016,
+  "log_phases": {
+   "boot": 0.987
+  }
+ },
+ "measure_from": "launch",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": true,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": [
+  {
+   "after": [
+    {
+     "api": "status#0"
+    }
+   ],
+   "delay_s": 3,
+   "job": 999
+  },
+  {
+   "after": [
+    {
+     "event": "configure@0"
+    }
+   ],
+   "delay_s": 1.5,
+   "job": "com.transistorsoft.fetchlab.task"
+  },
+  {
+   "after": [
+    {
+     "event": "configure@0"
+    }
+   ],
+   "delay_s": 3,
+   "job": 999,
+   "unspaced": "2026-11-09 3 s after the accepted run, inside the SDK's 5 s window: dropped"
+  },
+  {
+   "after": [
+    {
+     "event": "configure@0"
+    }
+   ],
+   "delay_s": 6.5,
+   "job": 999,
+   "unspaced": "2026-11-09 past 5 s from the accepted run, 3.5 s after the dropped one: delivered"
+  }
+ ],
+ "host": {
+  "error": null,
+  "held_s": {
+   "action0": 0.511,
+   "action1": 3.879,
+   "action2": 3.879,
+   "action3": 3.879
+  },
+  "sent_s": {
+   "action0": 3.561,
+   "action1": 5.404,
+   "action2": 6.984,
+   "action3": 10.578
+  }
+ },
+ "network": {
+  "read": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "default": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "differs": [],
+  "put": false
+ },
+ "privacy": null,
+ "location_accuracy": {
+  "want": true,
+  "was": true,
+  "now": true
+ },
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [
+  {
+   "subscribe": "configure",
+   "args": {
+    "minimumFetchInterval": 15,
+    "stopOnTerminate": true,
+    "enableHeadless": false,
+    "startOnBoot": false
+   },
+   "min": 3,
+   "max": 3,
+   "returns": {
+    "$": {
+     "type": "string"
+    }
+   }
+  }
+ ],
+ "hooks": [
+  {
+   "api": "status",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "api": "scheduleTask",
+   "args": {
+    "taskId": "com.transistorsoft.fetchlab.task",
+    "delay": 600000,
+    "periodic": false
+   },
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-09 11:37:09"
+}

@@ -1,0 +1,17 @@
+   crashes                          0                      expected 0            ok
+   driverEvents                     -                      expected fetch=1      MISMATCH
+   fetchReceived                    1                      expected 1            ok
+   fetchFinished                    0                      expected 1            MISMATCH
+   jobFinished                      1                      expected 1            ok
+   stoppingOnTerminate              1                      expected 0            MISMATCH
+   jobsCancelled                    999                    expected -            MISMATCH
+   headless                         true                   expected False        MISMATCH
+   jobIds                           -                      expected 999          MISMATCH
+   lifecycleTally                   headless:true=1,onCreate=1,onResume=1,onStart=1 expected any          ok
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   eventAssertions                  configure@0=never-fired expected ok           MISMATCH
+   actionsDone                      ok                     expected ok           ok
+   => FAIL
