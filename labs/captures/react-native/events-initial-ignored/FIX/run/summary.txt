@@ -1,0 +1,15 @@
+   crashes                          0                      expected 0            ok
+   fetchReceived                    1                      expected 1            ok
+   jobFinished                      1                      expected 1            ok
+   duplicateJobs                    0                      expected 0            ok
+   jobsRegistered                   999                    expected 999          ok
+   jobIds                           999                    expected 999          ok
+   jobStops                         999:app_called_jobFinished=1,999:onStartJob_returned_false=1 expected 999:app_called_jobFinished=1,999:onStartJob_returned_false=1 ok
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   eventAssertions                  ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => PASS
