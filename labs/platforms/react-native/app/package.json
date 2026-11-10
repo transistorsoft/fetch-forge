@@ -19,5 +19,16 @@
   },
   "engines": {
     "node": ">= 22.11.0"
+  },
+  "swiftpmConfig": {
+    "modules": [
+      {
+        "name": "LabModule",
+        "path": "ios/LabModule",
+        "exclude": [
+          "LabModule.podspec"
+        ]
+      }
+    ]
   }
 }

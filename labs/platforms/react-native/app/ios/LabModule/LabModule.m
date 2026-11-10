@@ -5,12 +5,18 @@
 // LabModule.m (0fe0eb14c).
 //
 // A legacy RCT_EXPORT_MODULE, like LabModule.kt's ReactContextBaseJavaModule: the driver reaches it as
-// NativeModules.Lab through the new architecture's legacy-module interop.  A local development pod (LabModule.podspec,
-// the Podfile's `pod 'LabModule'`) compiles it, so the project file never lists it.  It is also the
-// ExceptionsManager's delegate, so a fatal JavaScript error ends the process here as it does on Android (args()).
+// NativeModules.Lab through the new architecture's legacy-module interop.  It is also the ExceptionsManager's
+// delegate, so a fatal JavaScript error ends the process here as it does on Android (args()).
+//
+// One file for both iOS hosts, compiled without the project file listing it: by a local development pod in the
+// CocoaPods host (LabModule.podspec, the Podfile's `pod 'LabModule'`), and as an app module in the SwiftPM host
+// (app/package.json `swiftpmConfig.modules`, WO-002 phase 2b).  React Native's SwiftPM wrapper for an app module
+// gives it React's headers but no other dependency, so this file imports none of the SDK's: it reads the SDK's
+// state through the Objective-C runtime (LabSdk), and the one symbol it names, the version string, is resolved
+// when the app links, where both hosts link TSBackgroundFetch.
 #import <React/RCTBridgeModule.h>
 #import <React/RCTExceptionsManager.h>
-#import <TSBackgroundFetch/TSBackgroundFetch.h>
+#import <UIKit/UIKit.h>
 
 @interface LabModule : NSObject <RCTBridgeModule, RCTExceptionsManagerDelegate>
 @end
@@ -121,24 +127,39 @@ RCT_EXPORT_METHOD(knobs:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseReject
   resolve(LabKnobs(LabArgv()));
 }
 
-/// The SDK's build (LabSdkBuild) and state through its public headers, never by building anything: the Android probe reads LifecycleManager
+/// The SDK's public class, method or property by name (its headers are not imported here; see the file comment).
+static id LabSdk(NSString *className, NSString *classSelector) {
+  Class c = NSClassFromString(className);
+  SEL sel = NSSelectorFromString(classSelector);
+  if (!c || ![c respondsToSelector:sel]) return nil;
+  return ((id (*)(id, SEL))[c methodForSelector:sel])(c, sel);
+}
+
+static NSString *LabBool(id obj, NSString *key) {
+  @try { return [[obj valueForKey:key] boolValue] ? @"true" : @"false"; }
+  @catch (__unused NSException *e) { return @"?"; }
+}
+
+/// The SDK's build (LabSdkBuild) and state through its public API, never by building anything: the Android probe reads LifecycleManager
 /// by reflection, which iOS has no counterpart of (`headless=-`).  `subscribers` are the fetch listeners
 /// (TSBGAppRefreshSubscriber), `tasks` the scheduled TSBGTasks, `pendingFetch` whether a legacy fetch's completion
 /// handler is held, `bgTask` whether its UIBackgroundTask (the legacy timeout, TSBackgroundFetch.m:186-195) is open.
 RCT_EXPORT_METHOD(probe:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
 {
-  TSBackgroundFetch *f = [TSBackgroundFetch sharedInstance];
-  NSArray *subs = [[[TSBGAppRefreshSubscriber subscribers] allKeys] sortedArrayUsingSelector:@selector(compare:)];
+  id f = LabSdk(@"TSBackgroundFetch", @"sharedInstance");
+  NSDictionary *subscribers = LabSdk(@"TSBGAppRefreshSubscriber", @"subscribers");
+  NSArray *subs = [[subscribers allKeys] sortedArrayUsingSelector:@selector(compare:)];
   NSMutableArray *tasks = [NSMutableArray array];
-  for (TSBGTask *t in [TSBGTask tasks]) [tasks addObject:t.identifier ?: @"?"];
+  for (id t in (NSArray *)LabSdk(@"TSBGTask", @"tasks")) [tasks addObject:[t valueForKey:@"identifier"] ?: @"?"];
   [tasks sortUsingSelector:@selector(compare:)];
+  NSUInteger bg = f ? [[f valueForKey:@"backgroundTask"] unsignedIntegerValue] : UIBackgroundTaskInvalid;
   resolve([NSString stringWithFormat:
            @"headless=- sdkBuild=%@ configured=%@ active=%@ stopOnTerminate=%@ subscribers=%@ tasks=%@ pendingFetch=%@ bgTask=%@",
-           LabSdkBuild(), f.configured ? @"true" : @"false", f.active ? @"true" : @"false", f.stopOnTerminate ? @"true" : @"false",
+           LabSdkBuild(), LabBool(f, @"configured"), LabBool(f, @"active"), LabBool(f, @"stopOnTerminate"),
            subs.count ? [subs componentsJoinedByString:@","] : @"-",
            tasks.count ? [tasks componentsJoinedByString:@","] : @"-",
-           f.completionHandler ? @"true" : @"false",
-           f.backgroundTask != UIBackgroundTaskInvalid ? @"true" : @"false"]);
+           [f valueForKey:@"completionHandler"] ? @"true" : @"false",
+           bg != UIBackgroundTaskInvalid ? @"true" : @"false"]);
 }
 
 /// The host's verdict for the device view: run.py writes it into this app's data container

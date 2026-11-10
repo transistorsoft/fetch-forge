@@ -1,0 +1,13 @@
+name: FIX-SPM
+description: FIX, with the iOS apps getting TSBackgroundFetch through Swift Package Manager instead of CocoaPods
+# (WO-002 phase 2b, D4) The SwiftPM channel: the same native label and plugin checkouts as FIX, and `channel: spm`,
+# which bg-forge WO-192's harness hands each build as LAB_CHANNEL.  Only a platform view that lists `spm` in its
+# build.channels runs it (react-native's ios: block); every other view is n/a (WO-192 D1).  The React Native SwiftPM
+# build resolves the plugin's own ios/Package.swift requirement against a mirror of the label's iOS package
+# (labs/platforms/react-native/build.sh).  Captures are keyed by variant name, so FIX-SPM has its own board rows.
+native: 4.1.1-master-5de5242
+native_source:
+  android: 5de52423e1c5388afffa3d520f97dcb9b287ed29
+  ios: 5de52423e1c5388afffa3d520f97dcb9b287ed29
+plugin: worktree
+channel: spm
