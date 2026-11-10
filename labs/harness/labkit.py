@@ -3105,6 +3105,11 @@ def variant(name):
                 or not re.fullmatch(r"\d+\.\d+\.\d+", src["ios_version"]) or type(src["ios_build"]) is not int):
             raise SystemExit("variant %s: native_source's ios_version (X.Y.Z) and ios_build (an integer) come "
                              "together, beside an ios commit" % name)
+    # (WO-192) How the app gets its native SDK: `pods`, `spm`, ….  Absent, each platform builds its one default way.
+    # A word, because it is an environment value (LAB_CHANNEL) and part of the source stamp.
+    if "channel" in spec and not (isinstance(spec["channel"], str) and CHANNEL.fullmatch(spec["channel"])):
+        raise SystemExit("variant %s: channel is a lower-case word naming how the app gets its native SDK "
+                         "(pods, spm), not %r" % (name, spec["channel"]))
     return spec
 
 
@@ -3148,6 +3153,27 @@ def capture_dir(platform_name, scenario_name, variant_name, step_name, os_name="
 # ---------------------------------------------------------------------------------------
 # applicability
 # ---------------------------------------------------------------------------------------
+
+# (WO-192) A variant's `channel:` and a platform view's `build.channels`.
+CHANNEL = re.compile(r"[a-z][a-z0-9-]*")
+
+
+def channel_refusal(plat, var):
+    """(WO-192) None when the platform view builds the variant's channel, else why not.  A variant with no `channel:`
+    is every view's default build; one with a channel runs only where the view lists it in `build.channels` (D1: run
+    refuses, sweep and setup report the cell n/a), never as the view's default under the channel's name."""
+    channel = var.get("channel")
+    if not channel:
+        return None
+    declared = (plat.get("build") or {}).get("channels") or []
+    if not isinstance(declared, list) or not all(isinstance(c, str) and CHANNEL.fullmatch(c) for c in declared):
+        raise SystemExit("platform %s (%s): build.channels is a list of lower-case words, not %r"
+                         % (plat.get("name"), plat.get("os", "android"), declared))
+    if channel in declared:
+        return None
+    return "%s (%s) builds no channel %s (build.channels: %s)" % (
+        plat.get("name"), plat.get("os", "android"), channel, ", ".join(declared) or "none")
+
 
 def applicability(scen, plat):
     """None when the scenario applies, else the reason it does not (reported as n/a)."""
@@ -7843,6 +7869,95 @@ def _selftest():
                   (run.plugin_path(plat, var), run.plugin_checkout(plat, var) == os.path.realpath(repo),
                    run.plugin_path({"name": "fake", "default_checkout": repo}, {"plugin": "default"})),
                   (repo, True, "default"))
+            # ---- (WO-192) a variant's channel: the stamp, the build, the refusal ----
+            import io as io192, types as types192
+            spm, pods = dict(var, channel="spm"), dict(var, channel="pods")
+            check("(WO-192) stamp: no channel, a null one and an empty one give the stamp a variant had before "
+                  "channels existed; spm and pods each move it, and apart",
+                  (run.source_stamp(bare, dict(var, channel=None)) == run.source_stamp(bare, var),
+                   run.source_stamp(bare, dict(var, channel="")) == run.source_stamp(bare, var),
+                   run.source_stamp(bare, spm) != run.source_stamp(bare, var),
+                   run.source_stamp(bare, spm) != run.source_stamp(bare, pods)),
+                  (True, True, True, True))
+            fake_ios = {"name": "fake", "os": "ios", "build": {
+                "cwd": "platforms/fake", "app": "platforms/fake/Fake.app",
+                "cmd": ["sh", "-c", 'printf "%s|%s" "$LAB_CHANNEL" "$0" > built.txt', "{channel}"]}}
+            env_was = os.environ.get("LAB_CHANNEL")
+            os.environ["LAB_CHANNEL"] = "pods"                       # an operator's stale export
+            built = []
+            try:
+                for v in (spm, var):
+                    with contextlib.redirect_stdout(io192.StringIO()):
+                        run.build(fake_ios, v)
+                    built.append(open(os.path.join(tmp, "platforms", "fake", "built.txt")).read())
+                    built.append(open(run.stamp_path(fake_ios)).read() == run.source_stamp(fake_ios, v))
+            finally:
+                if env_was is None:
+                    os.environ.pop("LAB_CHANNEL", None)
+                else:
+                    os.environ["LAB_CHANNEL"] = env_was
+            check("(WO-192) build: LAB_CHANNEL and {channel} are the variant's over an operator's export, and empty "
+                  "for a variant with none; the stamp it writes is that variant's",
+                  built, ["spm|spm", True, "|", True])
+            # D1: run refuses a channel its view does not build; sweep's build pass skips the view as n/a.
+            ios_view = {"name": "fake", "os": "ios", "build": {"channels": ["pods", "spm"]}}
+            # A whole build, so that a run that failed to refuse would reach it (and `false` would fail it).
+            android_view = {"name": "fake", "os": "android", "build": {
+                "cmd": ["false"], "cwd": "platforms/fake", "apk": "platforms/fake/fake.apk"}}
+            bad = []
+            for v_ in ({"build": {"channels": "spm"}}, {"build": {"channels": ["SPM"]}}):
+                try:
+                    channel_refusal(dict(v_, name="x"), spm)
+                    bad.append(None)
+                except SystemExit as e:
+                    bad.append(str(e))
+            check("(WO-192, D1) channel_refusal: none for a variant with no channel or a channel the view lists; "
+                  "else a reason naming the view, its OS and the channel; a build.channels that is not a list of "
+                  "words is refused",
+                  (channel_refusal(android_view, var), channel_refusal(ios_view, spm),
+                   channel_refusal(android_view, spm), bad),
+                  (None, None, "fake (android) builds no channel spm (build.channels: none)",
+                   ["platform x (android): build.channels is a list of lower-case words, not 'spm'",
+                    "platform x (android): build.channels is a list of lower-case words, not ['SPM']"]))
+            loaded = []
+            load_was = globals()["_load"]
+            try:
+                for ch in ("spm", "SPM", 3):
+                    globals()["_load"] = lambda path, ch=ch: {"native": "x", "channel": ch}
+                    try:
+                        loaded.append(variant("WO192")["channel"])
+                    except SystemExit:
+                        loaded.append("refused")
+            finally:
+                globals()["_load"] = load_was
+            check("(WO-192) variant: `channel:` is a lower-case word", loaded, ["spm", "refused", "refused"])
+            import sweep as sweep192
+            patched = (run.labkit.platform, run.labkit.variant, sys.argv, sweep192.labkit.platform,
+                       sweep192.labkit.variant, sweep192._dir, sweep192._board)
+            try:
+                run.labkit.platform = lambda name, os_name=None: android_view
+                run.labkit.variant = lambda name: {"name": name, "channel": "spm", "must_fail": []}
+                sweep192.labkit.platform = lambda name, os_name=None: android_view
+                sweep192.labkit.variant = lambda name: {"name": name, "channel": "spm", "must_fail": []}
+                sys.argv = ["run.py", "--platform", "fake", "--build-only", "--variant", "SPMV"]
+                try:
+                    run.main()
+                    refused = None
+                except SystemExit as e:
+                    refused = str(e)
+                sweep192._dir, sweep192._board = tmp, {"builds": []}
+                swept = {}
+                with contextlib.redirect_stdout(io192.StringIO()):
+                    sweep192.build_pass([("fake", "android")], types192.SimpleNamespace(
+                        build="always", variant="SPMV", build_timeout=5), swept, tmp)
+                skipped = [b["status"] for b in sweep192._board["builds"]]
+            finally:
+                (run.labkit.platform, run.labkit.variant, sys.argv, sweep192.labkit.platform,
+                 sweep192.labkit.variant, sweep192._dir, sweep192._board) = patched
+            check("(WO-192, D1) run refuses to build a channel the view does not, and sweep's build pass reports the "
+                  "view n/a without building",
+                  (refused, skipped, ("fake", "android", "__build__") in swept),
+                  ("variant SPMV: fake (android) builds no channel spm (build.channels: none)", ["n/a"], False))
         finally:
             run.labkit.LABS = labs_was
     finally:

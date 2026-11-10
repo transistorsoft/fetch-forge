@@ -48,7 +48,7 @@ variables:
 
 From there:
 - Each vendored module is patched as soon as its import finishes.
-- A vendored script run as `__main__` (`run.py` started by `sweep.py:644`, `lab_setup.py`'s re-exec) has
+- A vendored script run as `__main__` (`run.py` started by `sweep.py:647`, `lab_setup.py`'s re-exec) has
   its globals patched when its `main()` is entered. `lab_devices.py` has no patch of its own; it sees the
   pack through the modules it imports.
 - Children inherit the environment, so the pack is active in every process the harness starts.
@@ -231,7 +231,7 @@ never run side by side. Never set `LAB_CLAIMS_DIR` and never use a separate devi
 
 Since bg-forge WO-191 each lab's first step evicts every other lab app on the device by package prefix
 (`com.transistorsoft.labs.*`, `com.transistorsoft.fetchlab.*`), and on Android force-stops every other
-Transistor app too (`labkit.evictions`, run.py:710-716): verified on both OSes and by back-to-back sweeps
+Transistor app too (`labkit.evictions`, run.py:719-725): verified on both OSes and by back-to-back sweeps
 (WO-002 Log, 2026-11-09).
 
 A capture's path has no device in it (`captures/<platform>/<scenario>/<variant>/<step>`, bg-forge's

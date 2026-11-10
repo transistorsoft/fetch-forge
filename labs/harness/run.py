@@ -48,7 +48,9 @@ def build(plat, var):
         for name in os.listdir(src):
             subprocess.run(["cp", os.path.join(src, name), os.path.join(dest, name)], check=True)
         print("[web] %s -> %s" % (web["src"], web["dest"]))
-    cmd = [expand(part).format(native=var.get("native", ""), plugin=plugin_path(plat, var) or "")
+    # (WO-192) {channel}: the variant's, for a manifest that wants it as an argument (LAB_CHANNEL below, as env).
+    cmd = [expand(part).format(native=var.get("native", ""), plugin=plugin_path(plat, var) or "",
+                               channel=var.get("channel") or "")
            for part in plat["build"]["cmd"]]
     cwd = os.path.join(labkit.LABS, plat["build"]["cwd"])
     env = dict(os.environ, **{k: expand(str(v)) for k, v in (plat["build"].get("env") or {}).items()})
@@ -56,6 +58,9 @@ def build(plat, var):
     # operator's shell would otherwise send an Android --build down the iOS branch, exit 0, and
     # have the stale APK stamped as fresh.  The platform view's own OS always wins.
     env["LAB_OS"] = plat.get("os", "android")
+    # (WO-192) And how the app gets its native SDK, for the same reason: the variant's, never an export left in the
+    # operator's shell.  Empty for a variant with no `channel:`, which each build reads as its one default way.
+    env["LAB_CHANNEL"] = var.get("channel") or ""
     # (WO-027) The stamp goes BEFORE the build, not only when the script fails: a build that is
     # killed — a timeout, ^C — would otherwise leave the previous stamp vouching for a half-built
     # artifact.  It is written back only after a clean exit.  Known limit: a lab source edited
@@ -212,6 +217,10 @@ def source_stamp(plat, var):
         roots.append(shared)
     h = hashlib.sha256()
     h.update(("%s|%s|" % (var.get("native"), plugin_path(plat, var))).encode())
+    # (WO-192) The channel too, so a CocoaPods app and a SwiftPM app of one label and checkout are told apart.  Only
+    # when set: a variant with no `channel:` hashes exactly as before it existed, and no installed app goes stale.
+    if var.get("channel"):
+        h.update(("channel=%s|" % var["channel"]).encode())
     # (WO-027) The plugin checkout by CONTENT, not by path: the path above is the string
     # 'default' for Flutter and React Native, so a plugin commit changed nothing here — four
     # release merges on 2026-09-23 left every installed app stamped fresh, and a run scored an
@@ -1218,6 +1227,7 @@ def run_step(dev, plat, scen, var, step, args, timings=None):
                    # apps it found (iOS leaves them installed, D1), so a board shows a dirty device.  null: a later step
                    "evicted": evicted, "foreignTransistorApps": foreign_apps,
                    "native": var.get("native"), "native_source": native_source(var, dev.os),
+                   "channel": var.get("channel"),                       # (WO-192) null: the platform's default
                    # (WO-027) what the installed artifact actually embeds, where readable
                    "native_resolved": dev.native_resolved(plat, artifact(plat)),
                    "plugin": plugin_path(plat, var),
@@ -1389,6 +1399,11 @@ def main():
     # (must_fail inverts the verdict); it is never RUN again.  inventory.py lists them.
     if var.get("retired"):
         raise SystemExit("variant %s is retired: %s" % (var["name"], var["retired"]))
+    # (WO-192, D1) A channel this view does not build is refused, build or run: built as the view's default, it would
+    # be scored under the channel's name.  sweep and setup skip such a cell as n/a before they get here.
+    why = labkit.channel_refusal(plat, var)
+    if why:
+        raise SystemExit("variant %s: %s" % (var["name"], why))
     if args.build_only:
         t = time.time()
         build(plat, var)
