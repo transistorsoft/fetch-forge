@@ -22,8 +22,13 @@ yarn-error.log
 android/app/src/main/assets/index.android.bundle
 *.jsbundle
 
-# No iOS host in this slice; a generated one would not belong in git either.
-/ios/
+# (WO-002 phase 2) ios/ is committed (React Native 0.88.0's template plus the lab's edits, D5); what CocoaPods and
+# xcodebuild generate is not.  Podfile.lock names the label's snapshot path (LAB_TSBF), so it is per-build.
+/ios/Pods/
+/ios/Podfile.lock
+/ios/*.xcworkspace/
+/ios/.xcode.env.local
+xcuserdata/
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*

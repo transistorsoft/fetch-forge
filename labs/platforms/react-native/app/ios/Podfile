@@ -17,6 +17,13 @@ end
 target 'FetchLab' do
   config = use_native_modules!
 
+  # (WO-002 phase 2) The native SDK under test, pinned BY PATH: build.sh exports LAB_TSBF as the label's directory in
+  # labs/xcframeworks (publish_native_fetch_ios.sh), so `pod install` is itself the pin and Podfile.lock's EXTERNAL
+  # SOURCES its record.  The plugin's own `~> 4.2` resolves against the snapshot's podspec version.
+  pod 'TSBackgroundFetch', :path => ENV.fetch('LAB_TSBF')
+  # The lab's `Lab` native module (args, probe, verdict), a local development pod.
+  pod 'LabModule', :path => 'LabModule'
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
@@ -30,5 +37,11 @@ target 'FetchLab' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    # (WO-002 phase 2) fmt 11.0.2 (via React-jsi) does not compile as C++20 under Xcode 26.4+'s clang (`call to
+    # consteval function … is not a constant expression`): MEASURED in bg-forge's React Native lab (WO-027 there),
+    # whose Podfile carries the same three lines.  fmt alone as C++17.
+    installer.pods_project.targets.select { |t| t.name == 'fmt' }.each do |t|
+      t.build_configurations.each { |c| c.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17' }
+    end
   end
 end
