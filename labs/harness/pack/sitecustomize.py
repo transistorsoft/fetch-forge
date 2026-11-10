@@ -1,7 +1,7 @@
 # The fetch pack's activation shim (WO-002; labs/harness/fetch_pack.py, labs/README.md "The pack").
 #
 # `./labkit` puts this directory first on PYTHONPATH and sets FETCH_LABKIT_PACK=1, so every Python process the harness
-# starts — `run.py` from sweep.py:644, lab_setup.py's re-exec, its `lab_devices.py status` probe — runs this at
+# starts — `run.py` from sweep.py:647, lab_setup.py's re-exec, its `lab_devices.py status` probe — runs this at
 # startup, and the vendored modules are patched before any of them is used.  Subprocesses inherit both variables.
 #
 # Python imports ONE sitecustomize, the first on sys.path, and this one is first: so it runs the interpreter's own

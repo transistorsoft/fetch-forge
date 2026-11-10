@@ -8,7 +8,7 @@ column: 2
 short: rn                        # its name in a board's eight-character column (labkit.board_name)
 # Distinct from bg-forge's com.transistorsoft.labs.* (WO-002 "Distinct package ids"): the two labs
 # share the Lab devices and their claims.  Since bg-forge WO-191 each lab's first step evicts every other lab
-# app by prefix (labkit.evictions, run.py:710-716).
+# app by prefix (labkit.evictions, run.py:719-725).
 package: com.transistorsoft.fetchlab.react
 activity: .MainActivity
 

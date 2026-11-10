@@ -6,8 +6,9 @@ When a fetch need cannot be met without changing one of these files, the change 
 one fetch-owned module: `labs/harness/fetch_pack.py`. It is described in `labs/README.md`, and
 `python3 labs/harness/fetch_pack.py --seams` lists each vendored line it stands in for.
 
-Commit: `23f448c42b3b2e9aaabe8ff243d28ddc2c4200bd` (bg-forge `lab/WO-191-labkit-shared-device-seams`, 2026-11-07:
-WO-191 Parts 1–5, the seams this pack had worked around).  It was 49d38d47f until WO-191.
+Commit: `76f6536ac5cb5516a5d96c72a727d76724a53ad7` (bg-forge `master`, 2026-11-10: the merge of WO-192, a variant's
+`channel:` reaching builds and source stamps, for fetch WO-002's D4).  Only WO-192 changed vendored files since
+the previous commit, `23f448c42` (WO-191 Parts 1–5, the seams this pack had worked around), which replaced 49d38d47f.
 
 Each file was extracted with `git -C <bg-forge> show <commit>:<path>`, never copied from a working tree.
 bg-forge's working tree has unrelated local edits.
@@ -23,14 +24,14 @@ bg-forge is found at `$BG_FORGE`, or else beside the main fetch-forge checkout.
 
 | Path | sha256 | mode | lines |
 |---|---|---|---|
-| `labs/harness/labkit.py` | `6ff484798aec17621aefb0612f386ee352a5961ea3c314cd15f83560c3be844a` | 100644 | 12196 |
+| `labs/harness/labkit.py` | `da0764d58c83128276557e7197b8120312d129efec5ba889ba8f51e5c1fa6ef5` | 100644 | 12311 |
 | `labs/harness/backends.py` | `4179d0d0654daf3bc75beb7d0b0440e944784e516fe3bbac794c0714f9d086e1` | 100644 | 1519 |
-| `labs/harness/run.py` | `95096d6cf5aecfcd1be4564f12f618de0873b1ea24ef546cf267ce70bb7cd08c` | 100755 | 1479 |
-| `labs/harness/sweep.py` | `411d918230d34a63713a2c9d1848d016737ec94cb6105f33e10a7df6c0a4756f` | 100644 | 950 |
+| `labs/harness/run.py` | `867eeaef264f18229e2f772f336aa0d42f3521bdf83910242bedab4a2d7860b8` | 100755 | 1494 |
+| `labs/harness/sweep.py` | `825e68d93d260883e6a00e7b469df6e0843a1ed8d61e0ffd79a37ed8cf50b239` | 100644 | 959 |
 | `labs/harness/summarize.py` | `d9e9b11d50cc48ff61e58528752d43e4757da3f7d3948877199e91239ddb66ed` | 100755 | 1405 |
 | `labs/harness/devices.py` | `e70c5cb78b5bbc47e33568f2cc6f095f4abacde733dc88987f93e1d1145b513b` | 100644 | 231 |
 | `labs/harness/lab_devices.py` | `245467c04cfd7965bea92cf812e5381793ed8beddcaf6e00bf5f6471f8867990` | 100644 | 736 |
-| `labs/harness/lab_setup.py` | `b8be37ba4fa2a2d7d5fdc0b678f6a26cc86a1b5d4398c9121122a21c7301d9b8` | 100644 | 553 |
+| `labs/harness/lab_setup.py` | `75b024518a92586ee391a15a7f3028ec46e590c9792278353821c441a0b4673c` | 100644 | 559 |
 | `labs/harness/inventory.py` | `6ed4f61f7040f788a5123cadec49231672021dad4f00f104995f1853ae9ae715` | 100644 | 172 |
 | `labs/harness/slots_selftest.js` | `0df29055c3284069a87a58df5526c96d16439e1f865a83595fb4e6687f7023f2` | 100644 | 433 |
 | `labs/harness/avd/lab.config.ini` | `5f24bf72174ae6a75b19db55897696cc9a51f097efebaeff7c7f2c13dbb48bf9` | 100644 | 67 |

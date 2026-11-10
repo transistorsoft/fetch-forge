@@ -18,7 +18,7 @@ How the activation is made active in EVERY Python process the harness starts:
   * activate() installs a post-import hook: when a vendored module (`backends`, `run`, …) is imported from
     labs/harness, its patches run right after its body does.
   * A vendored SCRIPT run as __main__ (`run.py`, which sweep.py starts as `sys.executable -u run.py` at
-    sweep.py:644; `lab_setup.py`, which re-execs itself) has its own globals patched the moment its main() is
+    sweep.py:647; `lab_setup.py`, which re-execs itself) has its own globals patched the moment its main() is
     entered (a one-shot sys.setprofile hook), so its main() and everything it calls see the pack.  `lab_devices.py`
     has no patch of its own: it sees the pack through the modules it imports.
   * Subprocesses inherit the environment, so the chain holds however deep the harness spawns.
@@ -346,7 +346,7 @@ seam("backends.SDK_SUBSYSTEM", "data", "backends.py:39 + :1314-1317",
      "\"[TSB\"` — seam: an IOS_LOG_PREDICATE constant")
 seam("backends.to_logcat", "wrap", "backends.py:1002-1031 (:1025)",
      "retags fetch's NSLog lines (`[TSB…`) to SDK_TAG — seam: an sdk_line(ev) predicate")
-seam("backends.Adb.sdk_db / Simctl.sdk_db", "replace", "backends.py:643-645, :1419-1425; run.py:1209",
+seam("backends.Adb.sdk_db / Simctl.sdk_db", "replace", "backends.py:643-645, :1419-1425; run.py:1218",
      "no SDK database: b'' (run.py still writes an empty transistor_log.db) — seam: SDK_DB = None skips the pull")
 seam("backends.PERMISSIONS / FLAG_PERMISSIONS / PRIVACY / SDK_ALERT_TITLES", "data",
      "backends.py:742, :964, :761, :816", "no location/motion permissions, no SDK alert")
@@ -587,33 +587,33 @@ def _native_ios(var, done, logs, setup):
 
 seam("labkit.CALLBACK_ARG", "data", "labkit.py:187",
      "the vendored pattern plus onEvent/onTimeout/task — seam: find callbacks by type (`=>`), as :1526 does")
-seam("labkit.FGS_PROMOTED", "data", "labkit.py:4634",
+seam("labkit.FGS_PROMOTED", "data", "labkit.py:4660",
      "the vendored pattern under fetch's tag: fetch starts no foreground service, so it never matches")
-seam("labkit.IOS_GRACE_S", "none", "labkit.py:4619, ios_grace :4650",
+seam("labkit.IOS_GRACE_S", "none", "labkit.py:4645, ios_grace :4676",
      "not overridden: its keys are geo (addGeofence, watchPosition), no fetch hook names them, so 'default' (2 s)")
-seam("labkit.SDK_LOG", "hook", "labkit.py:3386-3412",
+seam("labkit.SDK_LOG", "hook", "labkit.py:3412-3438",
      "reads TSBackgroundFetch lines from the log on both OSes, never transistor_log.db")
 seam("labkit.ACTION_HANDLERS", "hook", "labkit.py:1773",
      "`job:` (with `expect:` and, Tier 1, a dated `unspaced:`) and `force_stop:`, two action kinds of labkit's own")
 seam("labkit._validate_hooks", "wrap", "labkit.py:1270-1282 (a property probe's `$` is function|object)",
      "a probe of a constant (STATUS_*, NETWORK_TYPE_*: numbers) may assert its type and value — seam: "
      "`allowed |= wire_of(member)` for a property whose return has a `wire`")
-seam("labkit.HEADLESS_NAMES", "hook", "labkit.py:3587-3592",
+seam("labkit.HEADLESS_NAMES", "hook", "labkit.py:3613-3618",
      "fetch and timeout (HEADLESS_NAMES): the vocabulary carries no Event enum any more")
-seam("labkit.METRICS", "extend", "labkit.py:3419-3425 (the registry: no override)",
+seam("labkit.METRICS", "extend", "labkit.py:3445-3451 (the registry: no override)",
      "fetch's metrics: SDK-line counts, fetchTally, jobIds, jobsRegistered, configureOutcome; (Tier 1) jobStops, "
      "jobsCancelled, React Native HeadlessTask counts, driverEvents/driverFinishes, appProcesses, timing metrics")
-seam("labkit.IMPLICIT / EARLY_METRICS", "hook", "labkit.py:4522, :4545",
+seam("labkit.IMPLICIT / EARLY_METRICS", "hook", "labkit.py:4548, :4571",
      "adds `configureOutcome: ok` and `foreignLines: 0` to every step that expects anything, both early (whole-log) "
      "metrics, in place")
-seam("labkit.EVIDENCE", "hook", "labkit.py:4890",
+seam("labkit.EVIDENCE", "hook", "labkit.py:4916",
      "not complete while a configure() the driver made is unsettled")
-seam("labkit.CAPTURE_EXTRAS", "hook", "run.py:601-614 (end_capture_log)",
+seam("labkit.CAPTURE_EXTRAS", "hook", "run.py:610-623 (end_capture_log)",
      "the host's `dumpsys jobscheduler <pkg>` read as jobscheduler.txt (Android), its header carrying host_ms")
-seam("labkit.NATIVE", "hook", "labkit.py:275; lab_setup.py:236-242, :414-429; inventory.py:30",
+seam("labkit.NATIVE", "hook", "labkit.py:275; lab_setup.py:236-242, :416-431; inventory.py:30",
      "tsbackgroundfetch / TSBackgroundFetch.xcframework; fetch's own slots, publish_native_fetch.sh (Android) and "
      "publish_native_fetch_ios.sh (iOS)")
-seam("labkit.expectations", "wrap", "labkit.py:4942",
+seam("labkit.expectations", "wrap", "labkit.py:4968",
      "a `process: live` step expects configureOutcome '-' (the driver configures once per JS context)")
 
 # ---------------------------------------------------------------------------------------------------- metrics
@@ -977,8 +977,8 @@ def _run(m):
     return ["assert_native"]
 
 
-seam("run.assert_native", "wrap", "run.py:293-308 (:307 wording)", "names TSBackgroundFetch")
-seam("run.run_step eviction", "none", "run.py:710-716",
+seam("run.assert_native", "wrap", "run.py:302-317 (:316 wording)", "names TSBackgroundFetch")
+seam("run.run_step eviction", "none", "run.py:719-725",
      "not overridden: bg-forge WO-191 evicts every installed com.transistorsoft.labs.* and .fetchlab.* app but the one "
      "under test (and force-stops every other Transistor app on Android), and flags a foreign headless process")
 seam("_shared/labapi.js, labevents.js screen titles", "none", "labapi.js:96, labevents.js:53,96",
@@ -1070,7 +1070,7 @@ def _lab_setup(m):
 
 seam("lab_setup.SUBMODULES", "data", "lab_setup.py:44-47",
      "fetch's submodules (doctor and check_access read it before PyYAML exists: not a labkit hook, WO-191 D4 option A)")
-seam("lab_setup.capacitor_ready / ensure_capacitor", "replace", "lab_setup.py:214-217, :379-384 (:382 prints the bg-geo path)",
+seam("lab_setup.capacitor_ready / ensure_capacitor", "replace", "lab_setup.py:214-217, :381-386 (:384 prints the bg-geo path)",
      "capacitor/background-fetch and its types dependency — seam: a CAPACITOR_PLUGIN path")
 seam("lab_setup.swift_api_published", "replace", "lab_setup.py:244-250",
      "fetch's Swift API (BackgroundFetch.swift) beside the label — waits for the iOS pin (WO-191 D4)")
@@ -1078,7 +1078,7 @@ seam("lab_setup.check_repo", "wrap", "lab_setup.py:253-276 (labkit.py:3062 opens
      "a variant that does not load is a MISSING line, not a traceback")
 seam("lab_setup.Report.line", "wrap", "lab_setup.py:260 (the Capacitor line's detail text)",
      "names capacitor/background-fetch — seam: the CAPACITOR_PLUGIN path above")
-seam("lab_setup.check_access", "none", "lab_setup.py:337-350",
+seam("lab_setup.check_access", "none", "lab_setup.py:339-352",
      "not overridden: its private list (native/android, native/ios) is never missing here, so it checks nothing")
 
 # ---------------------------------------------------------------------------------------------------- activation

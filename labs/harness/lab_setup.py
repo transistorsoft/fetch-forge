@@ -293,6 +293,8 @@ def check_lab(r, oses, var):
     for os_name in oses:
         for p, _ in labkit.lab_cells(labkit.board_order(), [os_name]):     # (WO-143)
             plat = labkit.platform(p, os_name)
+            if labkit.channel_refusal(plat, var):                            # (WO-192, D1) n/a: nothing to build
+                continue
             stamp = run.stamp_path(plat)
             fresh = (os.path.exists(run.artifact(plat)) and os.path.exists(stamp)
                      and open(stamp).read().strip() == run.source_stamp(plat, var))
@@ -489,6 +491,10 @@ def ensure_apps(var, oses, logs):
     for os_name in oses:
         for p, _ in labkit.lab_cells(labkit.board_order(), [os_name]):     # (WO-143)
             plat = labkit.platform(p, os_name)
+            why = labkit.channel_refusal(plat, var)                         # (WO-192, D1)
+            if why:
+                print("n/a: %s" % why)
+                continue
             stamp = run.stamp_path(plat)
             if (os.path.exists(run.artifact(plat)) and os.path.exists(stamp)
                     and open(stamp).read().strip() == run.source_stamp(plat, var)):

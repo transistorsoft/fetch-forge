@@ -629,7 +629,10 @@ def lane(os_name, serial, queue, args, results, log_dir):
             keep("runs", {"plat": plat, "os": os_name, "serial": serial, "scenario": scen, **results[key]})
             return results[key], False
         try:
-            reason = labkit.applicability(labkit.scenario(scen), labkit.platform(plat, os_name))
+            view = labkit.platform(plat, os_name)
+            # (WO-192, D1) A view that does not build the variant's channel: n/a, as an OS a scenario excuses is.
+            reason = (labkit.channel_refusal(view, labkit.variant(args.variant))
+                      or labkit.applicability(labkit.scenario(scen), view))
         except SystemExit as e:
             reason = str(e)
         if reason:
@@ -715,6 +718,12 @@ def build_pass(cells, args, results, log_dir):
     for plat, os_name in cells:
         view = labkit.platform(plat, os_name)
         if args.build == "none":
+            continue
+        # (WO-192, D1) Nothing to build for a view that does not build the variant's channel: its cells are n/a.
+        why = labkit.channel_refusal(view, var)
+        if why:
+            say("BUILD   %-7s %-13s n/a: %s" % (os_name, plat, why))
+            keep("builds", {"plat": plat, "os": os_name, "status": "n/a", "start": None, "end": None})
             continue
         if args.build == "stale":
             path = runmod.stamp_path(view)

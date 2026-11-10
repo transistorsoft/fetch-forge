@@ -2,7 +2,7 @@
 """The fetch lab's offline selftest (WO-002): no device, no build.  `./labkit selftest` runs it.
 
 What it holds:
-  * the pack is active here AND in a subprocess started the way sweep.py starts run.py (sweep.capped, sweep.py:644),
+  * the pack is active here AND in a subprocess started the way sweep.py starts run.py (sweep.capped, sweep.py:647),
     and one level further down; refused (exit 2, lab_product.py: bg-forge WO-191) where FETCH_LABKIT_PACK is not set,
     where the activation is not installed, or where the active pack is another checkout's;
   * labs/harness/vocabulary.yaml against types/background-fetch (names, signatures, interfaces, closed types) and the
@@ -77,7 +77,7 @@ def test_activation(tmp):
     check("sweep.SUITE is fetch's", sweep.SUITE, fetch_pack.SUITE)
     check("sweep.scenario_list('suite')", sweep.scenario_list("suite"), fetch_pack.SUITE)
 
-    # (1) The way sweep.py starts a run (sweep.py:644 via sweep.capped, :247): the vendored function, real argv.
+    # (1) The way sweep.py starts a run (sweep.py:647 via sweep.capped, :247): the vendored function, real argv.
     report = os.path.join(tmp, "report.jsonl")
     env = dict(os.environ, FETCH_PACK_REPORT=report, FETCH_LABKIT_PACK="1",
                PYTHONPATH=os.pathsep.join([os.path.join(HARNESS, "pack")] +
