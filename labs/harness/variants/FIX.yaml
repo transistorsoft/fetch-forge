@@ -1,8 +1,8 @@
 name: FIX
 description: everything under test, fixed — the native master and each bridge's own checkout
 # (WO-002, 2026-11-05) The first slice's variant.  Read by the vendored labkit.variant() (labkit.py:3061; bg-forge
-# 23f448c42), whose schema this follows: `native` a label published to labs/m2 (and, once the iOS pin exists,
-# labs/xcframeworks), `native_source` the full commit it was built from, `plugin` the checkout each platform builds.
+# 23f448c42), whose schema this follows: `native` a label published to labs/m2 and labs/xcframeworks, `native_source`
+# the full commit it was built from, `plugin` the checkout each platform builds.
 #
 # native: com.transistorsoft:tsbackgroundfetch:4.1.1-master-5de5242 in labs/m2, published by
 #   labs/harness/publish_native_fetch.sh from a detached worktree of native/background-fetch at origin/master
@@ -11,8 +11,10 @@ description: everything under test, fixed — the native master and each bridge'
 #   labs/m2/.provenance/4.1.1-master-5de5242.txt (dirty: no), which run.py's native_source() reads into every
 #   capture's run.json.  `./labkit setup` rebuilds the label from native_source.android when labs/m2 lacks it
 #   (labs/m2 is gitignored; fetch_pack._native_android, labkit.NATIVE's Android slot).
-# native_source.ios: none yet — the fetch iOS pin (labs/xcframeworks) is WO-002 phase 2, and no platform in this
-#   slice has an `ios:` host.
+# native_source.ios: (WO-002 phase 2) the same commit, its Simulator slice in labs/xcframeworks/4.1.1-master-5de5242,
+#   built and published by labs/harness/publish_native_fetch_ios.sh (fetch_pack._native_ios).  The label keeps
+#   Android's version: versioning/TSBackgroundFetch.properties at 5de5242 reads 4.2.0 (4200), which the provenance
+#   records as marketing/build, and which the plugin podspecs' `~> 4.2` needs (D6).
 # plugin: `worktree`, which each platform's lab.yaml maps to its own checkout; react-native maps it to `default`,
 #   i.e. default_checkout {repo}/react-native/background-fetch (build.sh stages a copy of it).  run.json records the
 #   checkout's commit and dirty flag as plugin_source.  MEASURED with the react-native checkout on branch
@@ -23,4 +25,5 @@ description: everything under test, fixed — the native master and each bridge'
 native: 4.1.1-master-5de5242
 native_source:
   android: 5de52423e1c5388afffa3d520f97dcb9b287ed29
+  ios: 5de52423e1c5388afffa3d520f97dcb9b287ed29
 plugin: worktree

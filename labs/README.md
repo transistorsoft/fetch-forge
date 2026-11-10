@@ -173,7 +173,7 @@ does not see them.
 
 ## Pinning
 
-The native SDK a variant tests is a label in `labs/m2` (Android), built from a recorded commit:
+The native SDK a variant tests is a label in `labs/m2` (Android) and `labs/xcframeworks` (iOS), built from a recorded commit:
 
 ```
 labs/harness/publish_native_fetch.sh 4.1.1-master-5de5242 labs/checkouts/native-5de52423e
@@ -185,11 +185,28 @@ labs/harness/publish_native_fetch.sh 4.1.1-master-5de5242 labs/checkouts/native-
 - The script publishes `com.transistorsoft:tsbackgroundfetch:<label>` with bg-forge's
   `lab-publish.init.gradle`, checks the POM and AAR carry the label, and writes
   `labs/m2/.provenance/<label>.txt` (native commit, dirty flag), which every capture's `run.json` records.
-- A variant names the label (`native:`) and its commit (`native_source.android:`); `./labkit setup`
+- A variant names the label (`native:`) and its commit (`native_source.android:` / `.ios:`); `./labkit setup`
   rebuilds a missing label from that commit.
 - The React Native app resolves `tsbackgroundfetch` only from `labs/m2` and fails its build unless the
   resolved version is the label and the AAR's sha256 equals the one in `labs/m2`.
-- iOS has no pin yet (WO-002 phase 2).
+- **iOS** (WO-002 phase 2) is a label in `labs/xcframeworks`, built from the same worktree:
+
+  ```
+  labs/harness/publish_native_fetch_ios.sh 4.1.1-master-5de5242 labs/checkouts/native-5de52423e
+  ```
+
+  The script archives the Simulator slice alone, with the release build's Simulator flags, then signs it
+  ad hoc. It never uses the checkout's committed `TSBackgroundFetch.xcframework`, which is the last
+  release's binary. It checks that the slice's version and build match `versioning/TSBackgroundFetch.properties`,
+  that the slice carries `PROJECT:TSBackgroundFetch-<build>`, and that its three headers are public. Then it
+  publishes, beside the xcframework:
+  - the checkout's podspec, stamped with the iOS version, which a Podfile pins by `:path`;
+  - the checkout's `Package.swift`, its binary target pointed at the label's xcframework, with the Swift
+    overlay's sources at the path that manifest names;
+  - `labs/xcframeworks/.provenance/<label>.txt`: commit, dirty, marketing, build and `sha256_sim`.
+- **One label, one native commit, two versions** (D6). The label is named after Android's version, and each
+  OS's provenance records its own. At `5de5242` that is iOS 4.2.0 (4200) and Android 4.1.1, so a plugin
+  podspec's `~> 4.2` resolves.
 
 ## Commands
 

@@ -951,7 +951,8 @@ def test_hooks(tmp):
     saved = (lab_setup.sh, lab_setup.native_checkout, lab_setup.LABS)
     try:
         lab_setup.sh = lambda cmd, cwd=None, env=None, log=None: rec.append(
-            [os.path.basename(cmd[0])] + cmd[1:] + ([os.path.basename(log)] if log else []))
+            [os.path.basename(cmd[0])] + cmd[1:] + (["LANG=" + env["LANG"]] if env and "LANG" in env else []) +
+            ([os.path.basename(log)] if log else []))
         lab_setup.native_checkout = lambda sub, sha, name: (rec.append(["checkout", sub, sha[:1], name]), "/wt")[1]
         lab_setup.LABS = os.path.join(tmp, "labs")
         for rel in (("m2", "com", "transistorsoft", "tsbackgroundfetch", "L"), ("m2", ".provenance"),
@@ -992,14 +993,15 @@ def test_hooks(tmp):
     check("NATIVE: published() reads tsbackgroundfetch and TSBackgroundFetch.xcframework, and inventory prunes it",
           (pub, inventory.ANDROID_ARTIFACTS), ((True, True, False), ("tsbackgroundfetch",)))
     check("NATIVE: an unpublished Android label is built by fetch's slot (native/background-fetch as `native`, "
-          "publish_native_fetch.sh); a published one needs nothing; iOS stops at its pin with no checkout; no "
-          "native_source is the shared refusal",
+          "publish_native_fetch.sh); a published one needs nothing; an unpublished iOS label is built by fetch's iOS "
+          "slot from the same worktree (publish_native_fetch_ios.sh, LANG set for xcodebuild); no native_source is the "
+          "shared refusal",
           runs,
           [([["checkout", "native/background-fetch", "a", "native"], ["publish_native_fetch.sh", "M", "/wt",
                                                                       "native-android.log"]], [], "ok"),
            ([], ["ok: android L is published", "ok: ios L is published"], "ok"),
-           ([], [], "setup stopped: the iOS pin for fetch (xcframeworks/M/TSBackgroundFetch.xcframework) is not built "
-                    "yet — WO-002 phase 2"),
+           ([["checkout", "native/background-fetch", "b", "native"], ["publish_native_fetch_ios.sh", "M", "/wt",
+                                                                      "LANG=en_US.UTF-8", "native-ios.log"]], [], "ok"),
            ([], [], "setup stopped: M is not published for android, and variant V records no native_source.android to "
                     "build it from")])
 

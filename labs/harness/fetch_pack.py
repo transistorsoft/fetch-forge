@@ -573,11 +573,16 @@ def _native_android(var, done, logs, setup):
 
 
 def _native_ios(var, done, logs, setup):
-    """labkit.NATIVE["ios"]["build"]: a published label needs nothing; fetch's iOS pin is not built yet."""
+    """labkit.NATIVE["ios"]["build"], lab_setup.ensure_native's slot (WO-191): nothing for a published label; else
+    native/background-fetch at its native_source, its Simulator slice built and published into labs/xcframeworks by
+    publish_native_fetch_ios.sh (WO-002 phase 2).  The same `native` worktree as Android's slot: one label is one
+    native commit on both OSes, each OS's provenance recording its own version (D6)."""
     if done:
         return
-    raise SystemExit("setup stopped: the iOS pin for fetch (xcframeworks/%s/%s) is not built yet — WO-002 phase 2"
-                     % (var["native"], XCFRAMEWORK))
+    wt = setup.native_checkout("native/background-fetch", var["native_source"]["ios"], "native")
+    print("(a minute or two: Xcode archives TSBackgroundFetch's simulator slice into labs/xcframeworks)")
+    setup.sh([os.path.join(setup.HARNESS, "publish_native_fetch_ios.sh"), var["native"], wt],
+             env=dict(os.environ, LANG="en_US.UTF-8"), log=os.path.join(logs, "native-ios.log"))
 
 
 seam("labkit.CALLBACK_ARG", "data", "labkit.py:187",
@@ -606,8 +611,8 @@ seam("labkit.EVIDENCE", "hook", "labkit.py:4890",
 seam("labkit.CAPTURE_EXTRAS", "hook", "run.py:601-614 (end_capture_log)",
      "the host's `dumpsys jobscheduler <pkg>` read as jobscheduler.txt (Android), its header carrying host_ms")
 seam("labkit.NATIVE", "hook", "labkit.py:275; lab_setup.py:236-242, :414-429; inventory.py:30",
-     "tsbackgroundfetch / TSBackgroundFetch.xcframework; fetch's own Android slot (publish_native_fetch.sh) and an "
-     "iOS slot that stops at the pin")
+     "tsbackgroundfetch / TSBackgroundFetch.xcframework; fetch's own slots, publish_native_fetch.sh (Android) and "
+     "publish_native_fetch_ios.sh (iOS)")
 seam("labkit.expectations", "wrap", "labkit.py:4942",
      "a `process: live` step expects configureOutcome '-' (the driver configures once per JS context)")
 
@@ -966,7 +971,7 @@ def _run(m):
         except SystemExit as e:
             if isinstance(e.code, str):
                 raise SystemExit(e.code.replace("TSLocationManager", NATIVE_PROJECT)
-                                 .replace("publish_native_ios.sh", "the fetch iOS pin (WO-002 phase 2)"))
+                                 .replace("publish_native_ios.sh", "publish_native_fetch_ios.sh"))
             raise
     _rebind(m, "assert_native", assert_native)
     return ["assert_native"]
