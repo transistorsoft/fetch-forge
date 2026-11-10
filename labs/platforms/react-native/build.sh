@@ -9,8 +9,11 @@
 #                    (app/android/build.gradle's exclusiveContent), and this script refuses an APK whose
 #                    resolved version is not the label or whose AAR is not byte-identical to labs/m2's.
 #                    iOS: a TSBackgroundFetch.xcframework snapshot in labs/xcframeworks/<label>
-#                    (publish_native_fetch_ios.sh), pinned by the Podfile's `:path => ENV['LAB_TSBF']`; this
-#                    script refuses an app whose linked slice is not the label's (sha256, version, PROJECT string).
+#                    (publish_native_fetch_ios.sh).  LAB_CHANNEL (the variant's `channel:`, bg-forge WO-192) picks
+#                    how the app gets it: `pods` (the default), the Podfile's `:path => ENV['LAB_TSBF']` in app/ios;
+#                    `spm`, a SwiftPM mirror of the label for the plugin's own Package.swift, in app/ios-spm.  Either
+#                    way this script refuses an app whose linked slice is not the label's (sha256, version, PROJECT
+#                    string), and copies the one it proved to app/build/lab-ios/FetchLab.app.
 #   <plugin>         `default` (lab.yaml default_checkout: <repo>/react-native/background-fetch) or a path
 #                    to another checkout of react-native-background-fetch.
 #
@@ -158,7 +161,9 @@ done
 # app/ios is COMMITTED (D5): React Native 0.88.0's template (@react-native-community/template, renamed FetchLab, as
 # `init` does) plus the lab's edits — AppDelegate.swift (the legacy-fetch forward, D3), SceneDelegate.swift (the
 # embedded bundle), Info.plist (background modes, BGTask ids), the bundle id, the Podfile's pins, and the LabModule
-# pod.  This script only checks them; it edits no tracked file.
+# pod.  app/ios-spm (phase 2b) is the same template converted to Swift Package Manager by React Native's own tool,
+# sharing app/ios's sources.  This script only checks them; it edits no tracked file, and refuses a pod install or a
+# SwiftPM step that does.
 
 if [ "$OS" = ios ]; then
   PB=/usr/libexec/PlistBuddy
@@ -186,6 +191,21 @@ if [ "$OS" = ios ]; then
   for id in com.transistorsoft.fetch com.transistorsoft.fetchlab.task; do
     grep -qx "[[:space:]]*$id" <<<"$tasks" || die "$PLIST's BGTaskSchedulerPermittedIdentifiers lacks '$id'"
   done
+  # (WO-002 phase 2b, D4) How the app gets TSBackgroundFetch: the variant's `channel:` (bg-forge WO-192 hands it over
+  # as LAB_CHANNEL; lab.yaml's ios: block declares both).  Empty is this view's default, CocoaPods.
+  CHANNEL="${LAB_CHANNEL:-pods}"
+  plugin_real="$(cd node_modules/react-native-background-fetch && pwd -P)"
+  # tracked_sums <dir>…: the content of every tracked file under them, so a step that rewrites one is caught.
+  tracked_sums() { git ls-files -z "$@" | xargs -0 shasum -a 1; }
+  refuse_rewrites() {   # <before> <what ran> <dir>…
+    local before="$1" what="$2"; shift 2
+    local rewritten
+    rewritten="$(diff <(echo "$before") <(tracked_sums "$@") | sed -n 's/^> [0-9a-f]*  //p' | tr '\n' ' ' || true)"
+    [ -z "$rewritten" ] || die "$what rewrote tracked files under app/: ${rewritten}— review and commit what it wrote, then build again"
+  }
+
+  case "$CHANNEL" in
+  pods)
   ids="$(sed -n 's/.*PRODUCT_BUNDLE_IDENTIFIER = \([^;]*\);.*/\1/p' ios/FetchLab.xcodeproj/project.pbxproj | sort -u)"
   [ "$ids" = "$BUNDLE_ID" ] || die "ios/FetchLab.xcodeproj builds bundle id(s) '$ids', lab.yaml names $BUNDLE_ID"
   grep -q "pod 'TSBackgroundFetch', :path => ENV.fetch('LAB_TSBF')" ios/Podfile || die "ios/Podfile does not pin TSBackgroundFetch to LAB_TSBF"
@@ -200,7 +220,6 @@ if [ "$OS" = ios ]; then
   # spec change touches neither the file list nor the podspec).  The plugin's real path, its codegenConfig and spec
   # files, its native file list and podspec, and LabModule's podspec are recorded beside the sandbox after each
   # install and compared here.
-  plugin_real="$(cd node_modules/react-native-background-fetch && pwd -P)"
   codegen="$(node -p "JSON.stringify(require('$plugin_real/package.json').codegenConfig || null)")"
   specs_dir="$plugin_real/$(node -p "(require('$plugin_real/package.json').codegenConfig || {}).jsSrcsDir || 'src'")"
   inputs="plugin=$plugin_real $( ( echo "$codegen"
@@ -218,12 +237,10 @@ if [ "$OS" = ios ]; then
     # privacy manifest): MEASURED on the template's first install.  ios/ is tracked, so its committed state is that
     # output, which a second install leaves alone (MEASURED).  An install that rewrites a tracked file means the
     # committed host is stale: refuse, rather than build from files git does not hold.
-    tracked_sums() { git ls-files -z ios | xargs -0 shasum -a 1; }
-    tracked_before="$(tracked_sums)"
+    tracked_before="$(tracked_sums ios)"
     (cd ios && LANG=en_US.UTF-8 pod install > build/pod-install.log 2>&1) \
       || { tail -30 "$DERIVED/pod-install.log"; die "pod install failed ($DERIVED/pod-install.log)"; }
-    rewritten="$(diff <(echo "$tracked_before") <(tracked_sums) | sed -n 's/^> [0-9a-f]*  //p' | tr '\n' ' ' || true)"
-    [ -z "$rewritten" ] || die "pod install rewrote tracked files under app/: ${rewritten}— review and commit what it wrote, then build again"
+    refuse_rewrites "$tracked_before" "pod install" ios
     echo "$inputs" > ios/Pods/.lab-inputs
   fi
 
@@ -232,23 +249,105 @@ if [ "$OS" = ios ]; then
   # EXTRA_PACKAGER_ARGS after its own --dev, and the last one wins).  The copy left beside the app goes first, so the
   # check below reads this build's.
   rm -f "$PRODUCTS/main.jsbundle"
-  echo "[lab] xcodebuild — $DERIVED/xcodebuild.log"
+  echo "[lab] xcodebuild (CocoaPods) — $DERIVED/xcodebuild.log"
   LANG=en_US.UTF-8 xcodebuild -workspace ios/FetchLab.xcworkspace -scheme FetchLab \
     -configuration Debug -sdk iphonesimulator -arch "$(uname -m)" -derivedDataPath "$DERIVED" \
     FORCE_BUNDLING=1 EXTRA_PACKAGER_ARGS="--dev false" build > "$DERIVED/xcodebuild.log" 2>&1 \
     || { grep -E 'error:|BUILD FAILED' "$DERIVED/xcodebuild.log" | tail -30 || true; die "xcodebuild failed ($DERIVED/xcodebuild.log)"; }
+  SLICE="$PRODUCTS/XCFrameworkIntermediates/TSBackgroundFetch/TSBackgroundFetch.framework"
+  grep -q "TSBackgroundFetch (from \`$SNAPSHOT\`)" ios/Podfile.lock \
+    || die "Podfile.lock does not record the snapshot path as TSBackgroundFetch's source"
+  source_proof="Podfile.lock: TSBackgroundFetch from the snapshot"
+  ;;
+
+  spm)
+  # app/ios-spm is the SwiftPM host (committed, WO-002 phase 2b): the same template converted by React Native's own
+  # `setup-apple-spm.js add --deintegrate --config-command '["node","ios-spm/lab-config.js"]'`, its sources a symlink
+  # to app/ios/FetchLab so both hosts run one AppDelegate and SceneDelegate, and LabModule an app module
+  # (package.json swiftpmConfig.modules) compiled from app/ios/LabModule.
+  H=ios-spm
+  [ "$(readlink "$H/FetchLab")" = ../ios/FetchLab ] || die "$H/FetchLab is not the symlink to ../ios/FetchLab: the two hosts would run different app code"
+  tmpl="$(sed -n 's/^react-native=//p' "$H/.lab-template" 2>/dev/null)"
+  [ "$tmpl" = "$rn" ] || die "app/$H was generated for React Native ${tmpl:-?} ($H/.lab-template), this app is $rn — regenerate it"
+  ids="$(sed -n 's/.*PRODUCT_BUNDLE_IDENTIFIER = \([^;]*\);.*/\1/p' "$H/FetchLab.xcodeproj/project.pbxproj" | sort -u)"
+  [ "$ids" = "$BUNDLE_ID" ] || die "$H/FetchLab.xcodeproj builds bundle id(s) '$ids', lab.yaml names $BUNDLE_ID"
+  [ "$(node -p "JSON.stringify(require('./$H/FetchLab.xcodeproj/.spm-injected.json').configCommand)")" = '["node","ios-spm/lab-config.js"]' ] \
+    || die "$H's injection record does not run ios-spm/lab-config.js: autolinking would read app/ios instead"
+  [ -f "$plugin_real/ios/Package.swift" ] || die "the plugin checkout $want_real has no ios/Package.swift: it cannot be built with Swift Package Manager"
+
+  DERIVED="$H/build/DerivedData"
+  PRODUCTS="$DERIVED/Build/Products/Debug-iphonesimulator"
+  SRCPKG="$H/build/SourcePackages"
+  # The label as the package the plugin asks for.  The plugin's ios/Package.swift wants
+  # .package(url: "https://github.com/transistorsoft/transistor-background-fetch.git", from: <x>); a SwiftPM mirror
+  # maps that URL to a local git repo of the label, tagged with its iOS version, so the plugin's manifest is never
+  # edited and its own version requirement is what resolves (MEASURED 2026-11-10: `Checking out 4.2.0`).  The repo
+  # is named as the URL's package so the resolved identity is the one the plugin's `package:` names.  Remade, with
+  # SwiftPM's checkouts and pins, whenever the label it holds is not this one.
+  MIRROR="$H/build/lab-mirror/transistor-background-fetch"
+  mirror_source="label=$native commit=$(iprov commit) sha256_sim=$sha_want marketing=$marketing"
+  if [ "$(cat "$MIRROR.lab-source" 2>/dev/null)" != "$mirror_source" ] \
+     || ! git -C "$MIRROR" rev-parse -q --verify "refs/tags/$marketing" >/dev/null 2>&1; then
+    echo "[lab] SwiftPM mirror of $native (tag $marketing)"
+    rm -rf "$MIRROR" "$MIRROR.lab-source" "$SRCPKG" "$H/FetchLab.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+    mkdir -p "$MIRROR"
+    (cd "$SNAPSHOT" && tar --exclude .swiftpm --exclude .build -cf - .) | tar -x -C "$MIRROR"
+    git -C "$MIRROR" init -q
+    git -C "$MIRROR" add -A
+    git -C "$MIRROR" -c user.email=lab@fetch-forge.invalid -c user.name=labkit -c commit.gpgsign=false commit -qm "$mirror_source"
+    git -C "$MIRROR" -c tag.gpgsign=false tag "$marketing"
+    echo "$mirror_source" > "$MIRROR.lab-source"
+  fi
+  CFG="$H/FetchLab.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/configuration"
+  mkdir -p "$CFG"
+  printf '{"object":[{"mirror":"file://%s","original":"https://github.com/transistorsoft/transistor-background-fetch.git"}],"version":1}\n' \
+    "$(cd "$MIRROR" && pwd -P)" > "$CFG/mirrors.json"
+
+  # React Native's SwiftPM packages under build/ (gitignored): `update` makes them when they are missing (a fresh
+  # clone); otherwise the scheme's "Sync SPM Autolinking" pre-action refreshes autolinking and codegen at every build.
+  # Neither may rewrite a tracked file (MEASURED: `update` on the committed host changes none).
+  tracked_before="$(tracked_sums "$H" ios)"
+  if [ ! -f "$H/build/xcframeworks/Package.swift" ] || [ ! -f "$H/build/generated/autolinking/Package.swift" ]; then
+    echo "[lab] setup-apple-spm.js update — $H/build/spm-update.log"
+    mkdir -p "$H/build"
+    (cd "$H" && LANG=en_US.UTF-8 node ../node_modules/react-native/scripts/setup-apple-spm.js update --yes > build/spm-update.log 2>&1) \
+      || { tail -30 "$H/build/spm-update.log"; die "setup-apple-spm.js update failed ($H/build/spm-update.log)"; }
+  fi
+  rm -f "$PRODUCTS/main.jsbundle"
+  echo "[lab] xcodebuild (Swift Package Manager) — $H/build/xcodebuild.log"
+  LANG=en_US.UTF-8 xcodebuild -project "$H/FetchLab.xcodeproj" -scheme FetchLab \
+    -configuration Debug -sdk iphonesimulator -arch "$(uname -m)" -derivedDataPath "$DERIVED" \
+    -clonedSourcePackagesDirPath "$SRCPKG" \
+    FORCE_BUNDLING=1 EXTRA_PACKAGER_ARGS="--dev false" build > "$H/build/xcodebuild.log" 2>&1 \
+    || { grep -E 'error:|BUILD FAILED' "$H/build/xcodebuild.log" | tail -30 || true; die "xcodebuild failed ($H/build/xcodebuild.log)"; }
+  refuse_rewrites "$tracked_before" "the SwiftPM build" "$H" ios
+  # Which package SwiftPM resolved: the pin for the plugin's URL is the mirror's tag, at the mirror's commit.
+  RESOLVED="$H/FetchLab.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+  pin="$(python3 - "$RESOLVED" <<'PY'
+import json, sys
+pins = [p for p in json.load(open(sys.argv[1])).get("pins", [])
+        if p.get("location") == "https://github.com/transistorsoft/transistor-background-fetch.git"]
+print(" ".join([pins[0]["identity"], pins[0]["state"].get("version") or "-", pins[0]["state"].get("revision") or "-"])
+      if len(pins) == 1 else "none")
+PY
+)"
+  [ "$pin" = "transistor-background-fetch $marketing $(git -C "$MIRROR" rev-parse HEAD)" ] \
+    || die "Package.resolved pins transistor-background-fetch as '$pin', not the mirror of '$native' at $marketing"
+  SLICE="$PRODUCTS/TSBackgroundFetch.framework"
+  source_proof="Package.resolved: transistor-background-fetch $marketing from the mirror of the snapshot"
+  ;;
+
+  *) die "LAB_CHANNEL=$CHANNEL: this host builds pods or spm (lab.yaml's build.channels)" ;;
+  esac
 
   # --- prove WHICH native SDK the app links, from the artifact, never from the label -------------------------------
   APP="$PRODUCTS/FetchLab.app"
   [ -d "$APP" ] || die "no $APP after the build"
-  INTER="$PRODUCTS/XCFrameworkIntermediates/TSBackgroundFetch/TSBackgroundFetch.framework"
-  [ -f "$INTER/TSBackgroundFetch" ] || die "CocoaPods left no TSBackgroundFetch slice under $INTER"
-  sha_got="$(shasum -a 256 "$INTER/TSBackgroundFetch" | cut -d' ' -f1)"
-  [ "$sha_got" = "$sha_want" ] || die "the slice CocoaPods linked (sha256 $sha_got) is not the one labelled '$native' ($sha_want)"
-  mk_got="$($PB -c 'Print CFBundleShortVersionString' "$INTER/Info.plist")"
+  [ -f "$SLICE/TSBackgroundFetch" ] || die "the build left no TSBackgroundFetch slice under $SLICE"
+  sha_got="$(shasum -a 256 "$SLICE/TSBackgroundFetch" | cut -d' ' -f1)"
+  [ "$sha_got" = "$sha_want" ] || die "the slice the $CHANNEL build linked (sha256 $sha_got) is not the one labelled '$native' ($sha_want)"
+  mk_got="$($PB -c 'Print CFBundleShortVersionString' "$SLICE/Info.plist")"
   [ "$mk_got" = "$marketing" ] || die "linked TSBackgroundFetch says $mk_got, the provenance for '$native' says $marketing"
-  grep -q "TSBackgroundFetch (from \`$SNAPSHOT\`)" ios/Podfile.lock \
-    || die "Podfile.lock does not record the snapshot path as TSBackgroundFetch's source"
   # What is in the executable: the linker keeps the framework's version string.  A Debug build keeps the code in
   # <exe>.debug.dylib beside a launcher stub.  (`grep -q` would SIGPIPE `strings` under pipefail.)
   exe="$($PB -c 'Print CFBundleExecutable' "$APP/Info.plist")"
@@ -263,8 +362,11 @@ if [ "$OS" = ios ]; then
   # ... and which JavaScript: the bundle is in the app, and it is the --dev false one.
   [ -f "$APP/main.jsbundle" ] || die "no main.jsbundle in $APP — the app would wait for Metro"
   grep -q '__DEV__=false' "$PRODUCTS/main.jsbundle" || die "$PRODUCTS/main.jsbundle is not a --dev false bundle"
-  echo "[lab] built ios native=$native ($marketing/$build_no, commit $(iprov commit | cut -c1-12) dirty=$(iprov dirty))" \
-       "slice=sha256:${sha_got:0:12} plugin=$want_real app=$APP"
+  # (WO-002 phase 2b, bg-forge WO-192 D2) One artifact for the view, whichever channel built it: lab.yaml's ios: app.
+  OUT="build/lab-ios/FetchLab.app"
+  rm -rf "$OUT" && mkdir -p "$(dirname "$OUT")" && ditto "$APP" "$OUT"
+  echo "[lab] built ios channel=$CHANNEL native=$native ($marketing/$build_no, commit $(iprov commit | cut -c1-12) dirty=$(iprov dirty))" \
+       "slice=sha256:${sha_got:0:12} ($source_proof) plugin=$want_real app=app/$OUT"
   exit 0
 fi
 

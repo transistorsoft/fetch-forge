@@ -1,0 +1,11 @@
+
+# SPM – auto-generated at build time (do not commit)
+Package.resolved
+build/generated/
+build/xcframeworks/
+.build/
+
+# (WO-002 phase 2b) What build.sh and xcodebuild make here: DerivedData, SwiftPM's checkouts, the label's mirror, and
+# the workspace's Package.resolved and mirrors.json (an absolute file:// path to that mirror).
+build/
+FetchLab.xcodeproj/project.xcworkspace/
