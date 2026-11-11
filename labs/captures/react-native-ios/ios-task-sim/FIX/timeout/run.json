@@ -6,7 +6,7 @@
  "scenario": "ios-task-sim",
  "variant": "FIX",
  "step": "timeout",
- "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
+ "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
  "evicted": null,
  "foreignTransistorApps": null,
  "native": "4.1.1-master-5de5242",
@@ -26,7 +26,7 @@
   "dirty": "no"
  },
  "device": {
-  "model": "Lab1",
+  "model": "Lab2",
   "os": "iOS 27.2"
  },
  "activity": "",
@@ -38,57 +38,57 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 42.0,
-  "t0": 1794365633.367,
+  "step_s": 41.9,
+  "t0": 1794414973.059,
   "phases": {
-   "terminated": 0.098,
-   "swept": 0.312,
-   "neutral_pre": 0.312,
-   "permissions": 0.312,
-   "sleep_end": 0.312,
-   "log_begun": 0.725,
-   "launch_mark": 0.862,
-   "verdict_cleared": 0.862,
-   "launch": 0.991,
-   "settle_end": 10.997,
-   "trigger": 11.141,
-   "end": 41.568,
-   "runner_joined": 41.568,
-   "capture_mark": 41.714,
-   "pusher_joined": 41.714,
-   "log_ended": 41.962,
-   "log_written": 41.962,
-   "capture_extras": 41.962,
-   "db_pulled": 41.963,
-   "run_json": 42.022,
-   "judged": 42.05,
-   "verdict_pushed": 42.051,
-   "settled": 42.553,
-   "neutral_post": 42.553,
-   "terminated_post": 42.689
+   "terminated": 0.108,
+   "swept": 0.28,
+   "neutral_pre": 0.28,
+   "permissions": 0.28,
+   "sleep_end": 0.28,
+   "log_begun": 0.687,
+   "launch_mark": 0.82,
+   "verdict_cleared": 0.82,
+   "launch": 0.941,
+   "settle_end": 10.944,
+   "trigger": 11.089,
+   "end": 41.467,
+   "runner_joined": 41.467,
+   "capture_mark": 41.607,
+   "pusher_joined": 41.607,
+   "log_ended": 41.853,
+   "log_written": 41.854,
+   "capture_extras": 41.854,
+   "db_pulled": 41.854,
+   "run_json": 41.913,
+   "judged": 41.943,
+   "verdict_pushed": 41.944,
+   "settled": 42.447,
+   "neutral_post": 42.447,
+   "terminated_post": 42.583
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.241,
+    "s": 0.239,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 11,
-    "s": 1.78,
+    "s": 1.732,
     "bg_n": 2,
-    "bg_s": 0.245
+    "bg_s": 0.252
    },
    "_tap_text": {
     "n": 82,
-    "s": 0.03,
+    "s": 0.022,
     "bg_n": 80,
-    "bg_s": 0.029
+    "bg_s": 0.022
    },
    "begin_log": {
     "n": 1,
-    "s": 0.413,
+    "s": 0.406,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.214,
+    "s": 0.172,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.248,
+    "s": 0.246,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,25 +124,25 @@
    },
    "fire_task": {
     "n": 2,
-    "s": 0.495,
+    "s": 0.463,
     "bg_n": 2,
-    "bg_s": 0.495
+    "bg_s": 0.463
    },
    "launch": {
     "n": 1,
-    "s": 0.129,
+    "s": 0.121,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.67,
+    "s": 0.669,
     "bg_n": 2,
-    "bg_s": 0.245
+    "bg_s": 0.252
    },
    "native_resolved": {
     "n": 1,
-    "s": 0.006,
+    "s": 0.005,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -154,9 +154,9 @@
    },
    "peek": {
     "n": 80,
-    "s": 0.129,
+    "s": 0.112,
     "bg_n": 80,
-    "bg_s": 0.129
+    "bg_s": 0.112
    },
    "permissions": {
     "n": 1,
@@ -166,7 +166,7 @@
    },
    "push_verdict": {
     "n": 5,
-    "s": 0.002,
+    "s": 0.003,
     "bg_n": 3,
     "bg_s": 0.002
    },
@@ -178,13 +178,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.418,
+    "s": 0.372,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.233,
+    "s": 0.244,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -193,7 +193,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 2.308
+   "boot": 2.253
   }
  },
  "measure_from": "launch",
@@ -236,12 +236,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.548,
-   "action1": 5.251
+   "action0": 1.525,
+   "action1": 5.204
   },
   "sent_s": {
-   "action0": 4.64,
-   "action1": 10.404
+   "action0": 4.593,
+   "action1": 10.295
   }
  },
  "network": null,
@@ -303,5 +303,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-10 21:54:35"
+ "when": "2026-11-11 11:36:54"
 }

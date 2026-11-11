@@ -6,7 +6,7 @@
  "scenario": "ios-fetch-sim",
  "variant": "FIX",
  "step": "background",
- "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
  "evicted": null,
  "foreignTransistorApps": null,
  "native": "4.1.1-master-5de5242",
@@ -26,7 +26,7 @@
   "dirty": "no"
  },
  "device": {
-  "model": "Lab2",
+  "model": "Lab1",
   "os": "iOS 27.2"
  },
  "activity": "",
@@ -38,57 +38,57 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 26.9,
-  "t0": 1794365546.536,
+  "step_s": 27.0,
+  "t0": 1794414886.618,
   "phases": {
-   "terminated": 0.098,
-   "swept": 0.268,
-   "neutral_pre": 0.268,
-   "permissions": 0.268,
-   "sleep_end": 0.268,
-   "log_begun": 0.685,
-   "launch_mark": 0.807,
-   "verdict_cleared": 0.807,
-   "launch": 0.921,
-   "settle_end": 10.927,
-   "trigger": 11.037,
-   "end": 26.468,
-   "runner_joined": 26.468,
-   "capture_mark": 26.611,
-   "pusher_joined": 26.611,
-   "log_ended": 26.86,
-   "log_written": 26.86,
-   "capture_extras": 26.86,
-   "db_pulled": 26.861,
-   "run_json": 26.92,
-   "judged": 26.948,
-   "verdict_pushed": 26.949,
-   "settled": 27.449,
-   "neutral_post": 27.449,
-   "terminated_post": 27.584
+   "terminated": 0.097,
+   "swept": 0.298,
+   "neutral_pre": 0.298,
+   "permissions": 0.298,
+   "sleep_end": 0.298,
+   "log_begun": 0.697,
+   "launch_mark": 0.833,
+   "verdict_cleared": 0.833,
+   "launch": 0.961,
+   "settle_end": 10.966,
+   "trigger": 11.1,
+   "end": 26.525,
+   "runner_joined": 26.525,
+   "capture_mark": 26.657,
+   "pusher_joined": 26.657,
+   "log_ended": 26.901,
+   "log_written": 26.901,
+   "capture_extras": 26.901,
+   "db_pulled": 26.901,
+   "run_json": 26.962,
+   "judged": 26.992,
+   "verdict_pushed": 26.992,
+   "settled": 27.497,
+   "neutral_post": 27.497,
+   "terminated_post": 27.617
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.243,
+    "s": 0.238,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 11,
-    "s": 1.693,
+    "s": 1.716,
     "bg_n": 2,
-    "bg_s": 0.228
+    "bg_s": 0.23
    },
    "_tap_text": {
     "n": 61,
-    "s": 0.02,
+    "s": 0.018,
     "bg_n": 59,
-    "bg_s": 0.02
+    "bg_s": 0.018
    },
    "begin_log": {
     "n": 1,
-    "s": 0.417,
+    "s": 0.398,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.169,
+    "s": 0.201,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.25,
+    "s": 0.244,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,19 +124,19 @@
    },
    "launch": {
     "n": 1,
-    "s": 0.114,
+    "s": 0.127,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.601,
+    "s": 0.632,
     "bg_n": 2,
-    "bg_s": 0.228
+    "bg_s": 0.23
    },
    "native_resolved": {
     "n": 1,
-    "s": 0.004,
+    "s": 0.009,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -148,9 +148,9 @@
    },
    "peek": {
     "n": 59,
-    "s": 0.066,
+    "s": 0.072,
     "bg_n": 59,
-    "bg_s": 0.066
+    "bg_s": 0.072
    },
    "permissions": {
     "n": 1,
@@ -160,13 +160,13 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.145,
+    "s": 0.148,
     "bg_n": 1,
-    "bg_s": 0.145
+    "bg_s": 0.148
    },
    "push_verdict": {
     "n": 5,
-    "s": 0.003,
+    "s": 0.002,
     "bg_n": 3,
     "bg_s": 0.002
    },
@@ -184,22 +184,22 @@
    },
    "terminate": {
     "n": 2,
-    "s": 0.233,
+    "s": 0.217,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "to_background": {
     "n": 1,
-    "s": 0.161,
+    "s": 0.167,
     "bg_n": 1,
-    "bg_s": 0.161
+    "bg_s": 0.167
    }
   },
   "dialogs": [],
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 2.244
+   "boot": 2.301
   }
  },
  "measure_from": "launch",
@@ -240,12 +240,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.549,
-   "action1": 1.549
+   "action0": 1.528,
+   "action1": 1.528
   },
   "sent_s": {
-   "action0": 3.594,
-   "action1": 8.768
+   "action0": 3.565,
+   "action1": 8.698
   }
  },
  "network": null,
@@ -297,5 +297,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-10 21:52:53"
+ "when": "2026-11-11 11:35:13"
 }
