@@ -1,0 +1,92 @@
+name: ios-registration
+description: >
+  (WO-002 phase 2a) How the SDK registers its BGTaskScheduler launch handlers in a UIScene host.  Since native 4.1.0
+  (5099007) TSBackgroundFetch's +load creates the singleton, which observes UIApplicationDidFinishLaunchingNotification
+  and registers a handler for every permitted `com.transistorsoft…` identifier (TSBackgroundFetch.m:28-32, :59,
+  :64-79), so an app need not call didFinishLaunching() itself; and its `launched` flag makes an explicit call, before
+  or after, the same one registration (:65-66).  The flag is load-bearing: BGTaskScheduler raises on a second
+  registration of an identifier (`Launch handler for task with identifier … has already been registered`, MEASURED
+  2026-11-11 on the iOS 27.2 Simulator).  Cordova, Capacitor and Flutter call didFinishLaunching() from their own
+  start-up; React Native's install docs have the app call it in application(_:didFinishLaunchingWithOptions:).
+
+  The witness is BGTaskScheduler's own log, in the app's process (subsystem com.apple.BackgroundTasks):
+  `registerForTaskWithIdentifier: <id>` for each registration, `Application finished launching` (its observer of the
+  same notification, which runs before the SDK's) and `Handling app launch` (dispatched after it).  bgRegistrations
+  places each registration against those two lines (launching / finished / late).  The host's `sdkLaunchCall`
+  launch argument moves its own call (AppDelegate.swift, LabLaunchCall); sdkLaunchCalls reads where it made it.
+
+  What the Simulator cannot show: BGTaskScheduler launching the app for a task and running its handler, where a
+  handler registered too late would meet `No launch handler registered for task with identifier …` (a string in the
+  iOS 27.2 BackgroundTasks binary; INFERRED to be raised when the task runs).  The Simulator's BackgroundTasks has no
+  rule against registering after the launch (a registration from the scene or 2 s later returned true, MEASURED).
+  That is the manual device tier (ios-device-bgtask).
+
+  WHAT EACH STEP READS (from the launch), and what it catches:
+    * delegate: the host as the install docs have it.  Both identifiers register inside the app delegate (`launching`),
+      once each: the SDK's own +load observer, which comes after, finds `launched` set.  Without the flag it would
+      register again, and the app would crash.
+    * scene: the call made in SceneDelegate's willConnect instead, after the launch, as a plugin's own start-up makes
+      it where that start-up comes with the scene.  +load has registered both (`finished`), and the late call adds
+      no second registration: no crash.  The flag again, for a call after +load's.
+    * none: no call at all, so only +load can register (nothing else in this host calls didFinishLaunching): both
+      `finished`, once each.  This is the step that catches +load's loss: nothing would register ('-').  `finished`
+      alone does not say +load: `Handling app launch` came after the scene connected (42–85 ms after the launch,
+      the scene at 14–35 ms, MEASURED 2026-11-11), so a call from willConnect also lands before it.
+    * cold: the app terminated, then a background fetch (`fire: fetch`) launches it in the background.  An OS launch
+      has no launch arguments, so the host makes the delegate call there too: each identifier registers inside the
+      delegate in both processes, before the framework handles the background launch, and the fetch is delivered.
+      +load alone in a background launch is not measured: no argument reaches that process.
+platforms: [react-native]
+not_applicable:
+  android: "2026-11-11 — BGTaskScheduler's launch-handler registration is iOS's; Android schedules JobScheduler jobs at
+    configure() and scheduleTask() (api-smoke, events-task-android)."
+measure_from: launch
+steps:
+  - name: delegate
+    settle: 8
+    after: 5
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    expect:
+      crashes: 0
+      sdkLaunchCalls: "delegate=1"
+      bgRegistrations: "com.transistorsoft.fetch:launching=1,com.transistorsoft.fetchlab.task:launching=1"
+  - name: scene
+    settle: 8
+    after: 5
+    extras: {sdkLaunchCall: scene}
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    expect:
+      crashes: 0
+      sdkLaunchCalls: "scene=1"
+      bgRegistrations: "com.transistorsoft.fetch:finished=1,com.transistorsoft.fetchlab.task:finished=1"
+  - name: none
+    settle: 8
+    after: 5
+    extras: {sdkLaunchCall: none}
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    expect:
+      crashes: 0
+      sdkLaunchCalls: "-"
+      bgRegistrations: "com.transistorsoft.fetch:finished=1,com.transistorsoft.fetchlab.task:finished=1"
+  - name: cold
+    settle: 10
+    after: 20
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 2, terminate: true}
+      - {after: {api: "status#0"}, delay_s: 5, fire: fetch}
+    expect:
+      crashes: 0
+      sdkLaunchCalls: "delegate=2"
+      bgRegistrations: "com.transistorsoft.fetch:launching=2,com.transistorsoft.fetchlab.task:launching=2"
+      fetchReceived: 1
+      legacyFetchStates: "background=1"
+      legacyResults: "newData=1"

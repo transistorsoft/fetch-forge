@@ -847,3 +847,76 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   - **What this cannot show:** BGTaskScheduler launching the task, its expiration handler firing on its own, and what `setTaskCompletedWithSuccess:YES` (`TSBGTask.m:252`) tells the system after a timeout. That stays the manual device tier (`ios-device-bgtask`).
   - **Selftest:** 174 PASS. The new checks cover `fire_task`'s command and refusal, the `fire:` validation, and the four metrics on a synthetic capture. `vendor_check` PASS.
   - **Still not done:** `ios-registration`, `api-smoke` on iOS (per-OS expectations), back-to-back bg-forge and fetch sweeps on iOS, and the other platforms' iOS hosts.
+- 2026-11-11 — **`ios-registration`: the SDK's BGTaskScheduler registration in a UIScene host, MEASURED on both channels** (uncommitted, awaiting Chris's diff review). Branch `feat/WO-002-ios-registration`, from `master` `9a3895c`. Chris chose it ("ios-registration").
+  - **What it pins:**
+    - **The `+load` path.** Since native 4.1.0 (`5099007`), `+load` creates the singleton, which observes `UIApplicationDidFinishLaunchingNotification` and registers a launch handler for every permitted `com.transistorsoft…` identifier (`TSBackgroundFetch.m:28-32`, `:59`, `:64-79`).
+    - **The `launched` flag** (`:65-66`), which makes an explicit `didFinishLaunching()` call, made before or after, the same one registration.
+    - **Who calls it:**
+      - Cordova (`CDVBackgroundFetch.m:47`, `pluginInitialize`), Capacitor (`BackgroundFetchPlugin.swift:33`, `load()`) and Flutter (`BackgroundFetchPlugin.m:40`) still call it from their own code, "for backward compatibility".
+      - React Native's install docs have the app call it (`docs/INSTALL-AUTO-IOS.md:136`, `:158` at `85a6bf4`); the plugin itself does not.
+  - **The spike (MEASURED).**
+    - **Setup:**
+      - a throwaway Swift UIScene app with no SDK and two permitted identifiers, registering at one moment per launch;
+      - on a scratch iPhone 17 Pro Simulator (iOS 27.2, `RegSpike`), created for it and deleted after; the Lab devices were not touched.
+      - The source stayed in the session scratchpad.
+    - **BGTaskScheduler logs in the app's own process,** under subsystem `com.apple.BackgroundTasks`, category Framework:
+      - `registerForTaskWithIdentifier: <id>` for each registration (debug level);
+      - `Application finished launching` from its observer of the same notification (debug);
+      - `Handling app launch`, dispatched after it (default level).
+    - **No deadline on the Simulator.** A registration in the delegate, in a notification observer, in `scene(_:willConnectTo:)` and 2 s after the launch each returned `true`, with no complaint logged.
+    - **A second registration of one identifier crashes the app:** `NSInternalInconsistencyException`, `Launch handler for task with identifier com.transistorsoft.spike.a has already been registered` (assertion at `BGTaskScheduler.m:279`).
+    - **An identifier the Info.plist does not list:** `Registration rejected; … is not advertised in the application's Info.plist`, and `false`.
+    - **The framework's own messages** (strings of the iOS 27.2 runtime's dyld_sim shared cache):
+      - It has `No launch handler registered for task with identifier %@`, and no message about registering before the launch finishes.
+      - INFERRED: on a device, the risk of a late registration is a task that launched the app finding no handler when it runs. It is not an assertion at registration.
+      - The device's binary was not read.
+  - **The host (both channels; `FetchLab/` is shared):**
+    - **`AppDelegate.swift`** reads `--sdkLaunchCall=delegate|scene|none` (a step's `extras:`). The default is `delegate`, which is also what an OS launch, with no arguments, gets. Any other value stops the app (`fatalError`).
+      - It makes the call in the delegate only for `delegate`.
+      - It logs `LAB point=didFinishLaunching … sdkLaunchCall=<value>`, `LAB point=sdkLaunchCall at=delegate` before the call, and `LAB point=didFinishLaunchingReturn`.
+    - **`SceneDelegate.swift`** makes the call in `willConnect` for `scene`, after `LAB point=sdkLaunchCall at=scene`.
+    - `lab.yaml` notes the argument.
+  - **The pack:**
+    - **The tap's predicate** gains `(subsystem == "com.apple.BackgroundTasks")`.
+      - Other apps log there too (the spike saw MobileCal's `Handling app launch`), so the metrics keep the app's processes.
+      - Those are the pids of `LAB point=didFinishLaunching`, which also covers a process that dies before JavaScript boots.
+    - **New metrics:**
+      - `bgRegistrations`: the framework's registrations per process, placed against its two launch lines: `launching`, `finished`, `late`, `unplaced`, or `rejected`.
+      - `sdkLaunchCalls`: where the host made its call.
+    - **`SUITE`** gains `ios-registration`.
+  - **The scenario, steps:**
+    - **`delegate`:** the install docs' call. It catches the flag's loss: +load's observer, which comes after, would register again and crash the app.
+    - **`scene`:** the call made late. It catches the same, for a call after +load's registration.
+    - **`none`:** no call, so only +load can register. It catches +load's loss: nothing would register.
+    - **`cold`:** terminate, then `fire: fetch`. The background launch registers too.
+    - Android is excused, dated.
+  - **Measured.** Hand runs on Lab1 (`FIX`) and Lab2 (`FIX-SPM`, built), then two pairs of sweeps, every step PASS in each:
+    - `20261111-112547` (`FIX`) and `20261111-112852` (`FIX-SPM`);
+    - after a comment-only change to `SceneDelegate.swift`, `20261111-113410` (`FIX`) and `20261111-113708` (`FIX-SPM`). The committed captures are these, with `ios-registration` on Lab1 in both.
+    - The ranges below are over all four sweeps.
+    - **`delegate`:**
+      - `registerForTaskWithIdentifier: com.transistorsoft.fetch`;
+      - the SDK's `[TSBackgroundFetch registerForTaskWithIdentifier: com.transistorsoft.fetchlab.task`, and the framework's line for it;
+      - all within 1 ms of the delegate's start, before it returned.
+      - Then `Application finished launching`, and no second registration.
+    - **`scene` and `none`:** the delegate returned, `Application finished launching` came, then the two registrations within 1 ms. The framework's observer runs before the SDK's in every launch.
+    - **`scene`:** the late call (24–33 ms after the launch) added no registration and no crash.
+    - **`Handling app launch` came after the scene connected in every launch:** 42–85 ms after the launch, with the scene at 14–35 ms. So `finished` alone does not mean +load: a call from `willConnect` lands before it too. `none` is the step that says +load.
+    - **`cold`:**
+      - the background launch had `argv=[]` and made the delegate call;
+      - registrations at +0–1 ms, the legacy fetch at 35–46 ms, `Handling app launch` at 42–55 ms;
+      - the fetch was delivered, `newData`.
+    - **The fetch identifier has no SDK line.** The SDK's registration of `com.transistorsoft.fetch` logs nothing of its own (`TSBackgroundFetch.m:87-95`; only custom tasks log, `TSBGTask.m:32`), so the framework's line is the only witness for it.
+    - **The `cold` step prints `LAB DEFECT: anchor tickGcp=on, the host expects off`.** The vendored schedule report prints it for the OS relaunch, whose driver has no arguments; `ios-fetch-sim`'s `cold` prints it too. It is not a verdict.
+  - **The other iOS cells, re-swept with the new host and tap:**
+    - `api-constants`, `ios-fetch-sim`, `ios-timeout-sim` and `ios-task-sim` PASS in all four sweeps. In the final pair the timeout came at 25.999 s (`FIX`) and 25.998 s (`FIX-SPM`).
+    - Their captures replace `ios-task-sim`'s. In both variants `ios-fetch-sim` and `ios-registration` are Lab1's, and the others Lab2's.
+  - **What this cannot show:**
+    - BGTaskScheduler launching the app for a task and running its handler at `Handling app launch`;
+    - whether a device's BackgroundTasks enforces anything the Simulator's does not;
+    - +load alone in a background launch, since no launch argument reaches that process.
+
+    The first two are the manual device tier (`ios-device-bgtask`).
+  - **Red paths are proven offline only:** no registration (`-`), a `late` one, and a second (`crashes` 1, from the spike's crash). No SDK was mutated; phase 4's mutation variants could do it.
+  - **Selftest:** 177 PASS. New checks: `bgRegistrations` and `sdkLaunchCalls` on a synthetic capture (all five places, the SDK's look-alike line and another app's lines left out), and the predicate. `vendor_check` PASS.
+  - **Still not done:** `api-smoke` on iOS (per-OS expectations), back-to-back bg-forge and fetch sweeps on iOS (Verification), and the other platforms' iOS hosts.

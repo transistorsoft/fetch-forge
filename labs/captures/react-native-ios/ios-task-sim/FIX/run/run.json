@@ -6,7 +6,7 @@
  "scenario": "ios-task-sim",
  "variant": "FIX",
  "step": "run",
- "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
+ "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
  "evicted": [],
  "foreignTransistorApps": [],
  "native": "4.1.1-master-5de5242",
@@ -26,7 +26,7 @@
   "dirty": "no"
  },
  "device": {
-  "model": "Lab1",
+  "model": "Lab2",
   "os": "iOS 27.2"
  },
  "activity": "",
@@ -38,49 +38,49 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 42.7,
-  "t0": 1794365590.03,
+  "step_s": 42.6,
+  "t0": 1794414929.837,
   "phases": {
-   "terminated": 0.09,
-   "others_stopped": 0.191,
-   "reset": 0.741,
-   "swept": 0.938,
-   "neutral_pre": 0.938,
-   "permissions": 0.938,
-   "sleep_end": 0.938,
-   "log_begun": 1.248,
+   "terminated": 0.084,
+   "others_stopped": 0.179,
+   "reset": 0.66,
+   "swept": 0.83,
+   "neutral_pre": 0.83,
+   "permissions": 0.83,
+   "sleep_end": 0.83,
+   "log_begun": 1.231,
    "launch_mark": 1.366,
-   "verdict_cleared": 1.482,
-   "launch": 1.601,
-   "settle_end": 11.606,
-   "trigger": 11.757,
-   "end": 42.201,
-   "runner_joined": 42.201,
-   "capture_mark": 42.35,
-   "pusher_joined": 42.35,
-   "log_ended": 42.603,
-   "log_written": 42.603,
-   "capture_extras": 42.603,
-   "db_pulled": 42.604,
-   "run_json": 42.665,
-   "judged": 42.694,
-   "verdict_pushed": 42.695,
-   "settled": 43.204,
-   "neutral_post": 43.204,
-   "terminated_post": 43.336
+   "verdict_cleared": 1.48,
+   "launch": 1.597,
+   "settle_end": 11.602,
+   "trigger": 11.741,
+   "end": 42.115,
+   "runner_joined": 42.115,
+   "capture_mark": 42.255,
+   "pusher_joined": 42.255,
+   "log_ended": 42.504,
+   "log_written": 42.504,
+   "capture_extras": 42.504,
+   "db_pulled": 42.505,
+   "run_json": 42.566,
+   "judged": 42.596,
+   "verdict_pushed": 42.596,
+   "settled": 43.097,
+   "neutral_post": 43.097,
+   "terminated_post": 43.221
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.245,
+    "s": 0.241,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 16,
-    "s": 2.544,
+    "s": 2.371,
     "bg_n": 2,
-    "bg_s": 0.259
+    "bg_s": 0.261
    },
    "_tap_text": {
     "n": 75,
@@ -90,7 +90,7 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.31,
+    "s": 0.401,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -102,19 +102,19 @@
    },
    "container": {
     "n": 7,
-    "s": 0.225,
+    "s": 0.219,
     "bg_n": 3,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.197,
+    "s": 0.169,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.253,
+    "s": 0.249,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -126,31 +126,31 @@
    },
    "fire_task": {
     "n": 2,
-    "s": 0.495,
+    "s": 0.497,
     "bg_n": 2,
-    "bg_s": 0.495
+    "bg_s": 0.497
    },
    "installed": {
     "n": 1,
-    "s": 0.101,
+    "s": 0.095,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.119,
+    "s": 0.117,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.678,
+    "s": 0.674,
     "bg_n": 2,
-    "bg_s": 0.259
+    "bg_s": 0.261
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.121,
+    "s": 0.115,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -162,9 +162,9 @@
    },
    "peek": {
     "n": 73,
-    "s": 0.106,
+    "s": 0.117,
     "bg_n": 73,
-    "bg_s": 0.106
+    "bg_s": 0.117
    },
    "permissions": {
     "n": 1,
@@ -174,13 +174,13 @@
    },
    "push_verdict": {
     "n": 5,
-    "s": 0.118,
+    "s": 0.116,
     "bg_n": 3,
     "bg_s": 0.002
    },
    "reset_app": {
     "n": 1,
-    "s": 0.437,
+    "s": 0.372,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -192,13 +192,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.43,
+    "s": 0.368,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.222,
+    "s": 0.207,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -207,7 +207,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.105
+   "boot": 3.069
   }
  },
  "measure_from": "launch",
@@ -250,12 +250,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.817,
-   "action1": 5.543
+   "action0": 1.784,
+   "action1": 5.479
   },
   "sent_s": {
-   "action0": 4.901,
-   "action1": 8.64
+   "action0": 4.843,
+   "action1": 8.537
   }
  },
  "network": null,
@@ -316,5 +316,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-10 21:53:52"
+ "when": "2026-11-11 11:36:12"
 }

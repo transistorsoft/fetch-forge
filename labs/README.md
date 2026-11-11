@@ -216,6 +216,27 @@ actions:
   - `sdkTasks`: the task identifiers the SDK lists at the step's end (the last tick's probe), `-` for none.
   - `driverTally` (both OSes): the driver's deliveries by kind and taskId, e.g.
     `fetch:com.transistorsoft.fetchlab.task=1`.
+- **Launch-handler registration (`ios-registration`):** BGTaskScheduler logs each registration in the app's own
+  process, under the `com.apple.BackgroundTasks` subsystem, which the log filter keeps. It logs
+  `registerForTaskWithIdentifier: <id>`, then `Application finished launching` and `Handling app launch` for the
+  launch. A step's `extras: {sdkLaunchCall: delegate|scene|none}` tells the host where to call the SDK's
+  `didFinishLaunching()`:
+  - `delegate` (the default, and what an OS launch with no arguments gets): in the app delegate, as the install
+    docs say;
+  - `scene`: in SceneDelegate, after the launch;
+  - `none`: not at all, leaving only the SDK's `+load` path.
+
+  The host logs `LAB point=didFinishLaunching … sdkLaunchCall=<value>` at each launch.
+  - `bgRegistrations`: each registration in the app's processes, placed against those two lines, e.g.
+    `com.transistorsoft.fetch:launching=1`. The places are:
+    - `launching`: before `Application finished launching`, so from the app delegate;
+    - `finished`: after it, before `Handling app launch` (the SDK's `+load` path);
+    - `late`: after `Handling app launch`;
+    - `unplaced`: a line the placing needs is missing;
+    - `rejected`: the identifier isn't in the Info.plist.
+
+    A second registration of one identifier crashes the app (BGTaskScheduler raises), so `crashes` catches it.
+  - `sdkLaunchCalls`: where the host made its call, e.g. `scene=1`; `-` for none.
 - **Not on iOS yet:** `api-smoke`'s JobScheduler expectations have no iOS counterpart.
 
 ## Pinning

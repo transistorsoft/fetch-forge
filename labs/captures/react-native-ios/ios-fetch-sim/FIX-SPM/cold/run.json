@@ -6,7 +6,7 @@
  "scenario": "ios-fetch-sim",
  "variant": "FIX-SPM",
  "step": "cold",
- "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
  "evicted": null,
  "foreignTransistorApps": null,
  "native": "4.1.1-master-5de5242",
@@ -26,7 +26,7 @@
   "dirty": "no"
  },
  "device": {
-  "model": "Lab2",
+  "model": "Lab1",
   "os": "iOS 27.2"
  },
  "activity": "",
@@ -39,56 +39,56 @@
  },
  "timings": {
   "step_s": 32.0,
-  "t0": 1794365741.769,
+  "t0": 1794415093.857,
   "phases": {
-   "terminated": 0.093,
-   "swept": 0.267,
-   "neutral_pre": 0.267,
-   "permissions": 0.267,
-   "sleep_end": 0.267,
-   "log_begun": 0.68,
-   "launch_mark": 0.818,
-   "verdict_cleared": 0.818,
-   "launch": 0.95,
-   "settle_end": 10.958,
-   "trigger": 11.106,
-   "end": 31.567,
-   "runner_joined": 31.567,
-   "capture_mark": 31.713,
-   "pusher_joined": 31.713,
-   "log_ended": 31.951,
-   "log_written": 31.952,
-   "capture_extras": 31.952,
-   "db_pulled": 31.952,
-   "run_json": 32.015,
-   "judged": 32.036,
-   "verdict_pushed": 32.036,
-   "settled": 32.54,
-   "neutral_post": 32.541,
-   "terminated_post": 32.676
+   "terminated": 0.094,
+   "swept": 0.295,
+   "neutral_pre": 0.295,
+   "permissions": 0.295,
+   "sleep_end": 0.295,
+   "log_begun": 0.695,
+   "launch_mark": 0.821,
+   "verdict_cleared": 0.821,
+   "launch": 0.951,
+   "settle_end": 10.956,
+   "trigger": 11.099,
+   "end": 31.583,
+   "runner_joined": 31.583,
+   "capture_mark": 31.704,
+   "pusher_joined": 31.704,
+   "log_ended": 31.938,
+   "log_written": 31.938,
+   "capture_extras": 31.938,
+   "db_pulled": 31.938,
+   "run_json": 31.996,
+   "judged": 32.018,
+   "verdict_pushed": 32.018,
+   "settled": 32.522,
+   "neutral_post": 32.522,
+   "terminated_post": 32.659
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.232,
+    "s": 0.228,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 12,
-    "s": 1.924,
+    "s": 1.907,
     "bg_n": 3,
-    "bg_s": 0.362
+    "bg_s": 0.363
    },
    "_tap_text": {
     "n": 58,
     "s": 0.016,
     "bg_n": 56,
-    "bg_s": 0.015
+    "bg_s": 0.016
    },
    "begin_log": {
     "n": 1,
-    "s": 0.414,
+    "s": 0.401,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.174,
+    "s": 0.201,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.238,
+    "s": 0.233,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,19 +124,19 @@
    },
    "launch": {
     "n": 1,
-    "s": 0.132,
+    "s": 0.13,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.652,
+    "s": 0.609,
     "bg_n": 2,
-    "bg_s": 0.221
+    "bg_s": 0.22
    },
    "native_resolved": {
     "n": 1,
-    "s": 0.005,
+    "s": 0.006,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -148,9 +148,9 @@
    },
    "peek": {
     "n": 56,
-    "s": 0.054,
+    "s": 0.059,
     "bg_n": 56,
-    "bg_s": 0.054
+    "bg_s": 0.059
    },
    "permissions": {
     "n": 1,
@@ -160,9 +160,9 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.154,
+    "s": 0.152,
     "bg_n": 1,
-    "bg_s": 0.154
+    "bg_s": 0.152
    },
    "push_verdict": {
     "n": 4,
@@ -178,22 +178,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.453,
+    "s": 0.476,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.369,
+    "s": 0.373,
     "bg_n": 1,
-    "bg_s": 0.141
+    "bg_s": 0.143
    }
   },
   "dialogs": [],
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 2.314
+   "boot": 2.33
   }
  },
  "measure_from": "launch",
@@ -234,12 +234,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.538,
-   "action1": 1.538
+   "action0": 1.528,
+   "action1": 1.528
   },
   "sent_s": {
-   "action0": 3.607,
-   "action1": 6.698
+   "action0": 3.568,
+   "action1": 6.624
   }
  },
  "network": null,
@@ -275,5 +275,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-10 21:56:13"
+ "when": "2026-11-11 11:38:45"
 }
