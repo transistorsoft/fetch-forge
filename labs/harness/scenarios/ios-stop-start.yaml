@@ -1,0 +1,74 @@
+name: ios-stop-start
+description: >
+  (WO-002 Tier 2) stop() and start() on iOS, with a background fetch after each, on the Simulator.  There BGTaskScheduler
+  is unavailable and the SDK falls back to the legacy API: configure() sets UIKit's minimum background fetch interval
+  (TSBackgroundFetch.m:117-122), and `fire: fetch` has SpringBoard send the app a legacy fetch (ios-fetch-sim).
+
+  stop() with no taskId (the bridge, RNBackgroundFetch.mm:86-97 at 85a6bf4) removes the plugin's listener, which, once
+  no listener is left, runs cancelBGAppRefresh (TSBackgroundFetch.m:288-290).  Its iOS 13+ branch only cancels the
+  BGTaskScheduler request (:140-145) and leaves the legacy interval set, so SpringBoard still fetches.  The SDK's
+  performFetchWithCompletionHandler then requests the fetch again (:182-183), holds UIKit's completion handler, and
+  hands the fetch to no listener; when its UIBackgroundTask expires, onTimeout finds none (TSBGAppRefreshSubscriber.m:
+  80-96) and the handler is never called (TSBackgroundFetch.m:188-196).
+
+  WHAT EACH STEP READS (from the launch):
+    * stopped: stop(), then a fetch 3 s later, the app in front.  It asserts what stop() should leave: no delivery to
+      the driver (driverEvents `-`), no new fetch request (bgSubmits: configure's alone), and UIKit's fetch ending
+      without error (springboardResults `NoNewDataAvailable=1`, which SpringBoard logs for an app whose interval is
+      Never, MEASURED 2026-11-10 in the D3 spike, and, INFERRED, for a completion with noData).  It does not say how
+      the SDK should get there.  MEASURED RED 2026-11-11 (Lab1, FIX): SpringBoard ran the fetch, UIKit called the
+      delegate, the SDK requested the fetch again (appRefresh=2), held the handler (`pendingFetch=true`) past its
+      UIBackgroundTask's expiry, and SpringBoard recorded `Error completing … invalid response (the process probably
+      exited)` and `with result: Error` 31.2 s after the delivery.  Simulator-only on iOS 13+: on a device configure()
+      takes BGTaskScheduler's path and never sets the legacy interval (NOT CHECKED where else BGTaskScheduler answers
+      Unavailable).
+    * restarted: stop(), then start(), then a fetch 3 s later.  start() re-adds the plugin's listener and requests the
+      fetch again (stop() had cleared fetchScheduled); the fetch reaches configure()'s callback, the driver finishes it
+      1 s later, and SpringBoard records `RetrievedNewData`.  bgSubmits counts configure's request, start()'s, and the
+      one the SDK makes on each fetch (:182-183): 3.  Unlike Android's stop-start (suspected defect 2), start() after
+      stop() works here: MEASURED 2026-11-11.
+platforms: [react-native]
+not_applicable:
+  android: "2026-11-11 — `fire:` is the Simulator's (a SpringBoard background fetch); Android's stop()/start() is
+    stop-start's (suspected defect 2)."
+measure_from: launch
+steps:
+  - name: stopped
+    settle: 10
+    after: 45
+    end: window
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+      - api: stop
+        returns: {$: {type: boolean, equals: true}}
+    actions:
+      - {after: {api: "stop#1"}, delay_s: 3, fire: fetch}
+    expect:
+      crashes: 0
+      bgCancels: "com.transistorsoft.fetch=1"
+      driverEvents: "-"
+      bgSubmits: "com.transistorsoft.fetch:appRefresh=1"
+      springboardResults: "NoNewDataAvailable=1"
+  - name: restarted
+    settle: 10
+    after: 20
+    end: window
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+      - api: stop
+        returns: {$: {type: boolean, equals: true}}
+      - api: start
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    actions:
+      - {after: {api: "start#2"}, delay_s: 3, fire: fetch}
+    expect:
+      crashes: 0
+      bgCancels: "com.transistorsoft.fetch=1"
+      bgSubmits: "com.transistorsoft.fetch:appRefresh=3"
+      driverEvents: "fetch=1"
+      driverFinishes: "fetch:ok=1"
+      legacyResults: "newData=1"
+      springboardResults: "RetrievedNewData=1"
+      sdkSubscribers: "react-native-background-fetch"
