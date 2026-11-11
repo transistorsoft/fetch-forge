@@ -947,7 +947,7 @@ def _fetch_metrics(m):
         """(api-smoke-ios) iOS: the requests the SDK asked BGTaskScheduler to cancel in the app's processes (its own
         `cancelTaskRequestWithIdentifier: <id>`), `<id>=n`: stop(taskId) cancels the task's (TSBGTask.m:192-199), and
         stop() cancels the fetch's once the plugin's listener, the last, is removed (TSBackgroundFetch.m:288-290,
-        :140-145).  Android's jobIds at the step's end is the counterpart.  '-' for none, and on Android."""
+        :142-145).  Android's jobIds at the step's end is the counterpart.  '-' for none, and on Android."""
         own = launch_pids(c)
         return tally([hit.group(1) for hit in (re.search(r"\): cancelTaskRequestWithIdentifier: (\S+)$", l.rstrip())
                                                for l in c.window if m.line_pid(l) in own) if hit])
