@@ -171,6 +171,35 @@ counts the SDK, `point=headless` and `point=task-` lines of every other process;
 because bg-forge's headless metrics read those lines from every process and its contamination check
 does not see them.
 
+## Host actions and metrics (iOS)
+
+(WO-002 phase 2a, D3) The Simulator has no JobScheduler and no usable BGTaskScheduler.  A fetch is fired the way
+SpringBoard sends one: `xcrun simctl push <udid> <bundle>` with `{"aps":{"content-available":1}}` makes it deliver
+UIKit's legacy background fetch, which the app's AppDelegate forwards to the SDK.  It works in the foreground,
+suspended, and not running.  Three action kinds, iOS only, so a scenario using one excuses android:
+
+```yaml
+actions:
+  - {after: {api: "status#0"}, delay_s: 3, fire: fetch}          # simctl push: exit 0, or 121 "no user visible content"
+  - {after: {api: "status#0"}, delay_s: 2, background: true}     # Settings launched over the app (suspended within 1 s)
+  - {after: {api: "status#0"}, delay_s: 2, terminate: true}      # simctl terminate: the next `fire` launches it
+```
+
+- **Relaunches:** a boot that follows the step's own `terminate` is the app relaunched in the background, not
+  another lab's app.  The pack's wrap of `devices.contamination` excuses one boot per terminate, and every other
+  finding stands.
+- **Counts:** `fetchReceived` and `fetchFinished` count the iOS SDK's own lines on iOS
+  (`[TSBackgroundFetch performFetchWithCompletionHandler]`, `[TSBackgroundFetch finish] … (n of m)`).  The Android-only
+  counts read `-` there.
+- **New metrics, iOS only:**
+  - `legacyFetchStates`: the app state at each delivery, e.g. `background=1`.
+  - `legacyResults`: what UIKit's completion handler was given, e.g. `newData=1`.
+  - `springboardResults`: SpringBoard's own record of the result, e.g. `RetrievedNewData=1`. The log filter keeps
+    SpringBoard's `SBBackgroundFetchTask` lines for this.
+  - `legacyTimeoutAfterMs`: ms from delivery to the driver's `event=timeout`.
+- **Not on iOS yet:** a custom task has no route there (no BGTaskScheduler on the Simulator), and `api-smoke`'s
+  JobScheduler expectations have no iOS counterpart.
+
 ## Pinning
 
 The native SDK a variant tests is a label in `labs/m2` (Android) and `labs/xcframeworks` (iOS), built from a recorded commit:
