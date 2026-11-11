@@ -754,8 +754,34 @@ def test_ios_phase2a(tmp):
                 outcomes.append("refused exit=" + re.search(r"exited (\d+)", str(e)).group(1))
         answer = [(0, "")]
         background = dev.to_background(plat)
+        n = len(calls)
+        fired = [dev.fire_task(plat, "task", "com.transistorsoft.fetchlab.task")]
+        answer = [(1, "notifyutil: bad name\n")]
+        try:
+            fired.append(dev.fire_task(plat, "task-timeout", "com.transistorsoft.fetchlab.task"))
+        except SystemExit as e:
+            fired.append("refused exit=" + re.search(r"exited (\d+)", str(e)).group(1))
+        fired.append(calls[n])
+        del calls[n:]                                   # the push_fetch check below reads calls[-1]: to_background's
     finally:
         labkit.device_call = saved
+    check("(ios-task-sim) Simctl.fire_task posts the Darwin notification `<bundle>/<kind>/<taskId>` LabModule observes "
+          "(`simctl spawn <udid> notifyutil -p`); a failed post refuses",
+          fired, ["fire task taskId=com.transistorsoft.fetchlab.task", "refused exit=1",
+                  ["xcrun", "simctl", "spawn", "UDID-1", "notifyutil", "-p",
+                   "com.transistorsoft.fetchlab.react/task/com.transistorsoft.fetchlab.task"]])
+    verdicts = []
+    for item in ({"fire": "fetch"}, {"fire": "task", "taskId": "com.transistorsoft.fetchlab.task"},
+                 {"fire": "task-timeout", "taskId": "com.transistorsoft.fetchlab.task"}, {"fire": "task"},
+                 {"fire": "fetch", "taskId": "x"}, {"fire": "processing", "taskId": "x"},
+                 {"fire": "task", "taskId": "a b"}):
+        try:
+            verdicts.append(fetch_pack._fire_ok("at", item, {}))
+        except SystemExit as e:
+            verdicts.append(str(e).split(": ", 1)[1].split(" ")[0])
+    check("(ios-task-sim) `fire:` is fetch, or task / task-timeout with a `taskId:` (an identifier); a taskId on a "
+          "fetch, a task without one, another kind and a malformed id refuse",
+          verdicts, [0, 0, 0, "`fire:", "`taskId:`", "`fire:`", "`taskId:`"])
     check("Simctl.push_fetch: `simctl push <udid> <bundle> <payload>`; exit 0, and 121 only with simctl's "
           "no-visible-content message, are a fired fetch; anything else refuses",
           ([a[:5] for a in calls[:1]], outcomes, background, calls[-1]),
@@ -771,6 +797,13 @@ def test_ios_phase2a(tmp):
         lines = [L(1.0, "I", "LAB     ", 100, "point=launch label=x"),
                  L(1.1, "I", "LAB     ", 500, "app=boot n=1 args={}"),
                  L(2.0, "I", "LAB     ", 100, "point=trigger none"),
+                 L(2.5, "I", "TSBackgroundFetch", 500, "[TSBackgroundFetch scheduleTask] ERROR:  Failed to submit task "
+                   "request: Error Domain=BGTaskSchedulerErrorDomain Code=1 \"(null)\""),
+                 L(2.6, "I", "LAB     ", 500, "app=tick n=1 boot=1 status=2 headless=- tasks=t1 pendingFetch=false"),
+                 L(2.7, "I", "LAB     ", 500, "point=fire kind=task taskId=t1 found=true ran=true"),
+                 L(2.71, "I", "LAB     ", 500, "app=event=fetch n=1 taskId=t1"),
+                 L(2.8, "I", "LAB     ", 500, "point=fire kind=task taskId=t1 found=false ran=false"),
+                 L(2.9, "I", "LAB     ", 500, "point=fire kind=task-timeout taskId=t2 found=true ran=false"),
                  L(3.0, "I", "SpringBoard", 50, "Executing <" + sb % ("com.transistorsoft.fetchlab.react", 3)),
                  L(3.01, "I", "LAB     ", 500, "point=legacyFetch state=background remaining=30.0"),
                  L(3.02, "I", "TSBackgroundFetch", 500, "[TSBackgroundFetch performFetchWithCompletionHandler]"),
@@ -783,6 +816,7 @@ def test_ios_phase2a(tmp):
                  L(4.1, "I", "TSBackgroundFetch", 500, "[TSBackgroundFetch finish] x Called without a task to finish.  "
                    "Ignoring."),                                                           # not a finish
                  L(29.01, "I", "LAB     ", 500, "app=event=timeout n=1 taskId=react-native-background-fetch"),
+                 L(30.0, "I", "LAB     ", 500, "app=tick n=9 boot=1 status=2 headless=- tasks=- pendingFetch=false"),
                  L(35.0, "I", "LAB     ", 100, "point=capture")]
         with open(os.path.join(out, "logcat.txt"), "w") as f:
             f.write("\n".join(lines) + "\n")
@@ -798,6 +832,12 @@ def test_ios_phase2a(tmp):
           "iOS lines count nothing",
           ([labkit.METRICS[n](ios) for n in names], [labkit.METRICS[n](android) for n in names[:3]]),
           ([1, 1, "-", "background=1", "newData=1", "RetrievedNewData=1", 26000], [0, 0, 0]))
+    tasks = ("taskFires", "taskSubmitErrors", "driverTally", "sdkTasks")
+    check("(ios-task-sim) the custom-task metrics: the hook's fires by outcome (ran, missing, noCallback), why the "
+          "SDK could not submit, the driver's deliveries by taskId, and the last tick's task list",
+          [labkit.METRICS[n](ios) for n in tasks],
+          ["task-timeout:noCallback=1,task:missing=1,task:ran=1", "BGTaskSchedulerErrorDomain:1=1",
+           "fetch:t1=1,timeout:react-native-background-fetch=1", "-"])
 
 
 def test_relaunch():

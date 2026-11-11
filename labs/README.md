@@ -197,8 +197,26 @@ actions:
   - `springboardResults`: SpringBoard's own record of the result, e.g. `RetrievedNewData=1`. The log filter keeps
     SpringBoard's `SBBackgroundFetchTask` lines for this.
   - `legacyTimeoutAfterMs`: ms from delivery to the driver's `event=timeout`.
-- **Not on iOS yet:** a custom task has no route there (no BGTaskScheduler on the Simulator), and `api-smoke`'s
-  JobScheduler expectations have no iOS counterpart.
+- **Custom tasks (`ios-task-sim`):** BGTaskScheduler can't launch one on the Simulator, so the lab app has a hook.
+  `scheduleTask` rejects there, but the SDK has already listed the task with its callback.
+  `fire: task` / `fire: task-timeout` with a `taskId:` posts a Darwin notification, `<bundle>/<kind>/<taskId>`
+  (`simctl spawn <udid> notifyutil -p`). LabModule observes one for each task identifier the app's Info.plist
+  permits, and calls that task's `execute` or `onTimeout`, as BGTaskScheduler and the expiration handler do on a
+  device. A suspended app gets the notification only when it next resumes, so these steps keep the app in front.
+
+  ```yaml
+  - {after: {api: "scheduleTask#1"}, delay_s: 3, fire: task, taskId: com.transistorsoft.fetchlab.task}
+  - {after: {event: configure@0}, delay_s: 5, fire: task-timeout, taskId: com.transistorsoft.fetchlab.task}
+  ```
+
+  - `taskFires`: what the hook did with each fire, e.g. `task:ran=1,task:missing=1` (`missing`: no such task, e.g.
+    its finish destroyed it; `noCallback`: listed with no callback).
+  - `taskSubmitErrors`: why the SDK couldn't submit, e.g. `BGTaskSchedulerErrorDomain:1=1` (the Simulator's
+    Unavailable). `TSBackgroundFetch:0=1` would mean an identifier the Info.plist doesn't permit.
+  - `sdkTasks`: the task identifiers the SDK lists at the step's end (the last tick's probe), `-` for none.
+  - `driverTally` (both OSes): the driver's deliveries by kind and taskId, e.g.
+    `fetch:com.transistorsoft.fetchlab.task=1`.
+- **Not on iOS yet:** `api-smoke`'s JobScheduler expectations have no iOS counterpart.
 
 ## Pinning
 

@@ -54,6 +54,10 @@ IOS_SDK_PREFIX = "[TSB"
 # simctl push's exit when the payload has nothing for a notification to show (it has already sent the fetch).
 IOS_FETCH_TASK = "SBBackgroundFetchTask"
 PUSH_NO_CONTENT_EXIT = 121
+# (ios-task-sim) `fire:` kinds, and the Darwin notification the custom-task kinds post: `<bundle>/<kind>/<taskId>`, the
+# names the lab app's LabModule observes (LabObserveFires).
+FIRE_KINDS = ("fetch", "task", "task-timeout")
+DARWIN_FIRE = "%s/%s/%s"
 NATIVE_PROJECT = "TSBackgroundFetch"                # PROJECT:TSBackgroundFetch-<build> (apple-generic versioning)
 ANDROID_ARTIFACT = "tsbackgroundfetch"              # labs/m2/com/transistorsoft/tsbackgroundfetch/<label>
 XCFRAMEWORK = "TSBackgroundFetch.xcframework"       # labs/xcframeworks/<label>/TSBackgroundFetch.xcframework
@@ -77,7 +81,7 @@ HEADLESS_NAMES = ("fetch", "timeout")
 SUITE = ["termination-calibration", "api-smoke", "events-fetch-android",
          "api-constants", "events-initial-ignored", "events-duplicate", "events-task-android", "events-timeout-sdk",
          "stop-on-terminate", "headless-kill", "headless-activity-destroyed", "recreate-foreground-android",
-         "ios-fetch-sim", "ios-timeout-sim"]                      # (WO-002 phase 2a) iOS's, n/a on Android
+         "ios-fetch-sim", "ios-timeout-sim", "ios-task-sim"]      # (WO-002 phase 2a) iOS's, n/a on Android
 LISTS = {}
 
 OVERRIDES = []                                      # (symbol, kind, seam, why) — the Phase B cut list
@@ -362,6 +366,20 @@ def _backends(m):
         raise SystemExit("simctl push %s exited %d: %s" % (plat["package"], r.returncode, said[-300:]))
     _extend(m.Simctl, "push_fetch", push_fetch)
 
+    def fire_task(self, plat, kind, task_id):
+        """(ios-task-sim) The custom-task hook: a Darwin notification, `<bundle>/<kind>/<taskId>`, which the lab app's
+        LabModule observes for each permitted task identifier and answers with the TSBGTask's `execute` (`task`) or
+        `onTimeout` (`task-timeout`), logging `LAB point=fire kind= taskId= found= ran=`.  notifyutil cannot know
+        whether anyone observed it: the app's line is the evidence (taskFires).  A suspended app gets it only at its
+        next resume (the D3 spike), so the step keeps the app in the foreground."""
+        name = DARWIN_FIRE % (plat["package"], kind, task_id)
+        r = labkit.device_call(["xcrun", "simctl", "spawn", self.serial, "notifyutil", "-p", name], timeout=30)
+        if r.returncode != 0:
+            raise SystemExit("notifyutil -p %s exited %d: %s" % (name, r.returncode,
+                                                                 ((r.stdout or "") + (r.stderr or "")).strip()[-300:]))
+        return "fire %s taskId=%s" % (kind, task_id)
+    _extend(m.Simctl, "fire_task", fire_task)
+
     def to_background(self, plat):
         """The app to the background, as a user leaving it would: another app (Settings) launched over it.  The
         Simulator suspends a backgrounded app within 1 s (MEASURED 2026-11-10); a pushed fetch then resumes it."""
@@ -378,7 +396,8 @@ def _backends(m):
         _extend(m.Simctl, name, refuse)
     return ["SDK_TAG", "SDK_SUBSYSTEM", "to_logcat", "Adb.sdk_db", "Simctl.sdk_db", "PERMISSIONS",
             "FLAG_PERMISSIONS", "PRIVACY", "SDK_ALERT_TITLES", "Simctl.permissions", "Simctl.native_resolved",
-            "Adb.job", "Adb.force_stop", "Simctl.job", "Simctl.force_stop", "Simctl.push_fetch", "Simctl.to_background"]
+            "Adb.job", "Adb.force_stop", "Simctl.job", "Simctl.force_stop", "Simctl.push_fetch", "Simctl.fire_task",
+            "Simctl.to_background"]
 
 
 seam("backends.SDK_TAG", "data", "backends.py:40", "fetch's logcat tag, TSBackgroundFetch")
@@ -527,10 +546,12 @@ def _register(m):
         plat, item["job"], item.get("expect", "present"), item.get("unspaced")), keys=("expect", "unspaced")))
     _extend(m.ACTION_HANDLERS, "force_stop", m.ActionHandler(
         _force_stop_ok, lambda dev, item, plat, server: dev.force_stop(plat), keys=("expect",)))
-    # (WO-002 phase 2a, D3) iOS's: a fetch fired through SpringBoard (`simctl push`), the app sent to the background,
-    # and the app terminated (so a later `fire` launches it in the background).  A scenario using one excuses android.
+    # (WO-002 phase 2a, D3) iOS's: a fetch fired through SpringBoard (`simctl push`) or a custom task through the lab
+    # app's hook (a Darwin notification, ios-task-sim), the app sent to the background, and the app terminated (so a
+    # later `fire` launches it in the background).  A scenario using one excuses android.
     _extend(m.ACTION_HANDLERS, "fire", m.ActionHandler(
-        _fire_ok, lambda dev, item, plat, server: dev.push_fetch(plat), oses=("ios",)))
+        _fire_ok, lambda dev, item, plat, server: dev.push_fetch(plat) if item["fire"] == "fetch"
+        else dev.fire_task(plat, item["fire"], item["taskId"]), oses=("ios",), keys=("taskId",)))
     _extend(m.ACTION_HANDLERS, "background", m.ActionHandler(
         _flag_ok("background"), lambda dev, item, plat, server: dev.to_background(plat), oses=("ios",)))
     _extend(m.ACTION_HANDLERS, "terminate", m.ActionHandler(
@@ -604,11 +625,19 @@ def _job_ok(at, item, step):
 
 
 def _fire_ok(at, item, step):
-    """(WO-002 phase 2a) `fire: fetch`: the one kind of event SpringBoard sends on the Simulator (a custom task has no
-    such route; BGTaskScheduler is unavailable there)."""
-    if item["fire"] != "fetch":
-        raise SystemExit("%s: `fire:` is `fetch` (a SpringBoard background fetch through `simctl push`), not %r"
-                         % (at, item["fire"]))
+    """(WO-002 phase 2a) `fire: fetch`: the one kind of event SpringBoard sends on the Simulator.  A custom task has no
+    such route (BGTaskScheduler is unavailable there), so `fire: task` and `fire: task-timeout` take a `taskId:` and go
+    through the lab app's hook (Simctl.fire_task)."""
+    if item["fire"] not in FIRE_KINDS:
+        raise SystemExit("%s: `fire:` is `fetch` (a SpringBoard background fetch through `simctl push`), or `task` / "
+                         "`task-timeout` with a `taskId:` (the lab app's custom-task hook) — not %r" % (at, item["fire"]))
+    if item["fire"] == "fetch" and "taskId" in item:
+        raise SystemExit("%s: `taskId:` goes with `fire: task` and `fire: task-timeout`, not `fire: fetch`" % at)
+    if item["fire"] != "fetch" and "taskId" not in item:
+        raise SystemExit("%s: `fire: %s` needs a `taskId:`" % (at, item["fire"]))
+    if item["fire"] != "fetch" and not (isinstance(item["taskId"], str) and re.match(r"^[\w.-]+$", item["taskId"])):
+        raise SystemExit("%s: `taskId:` is a task identifier (letters, digits, `.`, `_`, `-`), not %r"
+                         % (at, item["taskId"]))
     return 0
 
 
@@ -669,7 +698,8 @@ seam("labkit.HEADLESS_NAMES", "hook", "labkit.py:3613-3618",
      "fetch and timeout (HEADLESS_NAMES): the vocabulary carries no Event enum any more")
 seam("labkit.METRICS", "extend", "labkit.py:3445-3451 (the registry: no override)",
      "fetch's metrics: SDK-line counts, fetchTally, jobIds, jobsRegistered, configureOutcome; (Tier 1) jobStops, "
-     "jobsCancelled, React Native HeadlessTask counts, driverEvents/driverFinishes, appProcesses, timing metrics")
+     "jobsCancelled, React Native HeadlessTask counts, driverEvents/driverTally/driverFinishes, appProcesses, timing "
+     "metrics; (phase 2a) the iOS legacy-fetch and custom-task metrics")
 seam("labkit.IMPLICIT / EARLY_METRICS", "hook", "labkit.py:4548, :4571",
      "adds `configureOutcome: ok` and `foreignLines: 0` to every step that expects anything, both early (whole-log) "
      "metrics, in place")
@@ -810,6 +840,38 @@ def _fetch_metrics(m):
         timed = next((ms(l) for l in c.window if " app=event=timeout " in l), None)
         return timed - fetched if fetched is not None and timed is not None else "-"
     _extend(m.METRICS, "legacyTimeoutAfterMs", legacyTimeoutAfterMs)
+
+    def taskFires(c):
+        """(ios-task-sim) iOS: what the lab app's custom-task hook did with each `fire: task|task-timeout` (LabModule's
+        `LAB point=fire kind=<k> taskId=<id> found=<b> ran=<b>`), `<kind>:<ran|noCallback|missing>=n`: ran (the task's
+        execute / onTimeout called its callback), noCallback (the task is listed with no callback), missing (no such
+        task, e.g. finish() destroyed it); '-' for none, and on Android."""
+        out = []
+        for l in c.window:
+            if " point=fire kind=" in l:
+                found, ran = re.search(r"\bfound=(\w+)", l), re.search(r"\bran=(\w+)", l)
+                out.append("%s:%s" % (re.search(r"\bkind=(\S+)", l).group(1),
+                                      "missing" if not found or found.group(1) != "true"
+                                      else "ran" if ran and ran.group(1) == "true" else "noCallback"))
+        return tally(out)
+    _extend(m.METRICS, "taskFires", taskFires)
+
+    def taskSubmitErrors(c):
+        """(ios-task-sim) iOS: why the SDK could not submit a custom task (`[TSBackgroundFetch scheduleTask] ERROR:
+        Failed to submit task request: Error Domain=<d> Code=<n> …`, TSBackgroundFetch.m:253-255), `<domain>:<code>=n`:
+        `BGTaskSchedulerErrorDomain:1` is the Simulator's (BGTaskSchedulerErrorCodeUnavailable); `TSBackgroundFetch:0`
+        would be a task identifier the app's Info.plist does not permit (TSBGTask.m:155-157).  '-' for none, and on
+        Android."""
+        return tally(["%s:%s" % h.groups() for h in (re.search(r"Error Domain=(\S+) Code=(-?\d+)", l)
+                                                     for l in c.sdk("%Failed to submit task request:%")) if h])
+    _extend(m.METRICS, "taskSubmitErrors", taskSubmitErrors)
+
+    def sdkTasks(c):
+        """(ios-task-sim) iOS: the custom tasks the SDK lists at the step's end (TSBGTask's list, the probe's `tasks=`
+        in the last tick), sorted: '-' for none — a non-periodic task is gone after its finish (TSBGTask.m:250-260).
+        `no-probe` where no tick carries the field (Android's probe has none)."""
+        return c.last_state("tasks", "no-probe")
+    _extend(m.METRICS, "sdkTasks", sdkTasks)
 
     def fetchTally(c):
         """(WO-002) Fetch events the SDK received, `taskId=n,…` sorted ('-' for none): recorded, for the taskIds a step
@@ -958,6 +1020,13 @@ def _fetch_metrics(m):
         return tally([hit.group(1) for hit in (re.search(m.TAG + r" app=event=(fetch|timeout) ", n)
                                                for _, n in own_window(c)) if hit])
 
+    def driverTally(c):
+        """(ios-task-sim) The foreground driver's deliveries by kind and taskId, `<fetch|timeout>:<taskId>=n` ('-'
+        none): which task each `app=event=… taskId=<id>` line was for.  fetchTally is the Android SDK's view; this one
+        reads the driver, so it holds on both OSes."""
+        return tally(["%s:%s" % (hit.group(1), c.field(n, "taskId")) for hit, n in
+                      ((re.search(m.TAG + r" app=event=(fetch|timeout) ", n), n) for _, n in own_window(c)) if hit])
+
     def driverFinishes(c):
         """(WO-002 Tier 1) How the foreground driver finished each delivery, `<fetch|timeout>:<outcome>=n` ('-'
         none): its `app=finish taskId=… timeout=<bool> … outcome=<ok|withheld|threw>` lines (index.js onDelivery;
@@ -1017,8 +1086,8 @@ def _fetch_metrics(m):
         return tally(keys)
 
     for fn in (fetchTally, jobIds, jobsRegistered, configureOutcome, jobsAtForceStop, bootBroadcasts, foreignLines,
-               jobStops, jobsCancelled, rnHeadlessErrors, headlessNoTask, driverEvents, driverFinishes, appProcesses,
-               fetchTimeoutSkewMs, headlessLatencyMs, lifecycleTally):
+               jobStops, jobsCancelled, rnHeadlessErrors, headlessNoTask, driverEvents, driverTally, driverFinishes,
+               appProcesses, fetchTimeoutSkewMs, headlessLatencyMs, lifecycleTally):
         _extend(m.METRICS, fn.__name__, fn)
 
 
