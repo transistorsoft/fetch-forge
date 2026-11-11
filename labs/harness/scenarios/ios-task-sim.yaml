@@ -1,0 +1,83 @@
+name: ios-task-sim
+description: >
+  (WO-002 phase 2a, D3) A custom task on the iOS Simulator, through the lab app's hook.  BGTaskScheduler is unavailable
+  on the Simulator, so scheduleTask's submit fails and the promise rejects (an expected rejection there, WO-002 "Not an
+  acceptable shortcut"); but the SDK has already listed the TSBGTask, with the plugin's callback, before the submit
+  (TSBackgroundFetch.m:241-252, TSBGTask.m:119-133).  `fire: task` posts a Darwin notification that LabModule answers
+  with that task's `execute`, as BGTaskScheduler's launch handler does on a device (TSBGTask.m:203-219); `fire:
+  task-timeout` calls its `onTimeout`, as the task's expiration handler does.  Either reaches configure()'s callbacks
+  through the plugin's task callback (RNBackgroundFetch.mm:168-176), and the driver finishes it; finish() completes
+  the task and destroys a non-periodic one (TSBackgroundFetch.m:325-341, TSBGTask.m:250-260).
+
+  What the Simulator cannot show: BGTaskScheduler launching the task, its expiration handler firing on its own, and
+  what setTaskCompletedWithSuccess tells the system.  That is the manual device tier (ios-device-bgtask).
+
+  WHAT THE STEPS READ (from the launch):
+    * run: scheduleTask rejects, for BGTaskSchedulerErrorDomain code 1 (Unavailable), not for an unpermitted
+      identifier (TSBackgroundFetch:0).  The fire (scheduleTask + 3 s) runs the task: one delivery of
+      `com.transistorsoft.fetchlab.task` to configure@0, finished after 1 s.  A second fire after the delivery finds
+      no task: the finish destroyed it, and the probe lists none at the end.  No legacy fetch (fetchReceived 0).
+    * timeout: the finish withheld, then `fire: task-timeout` 5 s after the delivery: onTimeout's delivery goes to the
+      declaration's onTimeout (`errors: true`), the driver finishes it there (finishOnTimeout), and the task is gone.
+platforms: [react-native]
+not_applicable:
+  android: "2026-11-10 — `fire: task` is the Simulator's lab hook (a Darwin notification into LabModule); Android's custom
+    task is fired through JobScheduler, events-task-android's."
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 30
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        outcome: rejected
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 1
+        max: 1
+        returns: {$: {type: string, equals: com.transistorsoft.fetchlab.task}}
+    actions:
+      - {after: {api: "scheduleTask#1"}, delay_s: 3, fire: task, taskId: com.transistorsoft.fetchlab.task}
+      - {after: {event: configure@0}, delay_s: 3, fire: task, taskId: com.transistorsoft.fetchlab.task}
+    expect:
+      crashes: 0
+      taskSubmitErrors: "BGTaskSchedulerErrorDomain:1=1"
+      taskFires: "task:missing=1,task:ran=1"
+      driverEvents: "fetch=1"
+      driverTally: "fetch:com.transistorsoft.fetchlab.task=1"
+      driverFinishes: "fetch:ok=1"
+      fetchReceived: 0
+      sdkTasks: "-"
+  - name: timeout
+    settle: 10
+    after: 30
+    extras: {withholdFinish: true}
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        outcome: rejected
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 1
+        max: 1
+        errors: true
+        returns: {$: {type: string, equals: com.transistorsoft.fetchlab.task}}
+    actions:
+      - {after: {api: "scheduleTask#1"}, delay_s: 3, fire: task, taskId: com.transistorsoft.fetchlab.task}
+      - {after: {event: configure@0}, delay_s: 5, fire: task-timeout, taskId: com.transistorsoft.fetchlab.task}
+    expect:
+      crashes: 0
+      taskSubmitErrors: "BGTaskSchedulerErrorDomain:1=1"
+      taskFires: "task-timeout:ran=1,task:ran=1"
+      driverEvents: "fetch=1,timeout=1"
+      driverTally: "fetch:com.transistorsoft.fetchlab.task=1,timeout:com.transistorsoft.fetchlab.task=1"
+      driverFinishes: "fetch:withheld=1,timeout:ok=1"
+      fetchReceived: 0
+      sdkTasks: "-"

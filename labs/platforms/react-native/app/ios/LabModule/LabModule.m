@@ -95,8 +95,53 @@ static NSDictionary *LabKnobs(NSDictionary *argv) {
 /// The Android counter lives on MainActivity; the JavaScript context is what boots here.
 static NSInteger sJsBoots = 0;
 
+/// (WO-002, ios-task-sim) The custom-task hook.  BGTaskScheduler is unavailable on the Simulator, so nothing launches
+/// a TSBGTask there; but scheduleTask has already put the task, with the plugin's callback, in TSBGTask's list before
+/// its submit fails (TSBackgroundFetch.m:241-252, TSBGTask.m:119-133).  The host's `fire: task` / `fire: task-timeout`
+/// posts a Darwin notification, `<bundle id>/<kind>/<taskId>` (`simctl spawn <udid> notifyutil -p`), and this calls
+/// that task's `execute` or `onTimeout`, as BGTaskScheduler's launch handler and the task's expiration handler do on a
+/// device (TSBGTask.m:203-219).  One pair of names per permitted task identifier other than the fetch's (a Darwin
+/// notification carries no payload).  A notification reaches a foreground app at once and a suspended one only at
+/// its next resume (MEASURED 2026-11-10, WO-002 Log, the D3 spike).
+static char kLabFireObserver;
+
+static void LabFire(CFNotificationCenterRef center, void *observer, CFNotificationName name, const void *object,
+                    CFDictionaryRef info) {
+  NSString *rest = [(__bridge NSString *)name substringFromIndex:[NSBundle mainBundle].bundleIdentifier.length + 1];
+  NSRange slash = [rest rangeOfString:@"/"];
+  NSString *kind = [rest substringToIndex:slash.location];
+  NSString *taskId = [rest substringFromIndex:NSMaxRange(slash)];
+  Class c = NSClassFromString(@"TSBGTask");
+  SEL get = NSSelectorFromString(@"get:");
+  id task = (c && [c respondsToSelector:get]) ? ((id (*)(id, SEL, id))[c methodForSelector:get])(c, get, taskId) : nil;
+  SEL run = NSSelectorFromString([kind isEqualToString:@"task-timeout"] ? @"onTimeout" : @"execute");
+  // NO from either: the task has no callback (loaded from the defaults, never scheduled in this process).
+  BOOL ran = [task respondsToSelector:run] && ((BOOL (*)(id, SEL))[task methodForSelector:run])(task, run);
+  NSLog(@"LAB point=fire kind=%@ taskId=%@ found=%@ ran=%@", kind, taskId, task ? @"true" : @"false",
+        ran ? @"true" : @"false");
+}
+
+static void LabObserveFires(void) {
+  static dispatch_once_t once;
+  dispatch_once(&once, ^{
+    NSString *bundle = [NSBundle mainBundle].bundleIdentifier;
+    NSMutableArray *armed = [NSMutableArray array];
+    for (NSString *taskId in [[NSBundle mainBundle] objectForInfoDictionaryKey:@"BGTaskSchedulerPermittedIdentifiers"]) {
+      if ([taskId isEqualToString:@"com.transistorsoft.fetch"]) continue;   // the fetch: `fire: fetch`, simctl push
+      for (NSString *kind in @[@"task", @"task-timeout"]) {
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), &kLabFireObserver, LabFire,
+                                        (__bridge CFStringRef)[NSString stringWithFormat:@"%@/%@/%@", bundle, kind, taskId],
+                                        NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+      }
+      [armed addObject:taskId];
+    }
+    NSLog(@"LAB point=fireArmed taskIds=%@", armed.count ? [armed componentsJoinedByString:@","] : @"-");
+  });
+}
+
 RCT_EXPORT_METHOD(args:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
 {
+  LabObserveFires();
   // A fatal JavaScript error must end the process, as it does on Android (useDevSupport false: the release
   // DevSupportManager rethrows it -> FATAL EXCEPTION -> `crashes`).  A Debug iOS build only shows a RedBox, so a
   // crash would score 0 here.  args() is the first thing the driver awaits: install before it.
