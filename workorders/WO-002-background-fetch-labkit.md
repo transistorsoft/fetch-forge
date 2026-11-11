@@ -920,3 +920,43 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   - **Red paths are proven offline only:** no registration (`-`), a `late` one, and a second (`crashes` 1, from the spike's crash). No SDK was mutated; phase 4's mutation variants could do it.
   - **Selftest:** 177 PASS. New checks: `bgRegistrations` and `sdkLaunchCalls` on a synthetic capture (all five places, the SDK's look-alike line and another app's lines left out), and the predicate. `vendor_check` PASS.
   - **Still not done:** `api-smoke` on iOS (per-OS expectations), back-to-back bg-forge and fetch sweeps on iOS (Verification), and the other platforms' iOS hosts.
+- 2026-11-11 — **`api-smoke-ios`: `api-smoke`'s hooks on iOS, MEASURED on both channels** (uncommitted, awaiting Chris's diff review). Branch `feat/WO-002-api-smoke-ios`, from `master` `4fa5467`. Chris chose it ("api-smoke on iOS").
+  - **The per-OS design: a scenario per OS, as bg-forge does** (`api-config-invalid-ios` / `-android`, `api-roundtrip-ios` / `-android`).
+    - Each one marks the other OS not applicable, so the vendored harness needs no change.
+    - Per-OS expectations alone would not have been enough: on iOS a hook's outcome differs too (`scheduleTask` rejects on the Simulator).
+    - A per-OS `expect` key would have needed a bg-forge work order first (the vendored scenario loader refuses unknown keys, `labkit.py:66`).
+    - `api-smoke` keeps Android, its iOS reason re-dated to point at `api-smoke-ios`.
+  - **The hooks, `api-smoke`'s, with one difference:**
+    - `scheduleTask` takes the identifier the iOS host's Info.plist permits (`com.transistorsoft.fetchlab.task`), with `outcome: rejected`.
+    - With `api-smoke`'s `…fetchlab.smoke`, a rejection could have been the app's misconfiguration rather than the Simulator's Unavailable.
+  - **What the iOS bridge does** (`RNBackgroundFetch.mm` at `85a6bf4`):
+    - `start()` resolves only when `backgroundRefreshStatus` is Available, and rejects otherwise (`:65-84`).
+    - `stop()` and `stop(taskId)` resolve `YES` whatever the SDK did (`:86-97`).
+    - `stop()` also removes the plugin's listener, which cancels the fetch request once no listener is left (`TSBackgroundFetch.m:288-290`, `:140-145`).
+    - `stop(taskId)` destroys the TSBGTask and cancels its request (`TSBGTask.m:192-199`).
+  - **New metrics** (iOS; `-` / `no-probe` on Android). The first two read BGTaskScheduler's own lines in the app's processes, which ios-registration's log filter already keeps.
+    - `bgSubmits`: `submitTaskRequest: <BG<Kind>TaskRequest: <id>, …>`, by kind (`appRefresh` / `processing`). It is the counterpart of `jobsRegistered`.
+    - `bgCancels`: `cancelTaskRequestWithIdentifier: <id>`.
+    - `sdkSubscribers`: the last tick's `subscribers=`. With `sdkTasks`, it is the counterpart of `jobIds`.
+    - `SUITE` gains `api-smoke-ios`.
+  - **Measured.** A draft on Lab1 (`FIX`), sweeps `20261111-114804` (`FIX`) and `20261111-114854` (`FIX-SPM`), both on Lab1, and a hand run on Lab2 (`FIX-SPM`). Every one PASS. The committed captures are the sweeps'.
+    - **Every hook settled with its declared shape:**
+      - `status` and `start`: 2;
+      - `scheduleTask`: rejected, `Error Domain=BGTaskSchedulerErrorDomain Code=1`;
+      - both `stop`s: `true`;
+      - `finish`: `undefined`, and the SDK logged `Called without a task to finish.  Ignoring.`
+    - **The OS's record:**
+      - configure at boot submitted the `BGAppRefreshTaskRequest`, which the Simulator refused, and the SDK fell back to the legacy API;
+      - `start()` submitted nothing (the `fetchScheduled` guard, `TSBackgroundFetch.m:104`);
+      - `scheduleTask` submitted the `BGProcessingTaskRequest`;
+      - `stop(taskId)`: `[TSBGTask destroy]`, then `cancelTaskRequestWithIdentifier: com.transistorsoft.fetchlab.task`;
+      - `stop()`: `cancelTaskRequestWithIdentifier: com.transistorsoft.fetch`.
+    - **Every probe tick after the hooks:** `subscribers=- tasks=-`.
+  - **Seen on the way (INFERRED from source, not measured):** on the Simulator, `stop()` does not stop the legacy fetch.
+    - With BGTaskScheduler unavailable, configure set the legacy minimum fetch interval (`TSBackgroundFetch.m:117-122`).
+    - `cancelBGAppRefresh`'s iOS 13+ branch only cancels the BGTaskScheduler request and leaves that interval set (`:140-145`).
+    - So a SpringBoard fetch after `stop()` would still reach `performFetchWithCompletionHandler`. It re-arms the interval (`:182-183`), holds the completion handler with no listener to finish it, and calls `onTimeout` with none when the UIBackgroundTask expires (`:188-196`).
+    - Simulator-only: on a device the SDK takes the BGTaskScheduler path and never sets the legacy interval. Tier 2's `ios-stop-start` would measure it.
+  - **Selftest:** 179 PASS. The new check covers the three metrics on a synthetic capture: by kind, another app's requests left out, `no-probe`. `vendor_check` PASS.
+  - **Not re-swept:** the other iOS cells and Android's `api-smoke`. No app source changed, and the pack's new metrics are read by `api-smoke-ios` alone.
+  - **Still not done:** back-to-back bg-forge and fetch sweeps on iOS (Verification), and the other platforms' iOS hosts. The manual device tier is still open.
