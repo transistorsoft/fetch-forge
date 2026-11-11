@@ -36,8 +36,8 @@
  "end": {
   "policy": "evidence",
   "ended": "evidence",
-  "evidence_s": 1.5,
-  "end_s": 4.1,
+  "evidence_s": 1.8,
+  "end_s": 4.3,
   "grace": {
    "rule": "fixed",
    "grace_s": 2,
@@ -46,65 +46,65 @@
    "floor_s": 0.0
   },
   "poll_s": 0.25,
-  "parse_ms": 0.6,
-  "parse_ms_max": 1.2
+  "parse_ms": 0.8,
+  "parse_ms_max": 1.7
  },
  "timings": {
-  "step_s": 6.2,
-  "t0": 1794335522.197,
+  "step_s": 6.8,
+  "t0": 1794360312.715,
   "phases": {
-   "terminated": 0.08,
-   "others_stopped": 0.172,
-   "reset": 0.716,
-   "swept": 0.889,
-   "neutral_pre": 0.889,
-   "permissions": 0.889,
-   "sleep_end": 0.889,
-   "log_begun": 1.195,
-   "launch_mark": 1.304,
-   "verdict_cleared": 1.413,
-   "launch": 1.527,
-   "evidence": 3.07,
-   "grace_end": 5.123,
-   "alive": 5.645,
-   "trigger": 5.783,
-   "end": 5.783,
-   "capture_mark": 5.885,
-   "pusher_joined": 5.885,
-   "log_ended": 6.123,
-   "log_written": 6.123,
-   "capture_extras": 6.123,
-   "db_pulled": 6.125,
-   "run_json": 6.177,
-   "judged": 6.191,
-   "verdict_pushed": 6.191,
-   "settled": 6.701,
-   "snapshot": 7.102,
-   "neutral_post": 7.102,
-   "terminated_post": 7.225
+   "terminated": 0.1,
+   "others_stopped": 0.209,
+   "reset": 0.906,
+   "swept": 1.102,
+   "neutral_pre": 1.102,
+   "permissions": 1.102,
+   "sleep_end": 1.102,
+   "log_begun": 1.513,
+   "launch_mark": 1.631,
+   "verdict_cleared": 1.75,
+   "launch": 1.888,
+   "evidence": 3.676,
+   "grace_end": 5.706,
+   "alive": 6.217,
+   "trigger": 6.357,
+   "end": 6.357,
+   "capture_mark": 6.469,
+   "pusher_joined": 6.469,
+   "log_ended": 6.716,
+   "log_written": 6.716,
+   "capture_extras": 6.716,
+   "db_pulled": 6.717,
+   "run_json": 6.777,
+   "judged": 6.791,
+   "verdict_pushed": 6.791,
+   "settled": 7.296,
+   "snapshot": 7.668,
+   "neutral_post": 7.668,
+   "terminated_post": 7.781
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.232,
+    "s": 0.241,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.122,
+    "s": 2.339,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_tap_text": {
-    "n": 23,
-    "s": 0.003,
+    "n": 24,
+    "s": 0.004,
     "bg_n": 4,
     "bg_s": 0.001
    },
    "begin_log": {
     "n": 1,
-    "s": 0.306,
+    "s": 0.411,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -116,19 +116,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.217,
+    "s": 0.246,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.172,
+    "s": 0.195,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.238,
+    "s": 0.247,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -140,25 +140,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.092,
+    "s": 0.109,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.115,
+    "s": 0.138,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.349,
+    "s": 0.37,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.117,
+    "s": 0.136,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -169,10 +169,10 @@
     "bg_s": 0.0
    },
    "peek": {
-    "n": 21,
-    "s": 0.01,
+    "n": 22,
+    "s": 0.014,
     "bg_n": 4,
-    "bg_s": 0.002
+    "bg_s": 0.003
    },
    "permissions": {
     "n": 1,
@@ -182,13 +182,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.11,
+    "s": 0.12,
     "bg_n": 2,
     "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.431,
+    "s": 0.566,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -200,13 +200,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.401,
+    "s": 0.371,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.203,
+    "s": 0.212,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -215,9 +215,9 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 2.941,
-   "evidence": 2.942,
-   "beat": 5.5
+   "boot": 3.476,
+   "evidence": 3.477,
+   "beat": 6.05
   }
  },
  "measure_from": "trigger",
@@ -335,5 +335,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-10 13:32:08"
+ "when": "2026-11-10 20:25:19"
 }

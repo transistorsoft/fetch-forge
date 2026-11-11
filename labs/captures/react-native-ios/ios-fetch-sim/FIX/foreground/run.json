@@ -38,59 +38,59 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 27.6,
-  "t0": 1794334943.01,
+  "step_s": 27.8,
+  "t0": 1794360183.958,
   "phases": {
-   "terminated": 0.082,
-   "others_stopped": 0.181,
-   "reset": 0.672,
-   "swept": 0.857,
-   "neutral_pre": 0.857,
-   "permissions": 0.857,
-   "sleep_end": 0.857,
-   "log_begun": 1.271,
-   "launch_mark": 1.378,
-   "verdict_cleared": 1.49,
-   "launch": 1.601,
-   "settle_end": 11.603,
-   "trigger": 11.717,
-   "end": 27.113,
-   "runner_joined": 27.113,
-   "capture_mark": 27.25,
-   "pusher_joined": 27.251,
-   "log_ended": 27.497,
-   "log_written": 27.497,
-   "capture_extras": 27.497,
-   "db_pulled": 27.497,
-   "run_json": 27.557,
-   "judged": 27.586,
-   "verdict_pushed": 27.587,
-   "settled": 28.095,
-   "neutral_post": 28.095,
-   "terminated_post": 28.229
+   "terminated": 0.098,
+   "others_stopped": 0.205,
+   "reset": 0.815,
+   "swept": 1.036,
+   "neutral_pre": 1.036,
+   "permissions": 1.036,
+   "sleep_end": 1.036,
+   "log_begun": 1.453,
+   "launch_mark": 1.564,
+   "verdict_cleared": 1.693,
+   "launch": 1.853,
+   "settle_end": 11.857,
+   "trigger": 11.981,
+   "end": 27.372,
+   "runner_joined": 27.373,
+   "capture_mark": 27.518,
+   "pusher_joined": 27.518,
+   "log_ended": 27.766,
+   "log_written": 27.766,
+   "capture_extras": 27.766,
+   "db_pulled": 27.766,
+   "run_json": 27.822,
+   "judged": 27.852,
+   "verdict_pushed": 27.852,
+   "settled": 28.355,
+   "neutral_post": 28.355,
+   "terminated_post": 28.492
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.239,
+    "s": 0.24,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 15,
-    "s": 2.199,
+    "s": 2.435,
     "bg_n": 1,
-    "bg_s": 0.113
+    "bg_s": 0.112
    },
    "_tap_text": {
-    "n": 46,
-    "s": 0.015,
-    "bg_n": 44,
-    "bg_s": 0.015
+    "n": 47,
+    "s": 0.01,
+    "bg_n": 45,
+    "bg_s": 0.009
    },
    "begin_log": {
     "n": 1,
-    "s": 0.414,
+    "s": 0.416,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -102,19 +102,19 @@
    },
    "container": {
     "n": 7,
-    "s": 0.216,
+    "s": 0.246,
     "bg_n": 3,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.185,
+    "s": 0.222,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.246,
+    "s": 0.247,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -126,25 +126,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.099,
+    "s": 0.107,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.112,
+    "s": 0.159,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 4,
-    "s": 0.471,
+    "s": 0.492,
     "bg_n": 1,
-    "bg_s": 0.113
+    "bg_s": 0.112
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.115,
+    "s": 0.127,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,10 +155,10 @@
     "bg_s": 0.0
    },
    "peek": {
-    "n": 44,
-    "s": 0.057,
-    "bg_n": 44,
-    "bg_s": 0.057
+    "n": 45,
+    "s": 0.037,
+    "bg_n": 45,
+    "bg_s": 0.037
    },
    "permissions": {
     "n": 1,
@@ -168,19 +168,19 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.134,
+    "s": 0.106,
     "bg_n": 1,
-    "bg_s": 0.134
+    "bg_s": 0.106
    },
    "push_verdict": {
     "n": 5,
-    "s": 0.114,
+    "s": 0.132,
     "bg_n": 3,
     "bg_s": 0.002
    },
    "reset_app": {
     "n": 1,
-    "s": 0.382,
+    "s": 0.488,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -198,7 +198,7 @@
    },
    "terminate": {
     "n": 2,
-    "s": 0.216,
+    "s": 0.23,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -207,7 +207,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.091
+   "boot": 3.436
   }
  },
  "measure_from": "launch",
@@ -239,10 +239,10 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.534
+   "action0": 1.774
   },
   "sent_s": {
-   "action0": 4.645
+   "action0": 4.833
   }
  },
  "network": null,
@@ -294,5 +294,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-10 13:22:50"
+ "when": "2026-11-10 20:23:31"
 }
