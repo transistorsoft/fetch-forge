@@ -804,3 +804,15 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - `ios-registration`.
     - `api-smoke` on iOS.
     - An iOS sweep: the harness also counted a non-Lab booted Simulator (`iPhone 17`, C8041EF8) as free, so each run here named its device with `--serial`.
+- 2026-11-10 — **Phase 2a step 6: the first iOS sweeps, react-native `FIX` and `FIX-SPM`, both Lab Simulators (MEASURED)**, at Chris's request ("The iOS sweep"). Branch `feat/WO-002-ios-sweep`, from `master` `b0f4ab3`.
+  - **A correction to the entry above.** The sweep never had the non-Lab Simulator problem. A sweep's devices come from `lab_devices.resolve`, which reads Lab1 and Lab2 by name (`lab_devices.py:620-657`). Only a plain `run` without `--serial` lists every booted iPhone Simulator (`devices.pick`, `devices.py:139-161`). There it refused, "several free emulators … pass --serial", which is that function's intended answer. No harness change was needed.
+  - **The sweeps,** `./labkit sweep --platforms react-native --os ios --variant <V> --scenarios suite`, from this worktree:
+    - **`20261110-202256`, `FIX`:** the build said `channel=pods`, `Podfile.lock: TSBackgroundFetch from the snapshot`.
+    - **`20261110-202503`, `FIX-SPM`:** the build said `channel=spm`, `Package.resolved: transistor-background-fetch 4.2.0 from the mirror of the snapshot`.
+    - Both builds linked the same slice (`sha256:cfe074357f4a`, native 4.1.1-master-5de5242 = 4.2.0/4200) and plugin `85a6bf4`, and were incremental (7.3 s, 8.8 s).
+  - **Each board:** `api-constants`, `ios-fetch-sim` and `ios-timeout-sim` PASS; the other 11 suite scenarios excuse iOS (`·`). Two lanes: `ios-fetch-sim` on Lab1 (89–90 s), `api-constants` then `ios-timeout-sim` on Lab2 (72 s). Wall 97 s and 99 s. Load at most 5.2 and 7.4; memory pressure normal.
+  - **The timeout** came 25.999 s (`FIX`) and 25.998 s (`FIX-SPM`) after delivery, both on Lab2.
+  - **`api-smoke`'s iOS excusal** now gives today's reason. The old one said no platform had an iOS host. Now: `jobsRegistered` and `jobIds` are JobScheduler's, and an expectation cannot differ by OS yet.
+  - **Kept:** the sweeps' captures replace the committed ones. A capture path has no device in it, so `api-constants` and `ios-timeout-sim` are now Lab2's and `ios-fetch-sim` Lab1's, for both variants. Only device, serial, timings and timeout values changed. `ios-fetch-sim/FIX-SPM/foreground` no longer lists an eviction: bg-forge's `nativeapi` app was gone from Lab1 by then.
+  - **Selftest:** 170 PASS; `vendor_check` PASS.
+  - **Still not done:** `ios-task-sim`, `ios-registration`, `api-smoke` on iOS (per-OS expectations), back-to-back bg-forge and fetch sweeps on iOS (Verification), and the other platforms' iOS hosts.
