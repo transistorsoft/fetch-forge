@@ -2,7 +2,8 @@ import UIKit
 import TSBackgroundFetch
 
 /// iOS host of the React Native fetch lab (WO-002 phase 2): React Native 0.88.0's template AppDelegate, changed in
-/// three places.  React Native itself starts in SceneDelegate.swift, after this has returned (a UIScene app).
+/// three places (and, for ios-registration, the SDK's launch call made where the launch says).  React Native itself
+/// starts in SceneDelegate.swift, after this has returned (a UIScene app).
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
   func application(
@@ -13,11 +14,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // the channel the harness taps (`log stream`).  The format is a literal so an argv value is never one.
     let keys = ProcessInfo.processInfo.arguments.filter { $0.hasPrefix("--") }
       .map { String($0.dropFirst(2).prefix { $0 != "=" }) }.sorted()
-    NSLog("%@", "LAB point=didFinishLaunching argv=\(keys) state=\(LabState.name(application.applicationState))")
+    let call = LabLaunchCall.value
+    NSLog("%@", "LAB point=didFinishLaunching argv=\(keys) state=\(LabState.name(application.applicationState)) " +
+          "sdkLaunchCall=\(call)")
+    guard LabLaunchCall.values.contains(call) else {
+      fatalError("LAB sdkLaunchCall=\(call) is not one of \(LabLaunchCall.values)")
+    }
 
     // (2) [REQUIRED] by the plugin's install docs (docs/INSTALL-AUTO-IOS.md, "AppDelegate").  The SDK's +load
     // also registers on UIApplicationDidFinishLaunchingNotification; its `launched` flag makes the two one call.
-    TSBackgroundFetch.sharedInstance().didFinishLaunching()
+    // (ios-registration) Unless the launch moves the call (LabLaunchCall).
+    if call == "delegate" {
+      NSLog("%@", "LAB point=sdkLaunchCall at=delegate")
+      TSBackgroundFetch.sharedInstance().didFinishLaunching()
+    }
+    NSLog("%@", "LAB point=didFinishLaunchingReturn")
     return true
   }
 
@@ -38,6 +49,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       completionHandler(result)
     }, applicationState: application.applicationState)
   }
+}
+
+/// (ios-registration) Where this launch makes the SDK's didFinishLaunching() call, from the launch's
+/// `--sdkLaunchCall=<value>` (a step's `extras: {sdkLaunchCall: …}`):
+///   * `delegate` (the default): in application(_:didFinishLaunchingWithOptions:), as the install docs say;
+///   * `scene`: in SceneDelegate's scene(_:willConnectTo:options:), after the launch has finished, as a plugin that
+///     makes the call from its own start-up (Cordova's pluginInitialize, Capacitor's load()) would where that
+///     start-up comes with the scene (NOT CHECKED in those platforms' hosts);
+///   * `none`: never, so the SDK's +load path (TSBackgroundFetch.m:28-32, :59) alone registers.
+/// A launch the OS makes (a background fetch into a terminated app) has no argv, so it reads `delegate`.
+enum LabLaunchCall {
+  static let values = ["delegate", "scene", "none"]
+  static let value: String = ProcessInfo.processInfo.arguments.first { $0.hasPrefix("--sdkLaunchCall=") }
+    .map { String($0.dropFirst("--sdkLaunchCall=".count)) } ?? "delegate"
 }
 
 /// The LAB lines' words, UIKit's.  SpringBoard's `SBBackgroundFetchTask … with result:` line words the same

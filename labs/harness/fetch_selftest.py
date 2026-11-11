@@ -724,7 +724,8 @@ def test_ios_adapter():
     check("the predicate the Simulator's log stream gets", predicate,
           '(eventMessage CONTAINS "LAB ") OR (subsystem == "com.transistorsoft.fetchlab.none") OR '
           '(eventMessage BEGINSWITH "[TSB") OR (process == "SpringBoard" AND eventMessage CONTAINS '
-          '"SBBackgroundFetchTask") OR (eventMessage CONTAINS "LICENSE VALIDATION FAILURE")')
+          '"SBBackgroundFetchTask") OR (subsystem == "com.apple.BackgroundTasks") OR '
+          '(eventMessage CONTAINS "LICENSE VALIDATION FAILURE")')
     if shutil.which("log"):
         r = subprocess.run(["log", "show", "--last", "1s", "--style", "ndjson", "--predicate", predicate],
                            capture_output=True, text=True, timeout=60)
@@ -838,6 +839,55 @@ def test_ios_phase2a(tmp):
           [labkit.METRICS[n](ios) for n in tasks],
           ["task-timeout:noCallback=1,task:missing=1,task:ran=1", "BGTaskSchedulerErrorDomain:1=1",
            "fetch:t1=1,timeout:react-native-background-fetch=1", "-"])
+
+
+def test_ios_registration(tmp):
+    """(ios-registration) bgRegistrations and sdkLaunchCalls on a synthetic iOS capture: BGTaskScheduler's lines placed
+    per process against its own launch lines, the SDK's look-alike NSLog and another app's lines not counted."""
+    fetch, task = "com.transistorsoft.fetch", "com.transistorsoft.fetchlab.task"
+    reg = lambda t, pid, ident: L(t, "I", "FetchLab", pid, "registerForTaskWithIdentifier: %s" % ident)
+    fw = lambda t, pid, msg, proc="FetchLab": L(t, "I", proc, pid, msg)
+    lab = lambda t, pid, msg: L(t, "I", "LAB     ", pid, msg)
+
+    def capture(os_name):
+        out = os.path.join(tmp, "captures", "react-native", "reg-%s" % os_name, "FIX", "run")
+        os.makedirs(out)
+        lines = [lab(1.0, 100, "point=launch label=x"), lab(1.05, 100, "point=trigger none"),
+                 # the delegate's call: both registrations before the framework's `Application finished launching`
+                 lab(1.10, 500, "point=didFinishLaunching argv=[] state=background sdkLaunchCall=delegate"),
+                 lab(1.11, 500, "point=sdkLaunchCall at=delegate"), reg(1.12, 500, fetch),
+                 L(1.13, "I", "TSBackgroundFetch", 500, "[TSBackgroundFetch registerForTaskWithIdentifier: %s" % task),
+                 reg(1.14, 500, task), lab(1.15, 500, "point=didFinishLaunchingReturn"),
+                 fw(1.16, 500, "Application finished launching"), fw(1.20, 500, "Handling app launch"),
+                 lab(1.30, 500, "app=boot n=1 args={}"),
+                 # +load's: after it, before `Handling app launch`; then a registration after it, and a rejected one
+                 lab(2.10, 600, "point=didFinishLaunching argv=[] state=background sdkLaunchCall=scene"),
+                 lab(2.11, 600, "point=didFinishLaunchingReturn"), fw(2.12, 600, "Application finished launching"),
+                 reg(2.13, 600, fetch), reg(2.14, 600, task), lab(2.15, 600, "point=sdkLaunchCall at=scene"),
+                 fw(2.20, 600, "Handling app launch"), reg(2.21, 600, task),
+                 fw(2.22, 600, "Registration rejected; zzz is not advertised in the application's Info.plist"),
+                 # another app's process: no LAB launch line, not counted
+                 fw(3.0, 700, "Application finished launching", "MobileCal"), fw(3.1, 700, "Handling app launch",
+                                                                                 "MobileCal"),
+                 L(3.2, "I", "MobileCal", 700, "registerForTaskWithIdentifier: %s" % fetch),
+                 # an app process that logged neither framework line
+                 lab(4.0, 800, "point=didFinishLaunching argv=[] state=background sdkLaunchCall=none"),
+                 reg(4.1, 800, fetch),
+                 lab(9.0, 100, "point=capture")]
+        with open(os.path.join(out, "logcat.txt"), "w") as f:
+            f.write("\n".join(lines) + "\n")
+        with open(os.path.join(out, "run.json"), "w") as f:
+            json.dump({"os": os_name, "actions": [], "year": 2026}, f)
+        return labkit.Capture(out)
+    ios = capture("ios")
+    check("(ios-registration) bgRegistrations: launching (before the framework's `Application finished launching`), "
+          "finished (before its `Handling app launch`), late (after it), unplaced (neither line), rejected; the SDK's "
+          "own NSLog and another app's lines are not registrations",
+          labkit.METRICS["bgRegistrations"](ios),
+          "%s:finished=1,%s:launching=1,%s:unplaced=1,%s:finished=1,%s:late=1,%s:launching=1,zzz:rejected=1"
+          % (fetch, fetch, fetch, task, task, task))
+    check("(ios-registration) sdkLaunchCalls: the host's calls by where it made them",
+          labkit.METRICS["sdkLaunchCalls"](ios), "delegate=1,scene=1")
 
 
 def test_relaunch():
@@ -1214,7 +1264,8 @@ def main():
     tmp = tempfile.mkdtemp(prefix="fetch-selftest-")
     try:
         for test in (test_seams, test_vocabulary, lambda: test_scenarios(tmp), lambda: test_capture(tmp),
-                     lambda: test_tier1(tmp), test_ios_adapter, lambda: test_ios_phase2a(tmp), test_relaunch, test_primitives, test_runner, lambda: test_hooks(tmp), lambda: test_shim(tmp),
+                     lambda: test_tier1(tmp), test_ios_adapter, lambda: test_ios_phase2a(tmp),
+                     lambda: test_ios_registration(tmp), test_relaunch, test_primitives, test_runner, lambda: test_hooks(tmp), lambda: test_shim(tmp),
                      test_live, test_shipped,
                      lambda: test_activation(tmp)):
             try:

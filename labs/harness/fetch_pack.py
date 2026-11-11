@@ -54,6 +54,9 @@ IOS_SDK_PREFIX = "[TSB"
 # simctl push's exit when the payload has nothing for a notification to show (it has already sent the fetch).
 IOS_FETCH_TASK = "SBBackgroundFetchTask"
 PUSH_NO_CONTENT_EXIT = 121
+# (ios-registration) BackgroundTasks.framework's os_log subsystem: BGTaskScheduler logs each launch-handler registration
+# there, in the app's own process.
+IOS_BG_SUBSYSTEM = "com.apple.BackgroundTasks"
 # (ios-task-sim) `fire:` kinds, and the Darwin notification the custom-task kinds post: `<bundle>/<kind>/<taskId>`, the
 # names the lab app's LabModule observes (LabObserveFires).
 FIRE_KINDS = ("fetch", "task", "task-timeout")
@@ -81,7 +84,8 @@ HEADLESS_NAMES = ("fetch", "timeout")
 SUITE = ["termination-calibration", "api-smoke", "events-fetch-android",
          "api-constants", "events-initial-ignored", "events-duplicate", "events-task-android", "events-timeout-sdk",
          "stop-on-terminate", "headless-kill", "headless-activity-destroyed", "recreate-foreground-android",
-         "ios-fetch-sim", "ios-timeout-sim", "ios-task-sim"]      # (WO-002 phase 2a) iOS's, n/a on Android
+         "ios-fetch-sim", "ios-timeout-sim", "ios-task-sim",
+         "ios-registration"]                                      # (WO-002 phase 2a) iOS's, n/a on Android
 LISTS = {}
 
 OVERRIDES = []                                      # (symbol, kind, seam, why) — the Phase B cut list
@@ -211,12 +215,18 @@ def _backends(m):
     #   (eventMessage CONTAINS "LAB ") OR (subsystem == "com.transistorsoft.fetchlab.none")
     #   OR (eventMessage BEGINSWITH "[TSB")
     #   OR (process == "SpringBoard" AND eventMessage CONTAINS "SBBackgroundFetchTask")
+    #   OR (subsystem == "com.apple.BackgroundTasks")
     #   OR (eventMessage CONTAINS "LICENSE VALIDATION FAILURE")
     # (WO-002 phase 2a) SpringBoard's lines are the OS's own record of a background fetch it ran and the result the
     # app's completion handler gave it (`Finished <SBBackgroundFetchTask: app<bundle…>; seq: n> with result: …`,
     # MEASURED 2026-11-10); they render as I/SpringBoard(pid) (backends.py:1029-1031) and springboardResults reads them.
+    # (ios-registration) BGTaskScheduler's own lines, which it logs in the app's process: `registerForTaskWithIdentifier:
+    # <id>` for each registration, then `Application finished launching` and `Handling app launch` (MEASURED
+    # 2026-11-11 on the iOS 27.2 Simulator, WO-002 Log); bgRegistrations reads them.  Other apps log there too
+    # (`Handling app launch`), so each reader keeps the app's own processes.
     _rebind(m, "SDK_SUBSYSTEM", 'com.transistorsoft.fetchlab.none") OR (eventMessage BEGINSWITH "%s") OR '
-                                '(process == "SpringBoard" AND eventMessage CONTAINS "%s' % (IOS_SDK_PREFIX, IOS_FETCH_TASK))
+                                '(process == "SpringBoard" AND eventMessage CONTAINS "%s") OR '
+                                '(subsystem == "%s' % (IOS_SDK_PREFIX, IOS_FETCH_TASK, IOS_BG_SUBSYSTEM))
     original_to_logcat = m.to_logcat
 
     def to_logcat(ndjson):
@@ -699,7 +709,7 @@ seam("labkit.HEADLESS_NAMES", "hook", "labkit.py:3613-3618",
 seam("labkit.METRICS", "extend", "labkit.py:3445-3451 (the registry: no override)",
      "fetch's metrics: SDK-line counts, fetchTally, jobIds, jobsRegistered, configureOutcome; (Tier 1) jobStops, "
      "jobsCancelled, React Native HeadlessTask counts, driverEvents/driverTally/driverFinishes, appProcesses, timing "
-     "metrics; (phase 2a) the iOS legacy-fetch and custom-task metrics")
+     "metrics; (phase 2a) the iOS legacy-fetch, custom-task and registration metrics")
 seam("labkit.IMPLICIT / EARLY_METRICS", "hook", "labkit.py:4548, :4571",
      "adds `configureOutcome: ok` and `foreignLines: 0` to every step that expects anything, both early (whole-log) "
      "metrics, in place")
@@ -872,6 +882,54 @@ def _fetch_metrics(m):
         `no-probe` where no tick carries the field (Android's probe has none)."""
         return c.last_state("tasks", "no-probe")
     _extend(m.METRICS, "sdkTasks", sdkTasks)
+
+    def launch_pids(c):
+        """(ios-registration) The app's iOS processes in the window: each logs `LAB point=didFinishLaunching ` first
+        (the host's AppDelegate), even one that dies before JavaScript boots."""
+        return {m.line_pid(l) for l in c.window if re.search(r"\bLAB\s*\(\s*\d+\): point=didFinishLaunching ", l)}
+
+    def bgRegistrations(c):
+        """(ios-registration) iOS: BGTaskScheduler's own record of each launch-handler registration in the app's
+        processes (BackgroundTasks.framework, in-process: `registerForTaskWithIdentifier: <id>`), placed against the
+        two lines it logs for that process's launch (MEASURED 2026-11-11, WO-002 Log), `<id>:<when>=n`:
+          * launching — before its `Application finished launching` (its observer of UIApplicationDidFinishLaunching
+            Notification, which runs before the SDK's +load observer): from application(_:didFinishLaunching…);
+          * finished — after that, before its `Handling app launch` (dispatched after the notification; a task that
+            launched the app runs there, INFERRED): the SDK's +load path (TSBackgroundFetch.m:28-32, :59);
+          * late — after `Handling app launch`: on a device a task that launched the app would find no handler
+            (the framework's `No launch handler registered for task with identifier %@`, INFERRED);
+          * unplaced — none of these, for the process lacks a line the placing needs;
+          * rejected — `Registration rejected; <id> is not advertised in the application's Info.plist`.
+        A second registration of one identifier raises (`… has already been registered`, MEASURED): crashes reads it.
+        '-' for none, and on Android."""
+        own, out = launch_pids(c), []
+        for pid in sorted(own):
+            # The raw line: the framework's messages open the line's text (`I/<process>(pid): <message>`), which
+            # tells them from the SDK's own `[TSBackgroundFetch registerForTaskWithIdentifier: …`.
+            lines = [l.rstrip() for l in c.window if m.line_pid(l) == pid]
+            finished = next((i for i, l in enumerate(lines) if l.endswith("): Application finished launching")), None)
+            handled = next((i for i, l in enumerate(lines) if l.endswith("): Handling app launch")), None)
+            for i, l in enumerate(lines):
+                hit = re.search(r"\): registerForTaskWithIdentifier: (\S+)$", l)
+                rejected = re.search(r"\): Registration rejected; (\S+) is not advertised", l)
+                if rejected:
+                    out.append("%s:rejected" % rejected.group(1))
+                elif hit:
+                    out.append("%s:%s" % (hit.group(1), "launching" if finished is not None and i < finished
+                                          else "late" if handled is not None and i > handled
+                                          else "finished" if finished is not None and handled is not None
+                                          else "unplaced"))
+        return tally(out)
+    _extend(m.METRICS, "bgRegistrations", bgRegistrations)
+
+    def sdkLaunchCalls(c):
+        """(ios-registration) iOS: where the host made the SDK's didFinishLaunching() call in each launch (the host's
+        `LAB point=sdkLaunchCall at=<delegate|scene>`, from the launch's sdkLaunchCall), `delegate=1`; '-' for none
+        (`sdkLaunchCall: none`), and on Android."""
+        own = launch_pids(c)
+        return tally([hit.group(1) for hit in (re.search(r"point=sdkLaunchCall at=(\w+)", l)
+                                               for l in c.window if m.line_pid(l) in own) if hit])
+    _extend(m.METRICS, "sdkLaunchCalls", sdkLaunchCalls)
 
     def fetchTally(c):
         """(WO-002) Fetch events the SDK received, `taskId=n,…` sorted ('-' for none): recorded, for the taskIds a step
