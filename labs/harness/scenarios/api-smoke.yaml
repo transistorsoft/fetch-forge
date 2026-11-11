@@ -34,8 +34,8 @@ description: >
   jobIds is read at the step's end, so the step keeps its full window rather than ending on its evidence.
 platforms: [react-native]
 not_applicable:
-  ios: "2026-11-05 — no platform in the first slice has an iOS host yet (labs/platforms/react-native/lab.yaml has no
-    `ios:` block); the iOS half of this scenario arrives with the fetch iOS pin (WO-002 phase 2)."
+  ios: "2026-11-10 — jobsRegistered and jobIds are JobScheduler's, and an expectation cannot differ by OS yet; the
+    iOS half waits for that design (WO-002 Log, 2026-11-10).  The react-native iOS host itself exists (phase 2a)."
 measure_from: launch
 settle: 10
 after: 30
