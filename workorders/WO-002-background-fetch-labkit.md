@@ -68,6 +68,7 @@ Each one that a scenario confirms becomes its own work order.
 8. **The Swift API's `@discardableResult` `onFetch`/`scheduleTask`** remove the listener or stop the task at once if the caller doesn't keep the result (`SwiftInterface/BackgroundFetch.swift:132,147-149,189,210-212`).
 9. **A `delay` above 2³¹−1 ms** breaks the `getInt`/`getInteger`/`Integer` casts in RN, Capacitor and Flutter.
 10. **RN: a configuration-change recreation leaves the SDK headless** (added 2026-11-09, INFERRED from code). React Native runs the old Activity's `onHostDestroy` on a recreation, and the plugin calls `LifecycleManager.setHeadless(true)` (`RNBackgroundFetchModule.java:113-117`). Nothing resets it: `onHostResume` does not (`:98-103`), and `ProcessLifecycleOwner` sends no ON_START/ON_RESUME when the new Activity resumes within 700 ms. The next fetch, with the app on screen, is then stopped (`stopOnTerminate: true`, the default: `- Stopping on terminate`) or silently stranded (`false`: `HeadlessTask.java:68-70`). `recreate-foreground-android` measures it. **MEASURED** red 2026-11-09 on Lab1 (`Stopping on terminate` with the app on screen): **WO-003**.
+11. **iOS: a timed-out fetch is reported to the OS as a success** (added 2026-11-10; PROVEN in source, legacy path MEASURED, device path NOT MEASURED). Once every subscriber has finished, the SDK's `finish` calls `setTaskCompletedWithSuccess:YES` on a BGAppRefreshTask, or the legacy handler with `UIBackgroundFetchResultNewData`, however the fetch ended (`TSBackgroundFetch.m:368-377`). So a fetch the plugin finishes from its onTimeout is reported as a success, which may skew iOS's scheduling of later refreshes. `ios-timeout-sim` measured the legacy half on the Simulator (`newData`, SpringBoard `RetrievedNewData`). The device half needs the manual tier.
 
 ### How events can be forced (PROVEN from source; each device command is INFERRED until a lab has run it — those marked MEASURED have, see the Log)
 
@@ -769,3 +770,37 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
       - `ios-spm/lab-config.js` moved away.
       The last two used `build.sh`'s own two functions, extracted verbatim, around each change, restored by git. An unchanged tree passes.
     - Selftest 165 PASS.
+- 2026-11-10 — **Phase 2a steps 3–5: the first scored iOS runs, CocoaPods and SwiftPM, both Lab Simulators (MEASURED)**, at Chris's request ("Yes, start them"). Branch `feat/WO-002-ios-scenarios`, from `master` `17e1fc3` (uncommitted, awaiting Chris's diff review). A read-only research agent first mapped the harness's iOS run path.
+  - **The pack:**
+    - **Actions:** three iOS-only kinds (`oses=("ios",)`):
+      - `fire: fetch`, `simctl push` with `content-available`, where exit 121 counts as a fired fetch only with simctl's "no user visible content" message;
+      - `background: true`, which launches Settings over the app;
+      - `terminate: true`, `simctl terminate`, after which the next `fire` launches the app in the background.
+    - **Log filter:** the iOS filter's splice also keeps SpringBoard's `SBBackgroundFetchTask` lines (`I/SpringBoard`).
+    - **Counts:** `fetchReceived`/`fetchFinished` count the iOS SDK's lines on iOS (`performFetchWithCompletionHandler`, and `finish … (n of m)`, not "Called without a task"). Android's other counts read `-` there.
+    - **New metrics:** `legacyFetchStates`, `legacyResults`, `springboardResults` and `legacyTimeoutAfterMs`.
+    - **A wrap of the vendored `devices.contamination`.** On iOS it counts any second `app=boot` as another lab's app (`devices.py:225-228`, "no trigger relaunches it"), so the first cold run read CONTAMINATED although it was the same app (pid 30305). The wrap excuses one boot after each of the step's own `action=terminate` marks. The rule is right for bg-forge, which never relaunches on iOS, so it is fetch's own exception, not an upstream change.
+  - **Scenarios:**
+    - **`ios-fetch-sim`:** steps foreground, background and cold.
+    - **`ios-timeout-sim`:** the finish withheld in the background.
+    - **`api-constants`:** no longer excuses iOS.
+    - Both new scenarios are in `SUITE` and excuse android.
+    - **`api-smoke` still excuses iOS.** Two of its expectations (`jobsRegistered`, `jobIds`) are JobScheduler's, and the harness has no per-OS expectation, so that needs its own design.
+  - **Measured, `FIX` on Lab1 and `FIX-SPM` on Lab1 and Lab2, all PASS:**
+    - **`ios-fetch-sim`:** each step gives `fetchReceived 1`, `fetchFinished 1`, `driverEvents fetch=1`, `legacyResults newData=1`, `springboardResults RetrievedNewData=1`; `legacyFetchStates` reads `active=1`, `background=1` and `background=1`. In the cold step SpringBoard launched the terminated app (a new pid) for the push, and the fetch still reached the driver.
+    - **`ios-timeout-sim`:** the timeout came 25.996 s after delivery on Lab1 (`FIX`), and 25.999 s and 25.990 s on `FIX-SPM` (Lab1, Lab2). The driver finished on it, the SDK logged `finish … (1 of 1)`, and UIKit's handler got `newData`, which SpringBoard records as `RetrievedNewData`.
+      - **The SDK reports a timed-out fetch as a success;** a Swift spike's `.failed` gave SpringBoard `Error`. It is pinned as today's behaviour, not judged right. The source (PROVEN): once every subscriber has finished, the SDK's `finish` signals the OS with success however the fetch ended, `setTaskCompletedWithSuccess:YES` on the BGTaskScheduler path and `UIBackgroundFetchResultNewData` on the legacy one (`TSBackgroundFetch.m:368-377` at `5de5242`). The research agent had cited `RNBackgroundFetch.mm:377`, which is the wrong file. **New suspected defect 11 (SUSPECTED, device path NOT MEASURED):** on a device, a BGAppRefreshTask whose expiration reaches the plugin's onTimeout, which finishes it, is reported to iOS as completed successfully, which may skew the system's scheduling of later refreshes. It gets a work order of its own if a device run confirms it.
+    - **`api-constants`:** the eight constants pass on iOS.
+    - **Provenance:** `run.json` records `channel: spm` for `FIX-SPM`, and `assert_native` read build 4200 from both apps.
+  - **Selftest:** 170 PASS. New checks:
+    - `push_fetch`'s exits;
+    - `to_background`'s command;
+    - the iOS metrics on a synthetic capture (a non-finish and another lab app's SpringBoard line are not counted);
+    - the contamination wrap (excused after a terminate; not without one; not a second boot after one).
+    - The action-kind, predicate and patched-module checks were updated.
+  - **Kept:** the 10 steps' `summary.txt` + `run.json` under `labs/captures/react-native-ios/` (`FIX` from Lab1, `FIX-SPM` from Lab2, the last run of each cell).
+  - **Not done:**
+    - `ios-task-sim`: the custom-task hook, a Darwin notification into LabModule.
+    - `ios-registration`.
+    - `api-smoke` on iOS.
+    - An iOS sweep: the harness also counted a non-Lab booted Simulator (`iPhone 17`, C8041EF8) as free, so each run here named its device with `--serial`.
