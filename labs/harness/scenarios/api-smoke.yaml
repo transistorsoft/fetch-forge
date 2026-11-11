@@ -34,8 +34,9 @@ description: >
   jobIds is read at the step's end, so the step keeps its full window rather than ending on its evidence.
 platforms: [react-native]
 not_applicable:
-  ios: "2026-11-10 — jobsRegistered and jobIds are JobScheduler's, and an expectation cannot differ by OS yet; the
-    iOS half waits for that design (WO-002 Log, 2026-11-10).  The react-native iOS host itself exists (phase 2a)."
+  ios: "2026-11-11 — iOS has its own scenario, api-smoke-ios: there scheduleTask rejects on the Simulator, and what
+    else is read is BGTaskScheduler's requests, not JobScheduler's jobs (one scenario per OS, as bg-forge's
+    api-*-ios / -android pairs)."
 measure_from: launch
 settle: 10
 after: 30

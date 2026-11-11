@@ -890,6 +890,46 @@ def test_ios_registration(tmp):
           labkit.METRICS["sdkLaunchCalls"](ios), "delegate=1,scene=1")
 
 
+def test_ios_smoke(tmp):
+    """(api-smoke-ios) bgSubmits, bgCancels and sdkSubscribers on a synthetic iOS capture: BGTaskScheduler's own lines
+    in the app's processes, by request kind; the SDK's look-alike NSLogs and another app's lines not counted."""
+    fetch, task = "com.transistorsoft.fetch", "com.transistorsoft.fetchlab.task"
+    fw = lambda t, pid, msg, proc="FetchLab": L(t, "I", proc, pid, msg)
+    lab = lambda t, pid, msg: L(t, "I", "LAB     ", pid, msg)
+    tick = "app=tick n=%d boot=1 status=2 headless=- configured=true subscribers=%s tasks=- pendingFetch=false"
+
+    def capture(name, os_name, ticks=True):
+        out = os.path.join(tmp, "captures", "react-native", "api-smoke-ios-%s" % name, "FIX", "run")
+        os.makedirs(out)
+        lines = [lab(1.0, 100, "point=launch label=x"), lab(1.05, 100, "point=trigger none"),
+                 lab(1.1, 500, "point=didFinishLaunching argv=[] state=background sdkLaunchCall=delegate"),
+                 L(1.2, "I", "TSBackgroundFetch", 500, "[TSBackgroundFetch scheduleBGAppRefresh] %s" % fetch),
+                 fw(1.21, 500, "submitTaskRequest: <BGAppRefreshTaskRequest: %s, earliestBeginDate: 2026-11-11 "
+                               "16:59:36 +0000>" % fetch),
+                 fw(1.3, 500, "submitTaskRequest: <BGProcessingTaskRequest: %s, earliestBeginDate: 2026-11-11 "
+                               "16:54:36 +0000, requiresExternalPower=0, requiresNetworkConnectivity=0>" % task),
+                 fw(1.4, 500, "cancelTaskRequestWithIdentifier: %s" % task),
+                 fw(1.5, 500, "cancelTaskRequestWithIdentifier: %s" % fetch),
+                 # another app's process: no LAB launch line, not counted
+                 fw(1.6, 700, "submitTaskRequest: <BGAppRefreshTaskRequest: com.apple.x, earliestBeginDate: (null)>",
+                    "MobileCal"),
+                 fw(1.7, 700, "cancelTaskRequestWithIdentifier: com.apple.x", "MobileCal")]
+        if ticks:
+            lines += [lab(2.0, 500, tick % (1, "react-native-background-fetch")), lab(3.0, 500, tick % (2, "-"))]
+        lines.append(lab(9.0, 100, "point=capture"))
+        with open(os.path.join(out, "logcat.txt"), "w") as f:
+            f.write("\n".join(lines) + "\n")
+        with open(os.path.join(out, "run.json"), "w") as f:
+            json.dump({"os": os_name, "actions": [], "year": 2026}, f)
+        return labkit.Capture(out)
+    names, ios = ("bgSubmits", "bgCancels", "sdkSubscribers"), capture("ios", "ios")
+    check("(api-smoke-ios) bgSubmits by request kind, bgCancels, and the last tick's subscribers; another app's "
+          "requests are not the app's, and a capture with no probe reads no-probe",
+          ([labkit.METRICS[n](ios) for n in names],
+           labkit.METRICS["sdkSubscribers"](capture("noprobe", "ios", ticks=False))),
+          (["%s:appRefresh=1,%s:processing=1" % (fetch, task), "%s=1,%s=1" % (fetch, task), "-"], "no-probe"))
+
+
 def test_relaunch():
     """(WO-002 phase 2a) The contamination wrap: on iOS a boot after the step's own `terminate` is the app relaunched."""
     def lines(terminate, boots=2):
@@ -1265,7 +1305,7 @@ def main():
     try:
         for test in (test_seams, test_vocabulary, lambda: test_scenarios(tmp), lambda: test_capture(tmp),
                      lambda: test_tier1(tmp), test_ios_adapter, lambda: test_ios_phase2a(tmp),
-                     lambda: test_ios_registration(tmp), test_relaunch, test_primitives, test_runner, lambda: test_hooks(tmp), lambda: test_shim(tmp),
+                     lambda: test_ios_registration(tmp), lambda: test_ios_smoke(tmp), test_relaunch, test_primitives, test_runner, lambda: test_hooks(tmp), lambda: test_shim(tmp),
                      test_live, test_shipped,
                      lambda: test_activation(tmp)):
             try:
