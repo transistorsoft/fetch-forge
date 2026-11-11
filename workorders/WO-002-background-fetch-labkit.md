@@ -816,3 +816,34 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   - **Kept:** the sweeps' captures replace the committed ones. A capture path has no device in it, so `api-constants` and `ios-timeout-sim` are now Lab2's and `ios-fetch-sim` Lab1's, for both variants. Only device, serial, timings and timeout values changed. `ios-fetch-sim/FIX-SPM/foreground` no longer lists an eviction: bg-forge's `nativeapi` app was gone from Lab1 by then.
   - **Selftest:** 170 PASS; `vendor_check` PASS.
   - **Still not done:** `ios-task-sim`, `ios-registration`, `api-smoke` on iOS (per-OS expectations), back-to-back bg-forge and fetch sweeps on iOS (Verification), and the other platforms' iOS hosts.
+- 2026-11-10 — **Phase 2a: `ios-task-sim`, a custom task on the Simulator through the lab app's hook (MEASURED)**, at Chris's request ("Yes, ios-task-sim"). Branch `feat/WO-002-ios-task-sim`, from `master` `4d060be`. It follows D3 as revised: custom tasks keep an in-app hook, fired by a Darwin notification with the app in the foreground.
+  - **The route** (source at `5de5242`, PROVEN by the runs below):
+    - On the Simulator, `scheduleTask` creates the `TSBGTask` with the plugin's callback, and the task joins TSBGTask's list before its submit fails (`TSBackgroundFetch.m:241-252`, `TSBGTask.m:119-133`). The submit error is logged at `:253-255`, and the promise rejects.
+    - `[[TSBGTask get:id] execute]` / `onTimeout` call that callback, as BGTaskScheduler's launch handler (via `setTask:`) and the task's expiration handler do on a device (`TSBGTask.m:203-248`). The plugin sends it to configure()'s callbacks (`RNBackgroundFetch.mm:168-176` at `85a6bf4`).
+    - The driver's `finish(taskId)` → `_finishProcessingTask` → `[TSBGTask finish:YES]`, which destroys a non-periodic task (`TSBackgroundFetch.m:325-341`, `TSBGTask.m:250-260`).
+  - **The hook, `LabModule.m` (both iOS hosts):**
+    - At its first `args()`, LabModule observes two Darwin notifications, `<bundle>/task/<taskId>` and `<bundle>/task-timeout/<taskId>`, for each task identifier the app's Info.plist permits other than the fetch's. A Darwin notification carries no payload, so the name carries the task.
+    - On one, it calls the task's `execute` or `onTimeout` through the runtime (still no SDK headers) and logs `LAB point=fire kind= taskId= found= ran=`. At arming it logs `point=fireArmed taskIds=…`.
+  - **The pack:**
+    - **`fire:`** also takes `task` and `task-timeout` with a `taskId:`. Validation refuses a `taskId:` on a fetch, a task kind without one, any other kind, and an id that isn't an identifier.
+    - **`Simctl.fire_task`** posts the notification with `simctl spawn <udid> notifyutil -p`. A non-zero exit refuses.
+    - **New metrics:**
+      - `taskFires`: the hook's outcome per fire (`ran`, `noCallback`, `missing`).
+      - `taskSubmitErrors`: `<domain>:<code>` of the SDK's submit error.
+      - `sdkTasks`: the last tick's `tasks=`.
+      - `driverTally`: the driver's deliveries by kind and taskId (both OSes).
+    - **`SUITE`** gains `ios-task-sim`.
+  - **The scenario, steps `run` and `timeout`:**
+    - **`run`:** `scheduleTask` (`outcome: rejected`), a fire at +3 s, and a second fire 3 s after the delivery.
+    - **`timeout`:** `withholdFinish`, a fire, then `task-timeout` 5 s after the delivery.
+    - Android is excused, dated.
+  - **Measured.** Hand run on Lab1 (`FIX`), then sweeps `20261110-215151` (`FIX`, `channel=pods`) and `20261110-215436` (`FIX-SPM`, `channel=spm`), both on Lab1. Every step PASS.
+    - **The rejection:** `Error Domain=BGTaskSchedulerErrorDomain Code=1 "BGTaskScheduler is not available on this platform."` The SDK had registered the permitted identifier at launch (`registerForTaskWithIdentifier: com.transistorsoft.fetchlab.task`), so it is the Simulator's Unavailable, not `TSBackgroundFetch:0` (identifier not permitted).
+    - **The hook:** the app logged the fire 131–144 ms after the host sent it (`simctl spawn` included), and the driver's `event=` line came in the same millisecond.
+    - **`run`:** one delivery of `com.transistorsoft.fetchlab.task` to configure@0, finished 1 s later. Then `[TSBGTask destroy] com.transistorsoft.fetchlab.task`. The first tick (before the finish) listed the task, and every later one `tasks=-`. The second fire read `found=false`.
+    - **`timeout`:** the first delivery's finish was withheld. `task-timeout` reached the declaration's onTimeout (`errors: true`), and the driver finished it 8–14 ms later (8 in the hand run, 11 and 14 in the sweeps). The task was then destroyed.
+    - `fetchReceived 0` in both: no legacy fetch was involved.
+  - **The other iOS cells, rebuilt with the new LabModule:** `api-constants`, `ios-fetch-sim` and `ios-timeout-sim` PASS in both sweeps. The timeout came at 25.999 s (`FIX`) and 25.996 s (`FIX-SPM`). Their captures replace the step-6 ones, with `ios-fetch-sim` now Lab2's and the others Lab1's.
+  - **What this cannot show:** BGTaskScheduler launching the task, its expiration handler firing on its own, and what `setTaskCompletedWithSuccess:YES` (`TSBGTask.m:252`) tells the system after a timeout. That stays the manual device tier (`ios-device-bgtask`).
+  - **Selftest:** 174 PASS. The new checks cover `fire_task`'s command and refusal, the `fire:` validation, and the four metrics on a synthetic capture. `vendor_check` PASS.
+  - **Still not done:** `ios-registration`, `api-smoke` on iOS (per-OS expectations), back-to-back bg-forge and fetch sweeps on iOS, and the other platforms' iOS hosts.
