@@ -6,7 +6,7 @@ description: >
 
   stop() with no taskId (the bridge, RNBackgroundFetch.mm:86-97 at 85a6bf4) removes the plugin's listener, which, once
   no listener is left, runs cancelBGAppRefresh (TSBackgroundFetch.m:288-290).  Its iOS 13+ branch only cancels the
-  BGTaskScheduler request (:140-145) and leaves the legacy interval set, so SpringBoard still fetches.  The SDK's
+  BGTaskScheduler request (:142-145) and leaves the legacy interval set, so SpringBoard still fetches.  The SDK's
   performFetchWithCompletionHandler then requests the fetch again (:182-183), holds UIKit's completion handler, and
   hands the fetch to no listener; when its UIBackgroundTask expires, onTimeout finds none (TSBGAppRefreshSubscriber.m:
   80-96) and the handler is never called (TSBackgroundFetch.m:188-196).

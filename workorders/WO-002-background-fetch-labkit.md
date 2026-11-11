@@ -70,9 +70,9 @@ Each one that a scenario confirms becomes its own work order.
 10. **RN: a configuration-change recreation leaves the SDK headless** (added 2026-11-09, INFERRED from code). React Native runs the old Activity's `onHostDestroy` on a recreation, and the plugin calls `LifecycleManager.setHeadless(true)` (`RNBackgroundFetchModule.java:113-117`). Nothing resets it: `onHostResume` does not (`:98-103`), and `ProcessLifecycleOwner` sends no ON_START/ON_RESUME when the new Activity resumes within 700 ms. The next fetch, with the app on screen, is then stopped (`stopOnTerminate: true`, the default: `- Stopping on terminate`) or silently stranded (`false`: `HeadlessTask.java:68-70`). `recreate-foreground-android` measures it. **MEASURED** red 2026-11-09 on Lab1 (`Stopping on terminate` with the app on screen): **WO-003**.
 11. **iOS: a timed-out fetch is reported to the OS as a success** (added 2026-11-10; PROVEN in source, legacy path MEASURED, device path NOT MEASURED). Once every subscriber has finished, the SDK's `finish` calls `setTaskCompletedWithSuccess:YES` on a BGAppRefreshTask, or the legacy handler with `UIBackgroundFetchResultNewData`, however the fetch ended (`TSBackgroundFetch.m:368-377`). So a fetch the plugin finishes from its onTimeout is reported as a success, which may skew iOS's scheduling of later refreshes. `ios-timeout-sim` measured the legacy half on the Simulator (`newData`, SpringBoard `RetrievedNewData`). The device half needs the manual tier.
 12. **iOS (Simulator): `stop()` leaves the legacy fetch armed, and a fetch after it is never completed** (added 2026-11-11; MEASURED on the Simulator, not a device).
-    - Where BGTaskScheduler is unavailable, configure() falls back to UIKit's legacy minimum fetch interval (`TSBackgroundFetch.m:117-122`). `stop()`'s `cancelBGAppRefresh` only cancels the BGTaskScheduler request on iOS 13+ and leaves that interval set (`:140-145`).
+    - Where BGTaskScheduler is unavailable, configure() falls back to UIKit's legacy minimum fetch interval (`TSBackgroundFetch.m:117-122`). `stop()`'s `cancelBGAppRefresh` only cancels the BGTaskScheduler request on iOS 13+ and leaves that interval set (`:142-145`).
     - A SpringBoard fetch after `stop()` still reaches `performFetchWithCompletionHandler`, which requests the fetch again (`:182-183`), holds UIKit's completion handler with no listener to finish it, and never calls it when its UIBackgroundTask expires (`:188-196`; `TSBGAppRefreshSubscriber.m:80-96`). SpringBoard records `with result: Error`.
-    - `ios-stop-start` measures it: its `stopped` step reads red on both channels.
+    - `ios-stop-start` measures it: its `stopped` step reads red on both channels. **WO-004** (draft).
     - Simulator-only on iOS 13+ as far as checked: on a device configure() takes BGTaskScheduler's path and never sets the legacy interval. NOT CHECKED: anywhere else BGTaskScheduler answers Unavailable (an iOS app on a Mac, for one).
 
 ### How events can be forced (PROVEN from source; each device command is INFERRED until a lab has run it — those marked MEASURED have, see the Log)
@@ -937,7 +937,7 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   - **What the iOS bridge does** (`RNBackgroundFetch.mm` at `85a6bf4`):
     - `start()` resolves only when `backgroundRefreshStatus` is Available, and rejects otherwise (`:65-84`).
     - `stop()` and `stop(taskId)` resolve `YES` whatever the SDK did (`:86-97`).
-    - `stop()` also removes the plugin's listener, which cancels the fetch request once no listener is left (`TSBackgroundFetch.m:288-290`, `:140-145`).
+    - `stop()` also removes the plugin's listener, which cancels the fetch request once no listener is left (`TSBackgroundFetch.m:288-290`, `:142-145`).
     - `stop(taskId)` destroys the TSBGTask and cancels its request (`TSBGTask.m:192-199`).
   - **New metrics** (iOS; `-` / `no-probe` on Android). The first two read BGTaskScheduler's own lines in the app's processes, which ios-registration's log filter already keeps.
     - `bgSubmits`: `submitTaskRequest: <BG<Kind>TaskRequest: <id>, …>`, by kind (`appRefresh` / `processing`). It is the counterpart of `jobsRegistered`.
@@ -959,7 +959,7 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - **Every probe tick after the hooks:** `subscribers=- tasks=-`.
   - **Seen on the way (INFERRED from source, not measured):** on the Simulator, `stop()` does not stop the legacy fetch.
     - With BGTaskScheduler unavailable, configure set the legacy minimum fetch interval (`TSBackgroundFetch.m:117-122`).
-    - `cancelBGAppRefresh`'s iOS 13+ branch only cancels the BGTaskScheduler request and leaves that interval set (`:140-145`).
+    - `cancelBGAppRefresh`'s iOS 13+ branch only cancels the BGTaskScheduler request and leaves that interval set (`:142-145`).
     - So a SpringBoard fetch after `stop()` would still reach `performFetchWithCompletionHandler`. It re-arms the interval (`:182-183`), holds the completion handler with no listener to finish it, and calls `onTimeout` with none when the UIBackgroundTask expires (`:188-196`).
     - Simulator-only: on a device the SDK takes the BGTaskScheduler path and never sets the legacy interval. Tier 2's `ios-stop-start` would measure it.
   - **Selftest:** 179 PASS. The new check covers the three metrics on a synthetic capture: by kind, another app's requests left out, `no-probe`. `vendor_check` PASS.
@@ -1012,3 +1012,4 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   - **Selftest:** 180 PASS (the new scenario loads). `vendor_check` PASS.
   - **Not re-swept:** the other iOS cells, since no app source or pack code changed.
   - **Still not done:** a work order for defect 12, if Chris wants one; the other platforms' iOS hosts; the rest of Tier 2; the mutation variants; and the manual device tier.
+- 2026-11-11 — **WO-004 drafted** for suspected defect 12 at Chris's request ("Yes, write it"). Also corrected: `cancelBGAppRefresh`'s iOS 13+ branch is `TSBackgroundFetch.m:142-145`, not `:140-145`, in this work order, `ios-stop-start.yaml` and the pack's `bgCancels` docstring.
