@@ -1,0 +1,339 @@
+{
+ "label": "react-native.api-constants.FIX.run",
+ "platform": "react-native",
+ "os": "ios",
+ "package": "com.transistorsoft.fetchlab.react",
+ "scenario": "api-constants",
+ "variant": "FIX",
+ "step": "run",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
+ "evicted": [],
+ "foreignTransistorApps": [],
+ "native": "4.1.1-master-5de5242",
+ "native_source": {
+  "branch": "",
+  "commit": "5de52423e1c5388afffa3d520f97dcb9b287ed29",
+  "dirty": "no",
+  "marketing": "4.2.0",
+  "build": "4200"
+ },
+ "channel": null,
+ "native_resolved": "4200",
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "react-native/background-fetch",
+  "commit": "85a6bf4ecd515409aa1fabde8db4e27c16f40541",
+  "dirty": "no"
+ },
+ "device": {
+  "model": "Lab1",
+  "os": "iOS 27.2"
+ },
+ "activity": "",
+ "process": null,
+ "settle": 10,
+ "after": 15,
+ "end": {
+  "policy": "evidence",
+  "ended": "evidence",
+  "evidence_s": 1.5,
+  "end_s": 4.1,
+  "grace": {
+   "rule": "fixed",
+   "grace_s": 2,
+   "held": null,
+   "fgs_promotions": 0,
+   "floor_s": 0.0
+  },
+  "poll_s": 0.25,
+  "parse_ms": 1.0,
+  "parse_ms_max": 1.8
+ },
+ "timings": {
+  "step_s": 6.3,
+  "t0": 1794335105.738,
+  "phases": {
+   "terminated": 0.086,
+   "others_stopped": 0.182,
+   "reset": 0.677,
+   "swept": 0.862,
+   "neutral_pre": 0.862,
+   "permissions": 0.862,
+   "sleep_end": 0.862,
+   "log_begun": 1.274,
+   "launch_mark": 1.407,
+   "verdict_cleared": 1.513,
+   "launch": 1.635,
+   "evidence": 3.172,
+   "grace_end": 5.231,
+   "alive": 5.746,
+   "trigger": 5.886,
+   "end": 5.886,
+   "capture_mark": 5.997,
+   "pusher_joined": 5.997,
+   "log_ended": 6.241,
+   "log_written": 6.241,
+   "capture_extras": 6.241,
+   "db_pulled": 6.241,
+   "run_json": 6.299,
+   "judged": 6.313,
+   "verdict_pushed": 6.314,
+   "settled": 6.821,
+   "snapshot": 7.224,
+   "neutral_post": 7.224,
+   "terminated_post": 7.354
+  },
+  "calls": {
+   "_alive": {
+    "n": 1,
+    "s": 0.237,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "_run": {
+    "n": 14,
+    "s": 2.132,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "_tap_text": {
+    "n": 23,
+    "s": 0.005,
+    "bg_n": 4,
+    "bg_s": 0.001
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.412,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "close": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "container": {
+    "n": 6,
+    "s": 0.212,
+    "bg_n": 2,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.185,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.243,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "installed": {
+    "n": 1,
+    "s": 0.097,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.122,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 3,
+    "s": 0.383,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "native_resolved": {
+    "n": 2,
+    "s": 0.117,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 21,
+    "s": 0.017,
+    "bg_n": 4,
+    "bg_s": 0.003
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 4,
+    "s": 0.108,
+    "bg_n": 2,
+    "bg_s": 0.002
+   },
+   "reset_app": {
+    "n": 1,
+    "s": 0.383,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.403,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 2,
+    "s": 0.216,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": null,
+  "clock_offset_rtt_s": null,
+  "log_phases": {
+   "boot": 3.089,
+   "evidence": 3.089,
+   "beat": 5.623
+  }
+ },
+ "measure_from": "trigger",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": true,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": null,
+ "host": null,
+ "network": null,
+ "privacy": null,
+ "location_accuracy": null,
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [],
+ "hooks": [
+  {
+   "api": "NETWORK_TYPE_NONE",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 0
+    }
+   }
+  },
+  {
+   "api": "NETWORK_TYPE_ANY",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 1
+    }
+   }
+  },
+  {
+   "api": "NETWORK_TYPE_UNMETERED",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 2
+    }
+   }
+  },
+  {
+   "api": "NETWORK_TYPE_NOT_ROAMING",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 3
+    }
+   }
+  },
+  {
+   "api": "NETWORK_TYPE_CELLULAR",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 4
+    }
+   }
+  },
+  {
+   "api": "STATUS_RESTRICTED",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 0
+    }
+   }
+  },
+  {
+   "api": "STATUS_DENIED",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 1
+    }
+   }
+  },
+  {
+   "api": "STATUS_AVAILABLE",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 2
+    }
+   }
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-10 13:25:12"
+}

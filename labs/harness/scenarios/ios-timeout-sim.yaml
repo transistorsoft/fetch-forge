@@ -1,0 +1,45 @@
+name: ios-timeout-sim
+description: >
+  (WO-002 phase 2a, D3) A background fetch the app never finishes, on the iOS Simulator: the legacy path's timeout.
+  The SDK begins a UIBackgroundTask with each legacy fetch (TSBackgroundFetch.m:186-195); its expiration calls
+  [TSBGAppRefreshSubscriber onTimeout], which the plugin delivers as configure()'s onTimeout, and the driver finishes
+  it there (finishOnTimeout, the default).  The SDK logs no line on this path, so the driver's `event=timeout` is the
+  evidence.  MEASURED 2026-11-10 on Lab1 (FIX): delivered in the background, finish withheld, the timeout 25.999 s
+  later (as in a Swift spike with no SDK, whose expiration came with 4.0 s of the 30 s left), the driver's finish on
+  it, `[TSBackgroundFetch finish] … (1 of 1)`, and UIKit's handler completed with `newData`, which SpringBoard records
+  as `RetrievedNewData`.  The SDK's finish signals success however the fetch ended (TSBackgroundFetch.m:368-377:
+  NewData here, setTaskCompletedWithSuccess:YES on a device's BGTask), so a timed-out fetch is reported as one with
+  new data (the spike's `.failed` gave SpringBoard `Error`).  Pinned here as what the SDK does today, not as right:
+  WO-002 suspected defect 11.
+platforms: [react-native]
+not_applicable:
+  android: "2026-11-10 — `fire:` and `background:` are the Simulator's; Android's SDK timeout is events-timeout-sdk's."
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 50
+    extras: {withholdFinish: true}
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 1
+        max: 1
+        errors: true
+        returns: {$: {type: string, equals: react-native-background-fetch}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 2, background: true}
+      - {after: {api: "status#0"}, delay_s: 7, fire: fetch}
+    expect:
+      crashes: 0
+      fetchReceived: 1
+      driverEvents: "fetch=1,timeout=1"
+      driverFinishes: "fetch:withheld=1,timeout:ok=1"
+      fetchFinished: 1
+      legacyFetchStates: "background=1"
+      legacyTimeoutAfterMs: "<28000"
+      legacyResults: "newData=1"
+      springboardResults: "RetrievedNewData=1"

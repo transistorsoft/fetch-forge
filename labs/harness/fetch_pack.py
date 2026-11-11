@@ -50,6 +50,10 @@ SDK_TAG = "TSBackgroundFetch"                       # Android: BackgroundFetch.j
 # iOS: the SDK NSLogs with no os_log subsystem; every line opens `[TSBackgroundFetch …`, `[TSBGTask …` or
 # `[TSBGAppRefreshSubscriber …` (TSBackgroundFetch.m:13, TSBGTask.m:13/273/293, TSBGAppRefreshSubscriber.m:14).
 IOS_SDK_PREFIX = "[TSB"
+# (WO-002 phase 2a) SpringBoard's background-fetch task (`Executing` / `Finished <SBBackgroundFetchTask: …>`), and
+# simctl push's exit when the payload has nothing for a notification to show (it has already sent the fetch).
+IOS_FETCH_TASK = "SBBackgroundFetchTask"
+PUSH_NO_CONTENT_EXIT = 121
 NATIVE_PROJECT = "TSBackgroundFetch"                # PROJECT:TSBackgroundFetch-<build> (apple-generic versioning)
 ANDROID_ARTIFACT = "tsbackgroundfetch"              # labs/m2/com/transistorsoft/tsbackgroundfetch/<label>
 XCFRAMEWORK = "TSBackgroundFetch.xcframework"       # labs/xcframeworks/<label>/TSBackgroundFetch.xcframework
@@ -72,7 +76,8 @@ HEADLESS_NAMES = ("fetch", "timeout")
 # scenario file yet is refused by sweep as usual.
 SUITE = ["termination-calibration", "api-smoke", "events-fetch-android",
          "api-constants", "events-initial-ignored", "events-duplicate", "events-task-android", "events-timeout-sdk",
-         "stop-on-terminate", "headless-kill", "headless-activity-destroyed", "recreate-foreground-android"]
+         "stop-on-terminate", "headless-kill", "headless-activity-destroyed", "recreate-foreground-android",
+         "ios-fetch-sim", "ios-timeout-sim"]                      # (WO-002 phase 2a) iOS's, n/a on Android
 LISTS = {}
 
 OVERRIDES = []                                      # (symbol, kind, seam, why) — the Phase B cut list
@@ -200,8 +205,14 @@ def _backends(m):
     # The tap's predicate is a format string around SDK_SUBSYSTEM (backends.py:1314-1317), and fetch has no
     # subsystem: the value closes the subsystem clause and opens fetch's own.  The predicate the Simulator gets:
     #   (eventMessage CONTAINS "LAB ") OR (subsystem == "com.transistorsoft.fetchlab.none")
-    #   OR (eventMessage BEGINSWITH "[TSB") OR (eventMessage CONTAINS "LICENSE VALIDATION FAILURE")
-    _rebind(m, "SDK_SUBSYSTEM", 'com.transistorsoft.fetchlab.none") OR (eventMessage BEGINSWITH "%s' % IOS_SDK_PREFIX)
+    #   OR (eventMessage BEGINSWITH "[TSB")
+    #   OR (process == "SpringBoard" AND eventMessage CONTAINS "SBBackgroundFetchTask")
+    #   OR (eventMessage CONTAINS "LICENSE VALIDATION FAILURE")
+    # (WO-002 phase 2a) SpringBoard's lines are the OS's own record of a background fetch it ran and the result the
+    # app's completion handler gave it (`Finished <SBBackgroundFetchTask: app<bundle…>; seq: n> with result: …`,
+    # MEASURED 2026-11-10); they render as I/SpringBoard(pid) (backends.py:1029-1031) and springboardResults reads them.
+    _rebind(m, "SDK_SUBSYSTEM", 'com.transistorsoft.fetchlab.none") OR (eventMessage BEGINSWITH "%s") OR '
+                                '(process == "SpringBoard" AND eventMessage CONTAINS "%s' % (IOS_SDK_PREFIX, IOS_FETCH_TASK))
     original_to_logcat = m.to_logcat
 
     def to_logcat(ndjson):
@@ -330,6 +341,36 @@ def _backends(m):
         return "force_stop pid=%s held=%s" % (pid or "none", held)
     _extend(m.Adb, "force_stop", force_stop)
 
+    # (WO-002 phase 2a, D3) The iOS host actions' device primitives, run by labkit.ACTION_HANDLERS' `fire`,
+    # `background` and `terminate` (register()).
+    def push_fetch(self, plat):
+        """`xcrun simctl push <udid> <bundle>` with {"aps":{"content-available":1}}: SpringBoard sends the app UIKit's
+        legacy background fetch, in the foreground, suspended or not running (MEASURED 2026-11-10, WO-002 Log).  simctl
+        then fails to post the notification itself (exit 121, `Notification has no user visible content`) AFTER the
+        fetch has gone; that one exit is success, any other is not."""
+        path = os.path.join(labkit.HARNESS, ".claims", "push-%d-%d.json" % (os.getpid(), time.time_ns()))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump({"aps": {"content-available": 1}}, f)
+        try:
+            r = labkit.device_call(["xcrun", "simctl", "push", self.serial, plat["package"], path], timeout=30)
+        finally:
+            os.unlink(path)
+        said = ((r.stdout or "") + (r.stderr or "")).strip()
+        if r.returncode == 0 or (r.returncode == PUSH_NO_CONTENT_EXIT and "no user visible content" in said):
+            return "fire fetch push_exit=%d" % r.returncode
+        raise SystemExit("simctl push %s exited %d: %s" % (plat["package"], r.returncode, said[-300:]))
+    _extend(m.Simctl, "push_fetch", push_fetch)
+
+    def to_background(self, plat):
+        """The app to the background, as a user leaving it would: another app (Settings) launched over it.  The
+        Simulator suspends a backgrounded app within 1 s (MEASURED 2026-11-10); a pushed fetch then resumes it."""
+        r = labkit.device_call(["xcrun", "simctl", "launch", self.serial, "com.apple.Preferences"], timeout=30)
+        if r.returncode != 0:
+            raise SystemExit("simctl launch com.apple.Preferences exited %d: %s" % (r.returncode, (r.stderr or "")[-300:]))
+        return "background via=com.apple.Preferences"
+    _extend(m.Simctl, "to_background", to_background)
+
     for name in ("job", "force_stop"):
         def refuse(self, *a, name=name):
             raise SystemExit("the Simulator has no `%s` — labkit refuses `actions:` on a scenario that does not "
@@ -337,7 +378,7 @@ def _backends(m):
         _extend(m.Simctl, name, refuse)
     return ["SDK_TAG", "SDK_SUBSYSTEM", "to_logcat", "Adb.sdk_db", "Simctl.sdk_db", "PERMISSIONS",
             "FLAG_PERMISSIONS", "PRIVACY", "SDK_ALERT_TITLES", "Simctl.permissions", "Simctl.native_resolved",
-            "Adb.job", "Adb.force_stop", "Simctl.job", "Simctl.force_stop"]
+            "Adb.job", "Adb.force_stop", "Simctl.job", "Simctl.force_stop", "Simctl.push_fetch", "Simctl.to_background"]
 
 
 seam("backends.SDK_TAG", "data", "backends.py:40", "fetch's logcat tag, TSBackgroundFetch")
@@ -486,6 +527,14 @@ def _register(m):
         plat, item["job"], item.get("expect", "present"), item.get("unspaced")), keys=("expect", "unspaced")))
     _extend(m.ACTION_HANDLERS, "force_stop", m.ActionHandler(
         _force_stop_ok, lambda dev, item, plat, server: dev.force_stop(plat), keys=("expect",)))
+    # (WO-002 phase 2a, D3) iOS's: a fetch fired through SpringBoard (`simctl push`), the app sent to the background,
+    # and the app terminated (so a later `fire` launches it in the background).  A scenario using one excuses android.
+    _extend(m.ACTION_HANDLERS, "fire", m.ActionHandler(
+        _fire_ok, lambda dev, item, plat, server: dev.push_fetch(plat), oses=("ios",)))
+    _extend(m.ACTION_HANDLERS, "background", m.ActionHandler(
+        _flag_ok("background"), lambda dev, item, plat, server: dev.to_background(plat), oses=("ios",)))
+    _extend(m.ACTION_HANDLERS, "terminate", m.ActionHandler(
+        _flag_ok("terminate"), lambda dev, item, plat, server: (dev.terminate(plat), "terminate")[1], oses=("ios",)))
 
     # The native SDK a label is built from and published as: tsbackgroundfetch in labs/m2 and TSBackgroundFetch's
     # xcframework, both OSes from one checkout (native/background-fetch).  Android's slot is fetch's own, so its publish is
@@ -552,6 +601,24 @@ def _job_ok(at, item, step):
                              % (at, dup))
         return 0
     return JOB_REPEAT_S if job_id(value) in earlier else 0
+
+
+def _fire_ok(at, item, step):
+    """(WO-002 phase 2a) `fire: fetch`: the one kind of event SpringBoard sends on the Simulator (a custom task has no
+    such route; BGTaskScheduler is unavailable there)."""
+    if item["fire"] != "fetch":
+        raise SystemExit("%s: `fire:` is `fetch` (a SpringBoard background fetch through `simctl push`), not %r"
+                         % (at, item["fire"]))
+    return 0
+
+
+def _flag_ok(kind):
+    def ok(at, item, step):
+        if item[kind] is not True:
+            raise SystemExit("%s: `%s:` is true, not %r" % (at, kind, item[kind]))
+        return 0
+    ok.__name__ = "_%s_ok" % kind
+    return ok
 
 
 def _force_stop_ok(at, item, step):
@@ -630,6 +697,13 @@ SDK_COUNTS = {
     "stoppingOnTerminate": ("%- Stopping on terminate%", "BackgroundFetch.java:277"),
     "headlessTaskErrors": ("%Headless task error: %", "BGTask.java:219, BackgroundFetch.java:283"),
 }
+# (WO-002 phase 2a) The same two on iOS (native/background-fetch 5de5242): the legacy fetch, the Simulator's path
+# (BGTaskScheduler is unavailable there), and a finish that found its subscriber (`(n of m)`; "Called without a task"
+# and "Failed to find Fetch subscriber" are not finishes).  The SDK logs no line for a timeout on that path.
+IOS_SDK_COUNTS = {
+    "fetchReceived": ("%[TSBackgroundFetch performFetchWithCompletionHandler]%", "TSBackgroundFetch.m:180"),
+    "fetchFinished": ("%[TSBackgroundFetch finish] % of %", "TSBackgroundFetch.m:366"),
+}
 # (WO-002 Tier 1) React Native's HeadlessTask (react-native/background-fetch android HeadlessTask.java), which logs under
 # the SDK's tag: the cold path builds a ReactContext (bridgeless: 4.2.6), each JS task starts and ends (4.2.7's names),
 # and its errors.  Another bridge logs none of these: its scenarios state them per platform (platform_expect).
@@ -682,13 +756,60 @@ def scheduled_jobs(text, package):
     return ids
 
 
+def _on_ios(c):
+    return (c.meta or {}).get("os") == "ios"
+
+
 def _fetch_metrics(m):
     for name, (like, where) in list(SDK_COUNTS.items()) + list(RN_HEADLESS_COUNTS.items()):
-        def count(c, like=like):
+        def count(c, like=like, name=name):
+            # (WO-002 phase 2a) iOS logs its own words for the two it shares; Android's others read '-' there.
+            if _on_ios(c):
+                ios = IOS_SDK_COUNTS.get(name)
+                return len(c.sdk(ios[0])) if ios else "-"
             return len(c.sdk(like))
         count.__name__ = name
-        count.__doc__ = "(WO-002) SDK lines `%s` in the window (Android, %s)." % (like.strip("%"), where)
+        count.__doc__ = "(WO-002) SDK lines `%s` in the window (Android, %s)%s." % (
+            like.strip("%"), where, "; on iOS `%s` (%s)" % (IOS_SDK_COUNTS[name][0].strip("%"), IOS_SDK_COUNTS[name][1])
+            if name in IOS_SDK_COUNTS else "; '-' on iOS")
         _extend(m.METRICS, name, count)
+
+    def tally(values):
+        return ",".join("%s=%d" % (v, values.count(v)) for v in sorted(set(values))) or "-"
+
+    def legacyFetchStates(c):
+        """(WO-002 phase 2a) iOS: the legacy background fetches UIKit handed the app, by its state then
+        (AppDelegate.swift's `LAB point=legacyFetch state=…`): `background=1`; '-' for none, and on Android."""
+        return tally([h.group(1) for h in (re.search(r"point=legacyFetch state=(\w+)", l) for l in c.window) if h])
+    _extend(m.METRICS, "legacyFetchStates", legacyFetchStates)
+
+    def legacyResults(c):
+        """(WO-002 phase 2a) iOS: what the SDK passed to UIKit's completion handler (`LAB point=legacyFetchComplete
+        result=newData|noData|failed`): `newData=1`; '-' for none, and on Android."""
+        return tally([h.group(1) for h in (re.search(r"point=legacyFetchComplete result=(\w+)", l) for l in c.window)
+                      if h])
+    _extend(m.METRICS, "legacyResults", legacyResults)
+
+    def springboardResults(c):
+        """(WO-002 phase 2a) iOS: SpringBoard's own record of the fetches it ran for a fetch lab app and what their
+        completion said (`Finished <SBBackgroundFetchTask: app<…>; seq: n> with result: …`): `RetrievedNewData=1`;
+        '-' for none, and on Android."""
+        return tally([h.group(1) for h in (re.search(r"%s: app<com\.transistorsoft\.fetchlab\.[^(>]+.*with result: (\w+)"
+                                                     % IOS_FETCH_TASK, l) for l in c.window) if h])
+    _extend(m.METRICS, "springboardResults", springboardResults)
+
+    def legacyTimeoutAfterMs(c):
+        """(WO-002 phase 2a) iOS: ms from the legacy fetch's delivery (`point=legacyFetch`) to the driver's first
+        `app=event=timeout`, the SDK's UIBackgroundTask expiring (TSBackgroundFetch.m:186-195; the SDK logs no line of
+        its own there); '-' without both."""
+        stamp = re.compile(r"^\d\d-\d\d (\d\d):(\d\d):(\d\d\.\d{3}) ")
+        def ms(line):
+            h = stamp.match(line)
+            return int(round((int(h.group(1)) * 3600 + int(h.group(2)) * 60 + float(h.group(3))) * 1000)) if h else None
+        fetched = next((ms(l) for l in c.window if "point=legacyFetch state=" in l), None)
+        timed = next((ms(l) for l in c.window if " app=event=timeout " in l), None)
+        return timed - fetched if fetched is not None and timed is not None else "-"
+    _extend(m.METRICS, "legacyTimeoutAfterMs", legacyTimeoutAfterMs)
 
     def fetchTally(c):
         """(WO-002) Fetch events the SDK received, `taskId=n,…` sorted ('-' for none): recorded, for the taskIds a step
@@ -957,6 +1078,37 @@ def _package_of(c):
     return hit.group(1) if hit else None
 
 # ---------------------------------------------------------------------------------------------------- run
+
+
+@patches("devices")
+def _devices(m):
+    original_contamination = m.contamination
+
+    def contamination(lines, label, os_name="android", package=None):
+        """The vendored check, which on iOS counts any second `app=boot` in a step as another lab's app ("no trigger
+        relaunches it", devices.py:225-228).  (WO-002 phase 2a) fetch's `terminate` action does: SpringBoard then
+        launches the app in the background for the next `fire` (ios-fetch-sim's cold step; MEASURED 2026-11-10,
+        pid 30305 after `action=terminate`).  A boot that follows one of this step's own `action=terminate` host
+        marks is that relaunch, one boot per terminate; every other finding stands."""
+        import labkit
+        out = original_contamination(lines, label, os_name, package)
+        if os_name != "ios" or not out:
+            return out
+        relaunched, pending = set(), 0
+        for line in lines:
+            n = labkit.normalize(line)
+            if "point=host " in n and " action=terminate" in n:
+                pending += 1
+            elif pending and labkit.TAG + " app=boot " in n:
+                relaunched.add(labkit.line_pid(line))
+                pending -= 1
+        return [o for o in out if o not in {"lab process pid %s booted mid-step" % pid for pid in relaunched}]
+    _rebind(m, "contamination", contamination)
+    return ["contamination"]
+
+
+seam("devices.contamination", "wrap", "devices.py:225-228 (iOS: a second boot is another lab app)",
+     "an iOS boot after the step's own `terminate` action is the app relaunched by SpringBoard, not another lab app")
 
 
 @patches("run")

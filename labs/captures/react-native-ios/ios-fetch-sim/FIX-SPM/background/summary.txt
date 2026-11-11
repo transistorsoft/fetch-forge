@@ -1,0 +1,15 @@
+   crashes                          0                      expected 0            ok
+   fetchReceived                    1                      expected 1            ok
+   fetchFinished                    1                      expected 1            ok
+   driverEvents                     fetch=1                expected fetch=1      ok
+   driverFinishes                   fetch:ok=1             expected fetch:ok=1   ok
+   legacyFetchStates                background=1           expected background=1 ok
+   legacyResults                    newData=1              expected newData=1    ok
+   springboardResults               RetrievedNewData=1     expected RetrievedNewData=1 ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   eventAssertions                  ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => PASS

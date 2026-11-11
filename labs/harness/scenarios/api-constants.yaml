@@ -18,9 +18,6 @@ description: >
   `noConfigure`: the driver makes no configure() (configureOutcome '-'); the probes need none.  Every expectation is
   an early one, so the step ends on its evidence.
 platforms: [react-native]
-not_applicable:
-  ios: "2026-11-09 — the react-native platform has no iOS host yet (labs/platforms/react-native/lab.yaml has no `ios:`
-    block); the iOS half of this scenario arrives with the fetch iOS pin (WO-002 phase 2)."
 settle: 10
 after: 15
 extras: {noConfigure: true}

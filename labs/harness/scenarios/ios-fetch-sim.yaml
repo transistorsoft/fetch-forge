@@ -1,0 +1,91 @@
+name: ios-fetch-sim
+description: >
+  (WO-002 phase 2a, D3) A background fetch on the iOS Simulator, as SpringBoard delivers one, in the three states an
+  app can be in.  BGTaskScheduler is unavailable on the Simulator; the SDK falls back to the legacy API
+  (TSBackgroundFetch.m:117-122, setMinimumBackgroundFetchInterval from configure()), and `xcrun simctl push` with
+  {"aps":{"content-available":1}} has SpringBoard send the app UIKit's legacy background fetch (`fire: fetch`;
+  MEASURED 2026-11-10).  The lab AppDelegate forwards it to the SDK (`LAB point=legacyFetch`), the SDK hands it to the
+  plugin, the driver finishes it 1 s later, and the SDK completes UIKit's handler (`LAB point=legacyFetchComplete`),
+  which SpringBoard records (`… with result: …`).
+
+  WHAT EACH STEP READS:
+    * foreground: the app on screen; the fetch is delivered `active`.
+    * background: Settings launched over the app (`background: true`); the Simulator suspends it within 1 s, and the
+      push resumes it in the background.
+    * cold: the app terminated (`terminate: true`); the push launches it in the background, with no launch args, so
+      the driver configures with its defaults and the delivery reaches that configure (no `events:` arm survives the
+      relaunch).  The SDK reloads its persisted subscriber at +load, so the fetch is not lost while JavaScript boots
+      (MEASURED 2026-11-10).
+    * Each: the SDK's own `performFetchWithCompletionHandler` and `finish … (1 of 1)` lines, the driver's delivery,
+      UIKit's result `newData`, and SpringBoard's `RetrievedNewData`.
+platforms: [react-native]
+not_applicable:
+  android: "2026-11-10 — `fire:`, `background:` and `terminate:` are the Simulator's (a SpringBoard background fetch);
+    Android's fetches are JobScheduler's, events-fetch-android's."
+measure_from: launch
+steps:
+  - name: foreground
+    settle: 10
+    after: 15
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 1
+        max: 1
+        returns: {$: {type: string, equals: react-native-background-fetch}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 3, fire: fetch}
+    expect:
+      crashes: 0
+      fetchReceived: 1
+      fetchFinished: 1
+      driverEvents: "fetch=1"
+      driverFinishes: "fetch:ok=1"
+      legacyFetchStates: "active=1"
+      legacyResults: "newData=1"
+      springboardResults: "RetrievedNewData=1"
+  - name: background
+    settle: 10
+    after: 15
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 1
+        max: 1
+        returns: {$: {type: string, equals: react-native-background-fetch}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 2, background: true}
+      - {after: {api: "status#0"}, delay_s: 7, fire: fetch}
+    expect:
+      crashes: 0
+      fetchReceived: 1
+      fetchFinished: 1
+      driverEvents: "fetch=1"
+      driverFinishes: "fetch:ok=1"
+      legacyFetchStates: "background=1"
+      legacyResults: "newData=1"
+      springboardResults: "RetrievedNewData=1"
+  - name: cold
+    settle: 10
+    after: 20
+    hooks:
+      - api: status
+        returns: {$: {type: number, in: [0, 1, 2]}}
+    actions:
+      - {after: {api: "status#0"}, delay_s: 2, terminate: true}
+      - {after: {api: "status#0"}, delay_s: 5, fire: fetch}
+    expect:
+      crashes: 0
+      fetchReceived: 1
+      fetchFinished: 1
+      driverEvents: "fetch=1"
+      driverFinishes: "fetch:ok=1"
+      legacyFetchStates: "background=1"
+      legacyResults: "newData=1"
+      springboardResults: "RetrievedNewData=1"

@@ -36,6 +36,7 @@ import fetch_pack                                     # noqa: E402  (activated b
 os.environ.setdefault("FETCH_LABKIT_PACK", "1")       # and here when the selftest is run on its own: lab_product.py
 fetch_pack.activate()                                 # asks for both (the subprocess checks set their own env)
 import backends                                       # noqa: E402
+import devices                                        # noqa: E402
 import labkit                                         # noqa: E402
 import run                                            # noqa: E402
 import sweep                                          # noqa: E402
@@ -71,9 +72,11 @@ def test_activation(tmp):
     check("labkit loaded lab_product.py, and SDK_LOG, EVIDENCE and CAPTURE_EXTRAS are the pack's",
           (labkit.PRODUCT.__name__, labkit.SDK_LOG.__module__, labkit.EVIDENCE.__module__,
            labkit.CAPTURE_EXTRAS.__module__), ("lab_product", "fetch_pack", "fetch_pack", "fetch_pack"))
-    check("job and force_stop are labkit action kinds, run by the vendored run_host (no companion runner)",
-          (list(labkit.ACTION_HANDLERS)[-2:], run.run_host.__module__ in ("run", "__main__")),
-          (["job", "force_stop"], True))
+    check("job and force_stop (Android), fire, background and terminate (iOS, WO-002 phase 2a) are labkit action "
+          "kinds, run by the vendored run_host (no companion runner)",
+          (list(labkit.ACTION_HANDLERS)[-5:], [labkit.ACTION_HANDLERS[k].oses for k in ("fire", "background", "terminate")],
+           run.run_host.__module__ in ("run", "__main__")),
+          (["job", "force_stop", "fire", "background", "terminate"], [("ios",)] * 3, True))
     check("sweep.SUITE is fetch's", sweep.SUITE, fetch_pack.SUITE)
     check("sweep.scenario_list('suite')", sweep.scenario_list("suite"), fetch_pack.SUITE)
 
@@ -139,10 +142,10 @@ def test_activation(tmp):
             shutil.copy2(os.path.join(HARNESS, name), other)
     r2 = subprocess.run([sys.executable, os.path.join(other, "run.py"), "--help"], stdout=subprocess.DEVNULL,
                         stderr=subprocess.PIPE, text=True, timeout=120, env=env)
-    check("through a symlinked harness path run.py is patched whole (backends, labkit, run); a checkout given another "
+    check("through a symlinked harness path run.py is patched whole (backends, devices, labkit, run); a checkout given another "
           "checkout's active pack is refused",
           (r.returncode, linked, r2.returncode, "another checkout's" in r2.stderr),
-          (0, ["backends", "labkit", "run"], 2, True))
+          (0, ["backends", "devices", "labkit", "run"], 2, True))
     check("two pack-activated child processes reported (sweep.capped's, the nested one's)", len(pids), 2)
     for pid in pids[:2]:
         mine = {r["module"]: r for r in rows if r["pid"] == pid}
@@ -700,13 +703,17 @@ def test_ios_adapter():
         "processImagePath": proc, "subsystem": sub, "eventMessage": msg})
     text = "\n".join(["Filtering the log data using ...", ev("LAB app=boot x=1"),
                       ev("[TSBackgroundFetch scheduleBGAppRefresh] com.transistorsoft.fetch"),
-                      ev("[TSBGTask save]: <TSBGTask>"), ev("unrelated line")])
+                      ev("[TSBGTask save]: <TSBGTask>"), ev("unrelated line"),
+                      ev("Finished <SBBackgroundFetchTask: app<com.transistorsoft.fetchlab.react((null))>; seq: 3> "
+                         "with result: RetrievedNewData", proc="/x/CoreServices/SpringBoard.app/SpringBoard")])
     got = backends.to_logcat(text).splitlines()
     check("iOS tap: SDK NSLog lines retagged TSBackgroundFetch, LAB kept, others by process",
           [re.sub(r"^\S+ \S+ ", "", l) for l in got],
           ["I/LAB     (   77): app=boot x=1",
            "I/TSBackgroundFetch(   77): [TSBackgroundFetch scheduleBGAppRefresh] com.transistorsoft.fetch",
-           "I/TSBackgroundFetch(   77): [TSBGTask save]: <TSBGTask>", "I/Runner(   77): unrelated line"])
+           "I/TSBackgroundFetch(   77): [TSBGTask save]: <TSBGTask>", "I/Runner(   77): unrelated line",
+           "I/SpringBoard(   77): Finished <SBBackgroundFetchTask: app<com.transistorsoft.fetchlab.react((null))>; "
+           "seq: 3> with result: RetrievedNewData"])
     src = open(os.path.join(HARNESS, "backends.py")).read()
     fmt = re.search(r"'\(eventMessage CONTAINS \"LAB \"\) OR \(subsystem == \"%s\"\) OR '\s*"
                     r"'\(eventMessage CONTAINS \"LICENSE VALIDATION FAILURE\"\)' % SDK_SUBSYSTEM", src)
@@ -716,13 +723,96 @@ def test_ios_adapter():
                  '(eventMessage CONTAINS "LICENSE VALIDATION FAILURE")' % backends.SDK_SUBSYSTEM)
     check("the predicate the Simulator's log stream gets", predicate,
           '(eventMessage CONTAINS "LAB ") OR (subsystem == "com.transistorsoft.fetchlab.none") OR '
-          '(eventMessage BEGINSWITH "[TSB") OR (eventMessage CONTAINS "LICENSE VALIDATION FAILURE")')
+          '(eventMessage BEGINSWITH "[TSB") OR (process == "SpringBoard" AND eventMessage CONTAINS '
+          '"SBBackgroundFetchTask") OR (eventMessage CONTAINS "LICENSE VALIDATION FAILURE")')
     if shutil.which("log"):
         r = subprocess.run(["log", "show", "--last", "1s", "--style", "ndjson", "--predicate", predicate],
                            capture_output=True, text=True, timeout=60)
         check("macOS `log show` accepts the predicate (host syntax check; the Simulator not run)", r.returncode, 0)
     else:
         note("NOT CHECKED: no `log` on this host for the predicate syntax")
+
+
+def test_ios_phase2a(tmp):
+    """(WO-002 phase 2a) The iOS actions' device primitives, and the metrics an iOS capture is scored by."""
+    calls = []
+
+    def device_call(argv, timeout=60, text=True):
+        calls.append(argv)
+        code, err = answer[0]
+        return subprocess.CompletedProcess(argv, code, "", err)
+    saved = labkit.device_call
+    labkit.device_call = device_call
+    outcomes = []
+    try:
+        dev, plat = backends.Simctl("UDID-1"), {"package": "com.transistorsoft.fetchlab.react"}
+        for answer in ([(0, "")], [(121, "Notification has no user visible content\n")], [(121, "other\n")],
+                       [(1, "No devices are booted.\n")]):
+            try:
+                outcomes.append(dev.push_fetch(plat))
+            except SystemExit as e:
+                outcomes.append("refused exit=" + re.search(r"exited (\d+)", str(e)).group(1))
+        answer = [(0, "")]
+        background = dev.to_background(plat)
+    finally:
+        labkit.device_call = saved
+    check("Simctl.push_fetch: `simctl push <udid> <bundle> <payload>`; exit 0, and 121 only with simctl's "
+          "no-visible-content message, are a fired fetch; anything else refuses",
+          ([a[:5] for a in calls[:1]], outcomes, background, calls[-1]),
+          ([["xcrun", "simctl", "push", "UDID-1", "com.transistorsoft.fetchlab.react"]],
+           ["fire fetch push_exit=0", "fire fetch push_exit=121",
+            "refused exit=121", "refused exit=1"],
+           "background via=com.apple.Preferences", ["xcrun", "simctl", "launch", "UDID-1", "com.apple.Preferences"]))
+
+    def capture(os_name):
+        out = os.path.join(tmp, "captures", "react-native", "ios-%s" % os_name, "FIX", "run")
+        os.makedirs(out)
+        sb = "SBBackgroundFetchTask: app<%s((null))>; seq: %d>"
+        lines = [L(1.0, "I", "LAB     ", 100, "point=launch label=x"),
+                 L(1.1, "I", "LAB     ", 500, "app=boot n=1 args={}"),
+                 L(2.0, "I", "LAB     ", 100, "point=trigger none"),
+                 L(3.0, "I", "SpringBoard", 50, "Executing <" + sb % ("com.transistorsoft.fetchlab.react", 3)),
+                 L(3.01, "I", "LAB     ", 500, "point=legacyFetch state=background remaining=30.0"),
+                 L(3.02, "I", "TSBackgroundFetch", 500, "[TSBackgroundFetch performFetchWithCompletionHandler]"),
+                 L(4.0, "I", "TSBackgroundFetch", 500, "[TSBackgroundFetch finish] react-native-background-fetch (1 of 1)"),
+                 L(4.01, "I", "LAB     ", 500, "point=legacyFetchComplete result=newData state=background"),
+                 L(4.05, "I", "SpringBoard", 50, "Finished <" + sb % ("com.transistorsoft.fetchlab.react", 3)
+                   + " with result: RetrievedNewData"),
+                 L(4.06, "I", "SpringBoard", 50, "Finished <" + sb % ("com.transistorsoft.labs.react", 4)
+                   + " with result: NoNewDataAvailable"),                                  # bg-forge's lab app
+                 L(4.1, "I", "TSBackgroundFetch", 500, "[TSBackgroundFetch finish] x Called without a task to finish.  "
+                   "Ignoring."),                                                           # not a finish
+                 L(29.01, "I", "LAB     ", 500, "app=event=timeout n=1 taskId=react-native-background-fetch"),
+                 L(35.0, "I", "LAB     ", 100, "point=capture")]
+        with open(os.path.join(out, "logcat.txt"), "w") as f:
+            f.write("\n".join(lines) + "\n")
+        with open(os.path.join(out, "run.json"), "w") as f:
+            json.dump({"os": os_name, "actions": [], "year": 2026}, f)
+        return labkit.Capture(out)
+    names = ("fetchReceived", "fetchFinished", "jobFinished", "legacyFetchStates", "legacyResults", "springboardResults",
+             "legacyTimeoutAfterMs")
+    ios, android = capture("ios"), capture("android")
+    check("iOS metrics: fetchReceived/fetchFinished count the iOS SDK's lines (a finish without its subscriber is "
+          "not one), Android's own counts read '-', the legacy fetch, its result and SpringBoard's record are "
+          "tallied (a non-fetch lab app's SpringBoard line is not), the timeout's ms after the delivery; on Android the "
+          "iOS lines count nothing",
+          ([labkit.METRICS[n](ios) for n in names], [labkit.METRICS[n](android) for n in names[:3]]),
+          ([1, 1, "-", "background=1", "newData=1", "RetrievedNewData=1", 26000], [0, 0, 0]))
+
+
+def test_relaunch():
+    """(WO-002 phase 2a) The contamination wrap: on iOS a boot after the step's own `terminate` is the app relaunched."""
+    def lines(terminate, boots=2):
+        out = [L(1.0, "I", "LAB     ", 100, "point=launch label=lbl"), L(1.1, "I", "LAB     ", 500, "app=boot n=1 args={}")]
+        if terminate:
+            out.append(L(2.0, "I", "LAB     ", 101, "point=host i=0 action=terminate sent_ms=1 done_ms=2 mark_ms=2"))
+        out += [L(3.0 + k, "I", "LAB     ", 600 + k, "app=boot n=1 args={}") for k in range(boots - 1)]
+        return out
+    got = [devices.contamination(lines(True), "lbl", "ios"), devices.contamination(lines(False), "lbl", "ios"),
+           devices.contamination(lines(True, boots=3), "lbl", "ios")]
+    check("(WO-002 phase 2a) iOS contamination: a boot after the step's own `terminate` is the relaunched app; "
+          "without one, or a second boot after one terminate, it is still another lab app",
+          got, [[], ["lab process pid 600 booted mid-step"], ["lab process pid 601 booted mid-step"]])
 
 
 # ---------------------------------------------------------------------------------------------------- host actions
@@ -869,7 +959,7 @@ def test_seams():
     check("every override names a vendored file:line", [o["symbol"] for o in rows
                                                        if not re.search(r"\w+\.(py|js):\d+", o["seam"])], [])
     check("every patched module's patch is registered (labkit registers itself: lab_product.py; inventory reads "
-          "labkit.NATIVE)", sorted(fetch_pack.PATCHES), ["backends", "lab_setup", "run", "sweep"])
+          "labkit.NATIVE)", sorted(fetch_pack.PATCHES), ["backends", "devices", "lab_setup", "run", "sweep"])
     import types
     # A re-vendor that renames a seam: the pack refuses instead of writing a dead attribute (WO-002 review).
     renamed = types.ModuleType("sweep")
@@ -1084,7 +1174,7 @@ def main():
     tmp = tempfile.mkdtemp(prefix="fetch-selftest-")
     try:
         for test in (test_seams, test_vocabulary, lambda: test_scenarios(tmp), lambda: test_capture(tmp),
-                     lambda: test_tier1(tmp), test_ios_adapter, test_primitives, test_runner, lambda: test_hooks(tmp), lambda: test_shim(tmp),
+                     lambda: test_tier1(tmp), test_ios_adapter, lambda: test_ios_phase2a(tmp), test_relaunch, test_primitives, test_runner, lambda: test_hooks(tmp), lambda: test_shim(tmp),
                      test_live, test_shipped,
                      lambda: test_activation(tmp)):
             try:
