@@ -284,3 +284,12 @@ The anchor `// (WO-004)` goes at both changes, and the native CHANGELOG entry ca
     - stale or contradicted sentences in the Proposed fix and the Scope check;
     - the commit's reachability, above;
     - `build.sh`'s mirror claim. That one is reworded, and its limit (a label re-published with other content) is logged in WO-002. The code is unchanged.
+- 2026-11-11 — **Pushed, and merged into fetch-forge.** Chris approved ("Push and merge"). Status stays `verify`: the device check is outstanding.
+  - **Native:** `fix/WO-004-ios-stop-legacy-fetch` pushed to origin (`transistorsoft/transistor-background-fetch`) at `0670713`, the only commit it added; its parent `478767b` is native `master`. Not merged into native `master`, and not released.
+  - **fetch-forge:** this branch merged into `master` as `4464e55` (`--no-ff`) and pushed. `./labkit selftest` on the merge, in the main checkout: fetch (182 checks), slots and vendor_check PASS.
+  - **`0670713` is reachable now (MEASURED):** a fresh repo fetched it from origin by sha (`git fetch --depth=1 origin 0670713…`). That is how `lab_setup.native_checkout` gets a commit the submodule lacks (PROVEN, `labs/harness/lab_setup.py`). So the previous entry's note on this worktree's submodule repo no longer applies. A `./labkit setup` that rebuilds the label in another checkout has not been run (NOT CHECKED).
+  - The parent's `native/background-fetch` pointer still records `fc74063`; the lab pins native through its variants.
+  - **Still open:**
+    - the device check (Verification);
+    - merging the native branch into native `master`, and a release with it;
+    - `FIX` and `FIX-SPM` pin `5de5242`, so `ios-stop-start` stays red there until that pin moves.
