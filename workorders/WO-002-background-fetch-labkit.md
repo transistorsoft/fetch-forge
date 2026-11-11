@@ -324,7 +324,7 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 - [x] `termination-calibration` result recorded
 - [ ] Tier 1 board green, or each failure linked to a work order; board captures (`summary.txt` + `run.json`) committed; full-window replay set saved under `labs/baselines/`
 - [ ] Mutation variants fail as intended
-- [x] Back-to-back bg-forge and fetch sweeps: no contamination (Android Lab1, api-smoke, 2026-11-08/09: bg-forge `20261108-133031`, fetch `20261108-133328` and `20261108-155938`, bg-forge `20261109-083338`, each PASS; iOS waits for phase 2's app)
+- [x] Back-to-back bg-forge and fetch sweeps: no contamination (Android Lab1, api-smoke, 2026-11-08/09: bg-forge `20261108-133031`, fetch `20261108-133328` and `20261108-155938`, bg-forge `20261109-083338`, each PASS; iOS Lab1, react-native, 2026-11-11: bg-forge `20261111-121719` (api-smoke), fetch `20261111-121805` (api-smoke-ios), bg-forge `20261111-121932`, each PASS)
 - [ ] Manual iOS device tier run once and documented
 - [ ] Each confirmed suspected defect has its own work order
 
@@ -960,3 +960,21 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   - **Selftest:** 179 PASS. The new check covers the three metrics on a synthetic capture: by kind, another app's requests left out, `no-probe`. `vendor_check` PASS.
   - **Not re-swept:** the other iOS cells and Android's `api-smoke`. No app source changed, and the pack's new metrics are read by `api-smoke-ios` alone.
   - **Still not done:** back-to-back bg-forge and fetch sweeps on iOS (Verification), and the other platforms' iOS hosts. The manual device tier is still open.
+- 2026-11-11 — **Back-to-back sweeps with bg-forge on iOS: no contamination** (Lab1 Simulator `B1070F11`, iOS 27.2). bg-forge's two sweeps were Chris's, run in its main checkout ("You run bg-forge's sweeps"), and fetch's was mine. I read bg-forge's results without changing its tree (906 uncommitted changes there before and after).
+  - **The protocol, as on Android:** one cell each with `--devices 1 --build stale`, so both labs claim Lab1.
+    - On iOS a sweep never uninstalls its own app (`sweep.py:697-701` uninstalls on Android only), so each lab's sweep found the other's app still installed.
+    - fetch's app had been left on Lab1 by the `api-smoke-ios` sweeps.
+  - **The sweeps:**
+    - **bg-forge `20261111-121719`,** react-native `api-smoke`, PASS in 10 s, with its build current. It evicted `com.transistorsoft.fetchlab.react`, so this is the first iOS eviction of fetch's real app: WO-191 had used a stand-in. `foreignTransistorApps`: none.
+    - **fetch `20261111-121805`,** `api-smoke-ios`, PASS. It evicted `com.transistorsoft.labs.react`, and `foreignTransistorApps` was none.
+      - The capture's only app process is fetch's (pid 59200, 112 `LAB` lines, its SDK and BackgroundTasks lines). The three other `LAB` pids are the harness's own launch, trigger and capture marks.
+      - No line names bg-forge's app. `foreignLines` 0.
+    - **bg-forge `20261111-121932`,** `api-smoke`, PASS. It evicted `com.transistorsoft.fetchlab.react` again, and `foreignTransistorApps` was none.
+      - Its only app process is bg-forge's (pid 60036: 70 `LAB` lines, 109 `TSLocationManager`), apart from the three marks.
+      - Nothing from fetch.
+  - **`summarize`** scores fetch's capture and bg-forge's latest PASS, with no `CONTAMINATED`.
+    - The first bg-forge sweep's capture was overwritten by the second, at the same path. Its PASS is in its sweep log, and its `evicted` was read before the second ran.
+  - **Not exercised:** two sweeps started at the same moment, so that one queues on the other's claim. Like the Android runs, these were back to back, one after the other.
+  - **Committed with this entry:** fetch's `api-smoke-ios/FIX` `run.json` from `20261111-121805`, which records the eviction. Its `summary.txt` is unchanged.
+  - **Verification:** the back-to-back box now cites the iOS runs.
+  - **Still not done:** the other platforms' iOS hosts, Tier 2 (including `ios-stop-start`, for the Simulator `stop()` question in the `api-smoke-ios` entry), the mutation variants, and the manual device tier.
