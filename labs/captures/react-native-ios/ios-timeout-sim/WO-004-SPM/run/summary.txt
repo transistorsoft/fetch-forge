@@ -1,0 +1,17 @@
+   crashes                          0                      expected 0            ok
+   fetchReceived                    1                      expected 1            ok
+   driverEvents                     fetch=1,timeout=1      expected fetch=1,timeout=1 ok
+   driverFinishes                   fetch:withheld=1,timeout:ok=1 expected fetch:withheld=1,timeout:ok=1 ok
+   fetchFinished                    1                      expected 1            ok
+   legacyFetchStates                background=1           expected background=1 ok
+   legacyTimeoutAfterMs             25016                  expected <28000       ok
+   legacyResults                    newData=1              expected newData=1    ok
+   springboardResults               RetrievedNewData=1     expected RetrievedNewData=1 ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   recorded                         configure@0.delivered=1, configure@0.errors=1 expected any          ok
+   eventAssertions                  ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => PASS

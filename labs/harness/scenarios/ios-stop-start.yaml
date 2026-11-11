@@ -6,22 +6,24 @@ description: >
 
   stop() with no taskId (the bridge, RNBackgroundFetch.mm:86-97 at 85a6bf4) removes the plugin's listener, which, once
   no listener is left, runs cancelBGAppRefresh (TSBackgroundFetch.m:288-290).  Its iOS 13+ branch only cancels the
-  BGTaskScheduler request (:142-145) and leaves the legacy interval set, so SpringBoard still fetches.  The SDK's
-  performFetchWithCompletionHandler then requests the fetch again (:182-183), holds UIKit's completion handler, and
-  hands the fetch to no listener; when its UIBackgroundTask expires, onTimeout finds none (TSBGAppRefreshSubscriber.m:
-  80-96) and the handler is never called (TSBackgroundFetch.m:188-196).
+  BGTaskScheduler request (:142-145) and leaves the legacy interval set.  SpringBoard's fetch reaches the app whatever
+  that interval is (MEASURED 2026-11-11, WO-004 Log), and at native 5de5242 the SDK's performFetchWithCompletionHandler
+  then requests the fetch again (:182-183), holds UIKit's completion handler, and hands the fetch to no listener; when
+  its UIBackgroundTask expires, onTimeout finds none (TSBGAppRefreshSubscriber.m:80-96) and the handler is never called
+  (TSBackgroundFetch.m:188-196).  WO-004's fix answers such a fetch at once with noData.
 
   WHAT EACH STEP READS (from the launch):
     * stopped: stop(), then a fetch 3 s later, the app in front.  It asserts what stop() should leave: no delivery to
       the driver (driverEvents `-`), no new fetch request (bgSubmits: configure's alone), and UIKit's fetch ending
-      without error (springboardResults `NoNewDataAvailable=1`, which SpringBoard logs for an app whose interval is
-      Never, MEASURED 2026-11-10 in the D3 spike, and, INFERRED, for a completion with noData).  It does not say how
-      the SDK should get there.  MEASURED RED 2026-11-11 (Lab1, FIX): SpringBoard ran the fetch, UIKit called the
+      without error (springboardResults `NoNewDataAvailable=1`, which SpringBoard logs for a completion with noData,
+      MEASURED 2026-11-11; the interval does not gate the delivery, MEASURED 2026-11-11, correcting WO-002's D3 spike
+      note).  It does not say how the SDK should get there.  MEASURED RED 2026-11-11 (Lab1, FIX): SpringBoard ran the fetch, UIKit called the
       delegate, the SDK requested the fetch again (appRefresh=2), held the handler (`pendingFetch=true`) past its
       UIBackgroundTask's expiry, and SpringBoard recorded `Error completing … invalid response (the process probably
-      exited)` and `with result: Error` 31.2 s after the delivery.  Simulator-only on iOS 13+: on a device configure()
-      takes BGTaskScheduler's path and never sets the legacy interval (NOT CHECKED where else BGTaskScheduler answers
-      Unavailable).
+      exited)` and `with result: Error` 31.2 s after the delivery.  Not Simulator-only: a device app that does not
+      permit com.transistorsoft.fetch takes the legacy path too (TSBackgroundFetch.m:129-131, WO-004).  GREEN on
+      WO-004's fix (variants WO-004 and WO-004-SPM, 2026-11-11): the fetch is completed at once with noData, the SDK
+      requests nothing again, and SpringBoard records `NoNewDataAvailable`.
     * restarted: stop(), then start(), then a fetch 3 s later.  start() re-adds the plugin's listener and requests the
       fetch again (stop() had cleared fetchScheduled); the fetch reaches configure()'s callback, the driver finishes it
       1 s later, and SpringBoard records `RetrievedNewData`.  bgSubmits counts configure's request, start()'s, and the

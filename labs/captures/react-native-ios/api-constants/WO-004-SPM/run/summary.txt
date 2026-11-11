@@ -1,0 +1,6 @@
+   crashes                          0                      expected 0            ok
+   configureOutcome                 -                      expected -            ok
+   configDropped                    -                      expected -            ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   => PASS
