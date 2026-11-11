@@ -295,8 +295,16 @@ if [ "$OS" = ios ]; then
   # maps that URL to a local git repo of the label, tagged with its iOS version, so the plugin's manifest is never
   # edited and its own version requirement is what resolves (MEASURED 2026-11-10: `Checking out 4.2.0`).  The repo
   # is named as the URL's package so the resolved identity is the one the plugin's `package:` names.  Remade, with
-  # SwiftPM's checkouts and pins, whenever the label it holds is not this one.
-  MIRROR="$H/build/lab-mirror/transistor-background-fetch"
+  # SwiftPM's checkouts and pins, when it does not hold this label's build (its .lab-source differs) or lacks its tag.
+  # (WO-004) One mirror per label, its commit made with fixed dates.  SwiftPM records the revision of every version it
+  # resolves from a location (~/Library/org.swift.swiftpm/security/fingerprints, keyed by the mirror's file URL) and
+  # refuses that version at another revision later: every label is tagged with its iOS version, so a second label at
+  # one mirror path failed with "does not match previously recorded value" (MEASURED 2026-11-11), and so would a remade
+  # mirror of the same label, its commit time being new.  A path per label keeps each label's record apart, and the
+  # fixed dates keep a mirror remade from the same snapshot and provenance at one revision.  A label re-published with
+  # other content (another slice, commit or version) still gets a new revision at its path, which SwiftPM refuses:
+  # publish such a build under a new label.
+  MIRROR="$H/build/lab-mirror/$native/transistor-background-fetch"
   mirror_source="label=$native commit=$(iprov commit) sha256_sim=$sha_want marketing=$marketing"
   if [ "$(cat "$MIRROR.lab-source" 2>/dev/null)" != "$mirror_source" ] \
      || ! git -C "$MIRROR" rev-parse -q --verify "refs/tags/$marketing" >/dev/null 2>&1; then
@@ -306,14 +314,20 @@ if [ "$OS" = ios ]; then
     (cd "$SNAPSHOT" && tar --exclude .swiftpm --exclude .build -cf - .) | tar -x -C "$MIRROR"
     git -C "$MIRROR" init -q
     git -C "$MIRROR" add -A
-    git -C "$MIRROR" -c user.email=lab@fetch-forge.invalid -c user.name=labkit -c commit.gpgsign=false commit -qm "$mirror_source"
+    GIT_AUTHOR_DATE="2000-01-01T00:00:00+0000" GIT_COMMITTER_DATE="2000-01-01T00:00:00+0000" \
+      git -C "$MIRROR" -c user.email=lab@fetch-forge.invalid -c user.name=labkit -c commit.gpgsign=false commit -qm "$mirror_source"
     git -C "$MIRROR" -c tag.gpgsign=false tag "$marketing"
     echo "$mirror_source" > "$MIRROR.lab-source"
   fi
   CFG="$H/FetchLab.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/configuration"
   mkdir -p "$CFG"
-  printf '{"object":[{"mirror":"file://%s","original":"https://github.com/transistorsoft/transistor-background-fetch.git"}],"version":1}\n' \
-    "$(cd "$MIRROR" && pwd -P)" > "$CFG/mirrors.json"
+  mirrors="$(printf '{"object":[{"mirror":"file://%s","original":"https://github.com/transistorsoft/transistor-background-fetch.git"}],"version":1}' \
+    "$(cd "$MIRROR" && pwd -P)")"
+  # (WO-004) Another label's mirror in use before: SwiftPM's checkouts and pins name it, so they go too.
+  if [ "$(cat "$CFG/mirrors.json" 2>/dev/null)" != "$mirrors" ]; then
+    rm -rf "$SRCPKG" "$H/FetchLab.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+  fi
+  printf '%s\n' "$mirrors" > "$CFG/mirrors.json"
 
   # React Native's SwiftPM packages under build/ (gitignored): `update` makes them when they are missing (a fresh
   # clone); otherwise the scheme's "Sync SPM Autolinking" pre-action refreshes autolinking and codegen at every build.

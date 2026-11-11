@@ -72,8 +72,9 @@ Each one that a scenario confirms becomes its own work order.
 12. **iOS (Simulator): `stop()` leaves the legacy fetch armed, and a fetch after it is never completed** (added 2026-11-11; MEASURED on the Simulator, not a device).
     - Where BGTaskScheduler is unavailable, configure() falls back to UIKit's legacy minimum fetch interval (`TSBackgroundFetch.m:117-122`). `stop()`'s `cancelBGAppRefresh` only cancels the BGTaskScheduler request on iOS 13+ and leaves that interval set (`:142-145`).
     - A SpringBoard fetch after `stop()` still reaches `performFetchWithCompletionHandler`, which requests the fetch again (`:182-183`), holds UIKit's completion handler with no listener to finish it, and never calls it when its UIBackgroundTask expires (`:188-196`; `TSBGAppRefreshSubscriber.m:80-96`). SpringBoard records `with result: Error`.
-    - `ios-stop-start` measures it: its `stopped` step reads red on both channels. **WO-004** (draft).
+    - `ios-stop-start` measures it: its `stopped` step reads red on both channels. **WO-004** (`verify` since 2026-11-11): the fix is native `0670713` on `fix/WO-004-ios-stop-legacy-fetch`, not yet merged. On that commit's label `stopped` is green on both channels (variants `WO-004` and `WO-004-SPM`, sweeps `20261111-164604` and `20261111-165050`). `FIX` and `FIX-SPM` pin `5de5242`, so it stays red there until that pin moves.
     - Simulator-only on iOS 13+ as far as checked: on a device configure() takes BGTaskScheduler's path and never sets the legacy interval. NOT CHECKED: anywhere else BGTaskScheduler answers Unavailable (an iOS app on a Mac, for one).
+      - (Corrected 2026-11-11, WO-004.) Not Simulator-only: an app that does not permit `com.transistorsoft.fetch` sets the legacy interval at `:129-131`, on iOS 13+ and on a device too (PROVEN in source, not measured). Nor does the interval decide whether the fetch arrives: SpringBoard's fetch reaches the delegate whatever the interval (MEASURED, WO-004 Log).
 
 ### How events can be forced (PROVEN from source; each device command is INFERRED until a lab has run it — those marked MEASURED have, see the Log)
 
@@ -634,6 +635,9 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - **SpringBoard logs the completion result:** `Finished <SBBackgroundFetchTask …> with result: RetrievedNewData` (`.newData`), `NoNewDataAvailable`, or `Error` (`.failed`). That is an OS-side witness of what the app passed to the completion handler.
     - **Requirements:** UIBackgroundModes `fetch`, and a minimum fetch interval other than Never.
       - With Never (a fresh install that never set an interval), UIKit answered `NoNewDataAvailable` in 2 ms without calling the delegate.
+        - (Corrected 2026-11-11, WO-004 Log: not reproduced.) A controlled re-run on an iOS 27.2 Simulator found the opposite: a push-triggered fetch reached the delegate whatever the interval (never set, 900, 900 then Never, Never), with the app in front and suspended, 8 of 8.
+        - The round-2 app that gave `NoNewDataAvailable` logged no delegate call and was rebuilt afterwards. Whether it implemented the delegate method then is unknown.
+        - So the interval is not a requirement for this delivery. `NoNewDataAvailable` is what a `.noData` completion gives (MEASURED 2026-11-11).
       - An interval of 900 s works as well as the minimum.
       - Not needed, each tried both ways: `remote-notification`, an `aps-environment` entitlement, push registration.
   - **The legacy timeout:** the completion was withheld, and a UIBackgroundTask was begun as `TSBackgroundFetch.m:186-195` does. Its expiration handler ran 26.0 s after delivery, with 4.0 s left (runningboard: `Assertions for process will expire soon`). Completing then gave `with result: Error`, and the app was suspended 5 s later.
@@ -1013,3 +1017,24 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   - **Not re-swept:** the other iOS cells, since no app source or pack code changed.
   - **Still not done:** a work order for defect 12, if Chris wants one; the other platforms' iOS hosts; the rest of Tier 2; the mutation variants; and the manual device tier.
 - 2026-11-11 — **WO-004 drafted** for suspected defect 12 at Chris's request ("Yes, write it"). Also corrected: `cancelBGAppRefresh`'s iOS 13+ branch is `TSBackgroundFetch.m:142-145`, not `:140-145`, in this work order, `ios-stop-start.yaml` and the pack's `bgCancels` docstring.
+- 2026-11-11 — **The SwiftPM channel's mirror, one per label, with a deterministic commit** (`labs/platforms/react-native/build.sh`; found while proving WO-004 on `WO-004-SPM`; committed with WO-004's lab changes).
+  - **The failure (MEASURED):** the first build of a second label (`4.1.1-WO-004-r2-dirty`) stopped at package resolution: `Revision 64c1ef9c… for transistor-background-fetch … version 4.2.0 does not match previously recorded value 51f657ca…`.
+  - **Why:** SwiftPM keeps, per package location, the revision of every version it has resolved (`~/Library/org.swift.swiftpm/security/fingerprints/transistor-background-fetch-<hash>.json`, one file per origin URL), and refuses that version at another revision.
+    - The mirror has one path, and every label is tagged with its iOS version (`4.2.0` for both). So a second label could never build.
+    - Nor could the same label after its mirror was remade, because the commit time changes the revision. FIX-SPM would have failed the next time its mirror was rebuilt.
+  - **The fix:**
+    - The mirror lives under `build/lab-mirror/<label>/transistor-background-fetch`, so each label has its own record. The last path component stays the package's name.
+    - Its commit uses fixed author and committer dates, so a mirror of one label remade from the same snapshot and provenance gets the same revision.
+    - When `mirrors.json` changes (another label's mirror was in use), SwiftPM's checkouts and `Package.resolved` are cleared, as they already were when a mirror was remade.
+    - The user's SwiftPM fingerprint files are left alone. The old path's record is simply no longer consulted.
+  - **Verified (MEASURED):**
+    - After the fix, `WO-004-SPM` swept green (`20261111-135517`).
+    - `FIX-SPM` and `WO-004-SPM` then built one after the other, each switching the mirror.
+    - Each later label built at its own mirror on its first SwiftPM build: `4.1.1-WO-004-r3-dirty` in sweep `20261111-142842`, `4.1.1-WO-004-0670713` in sweep `20261111-165050`.
+  - **Limit, not fixed** (found by WO-004's commit-time review):
+    - A label re-published with other content (another slice, commit or version) is remade at its own path with a new revision. SwiftPM refuses that, as before.
+    - Such a build needs a new label, or the removal of that location's fingerprint file.
+    - Keying the mirror's path by content as well as by label would lift the limit. Offered to Chris as a follow-up.
+- 2026-11-11 — **WO-004 committed for suspected defect 12** (native `0670713` on `fix/WO-004-ios-stop-legacy-fetch`, not yet merged). WO-004 is `verify`: its device check is outstanding.
+  - On its variants `WO-004` and `WO-004-SPM`, all seven react-native iOS cells pass, `ios-stop-start` included (sweeps `20261111-164604` and `20261111-165050`).
+  - `FIX` and `FIX-SPM` keep native `5de5242`. So `ios-stop-start` stays red on them, as it should, until their pin moves to a native commit with the fix.

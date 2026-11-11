@@ -1,0 +1,11 @@
+   crashes                          0                      expected 0            ok
+   bgSubmits                        com.transistorsoft.fetch:appRefresh=1,com.transistorsoft.fetchlab.task:processing=1 expected com.transistorsoft.fetch:appRefresh=1,com.transistorsoft.fetchlab.task:processing=1 ok
+   taskSubmitErrors                 BGTaskSchedulerErrorDomain:1=1 expected BGTaskSchedulerErrorDomain:1=1 ok
+   bgCancels                        com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1 expected com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1 ok
+   sdkTasks                         -                      expected -            ok
+   sdkSubscribers                   -                      expected -            ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   => PASS

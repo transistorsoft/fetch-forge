@@ -1,0 +1,15 @@
+name: WO-004
+description: FIX with native at WO-004's fix — TSBackgroundFetch from fix/WO-004-ios-stop-legacy-fetch (iOS only)
+# (WO-004) The variant the fix is proved on: FIX's plugin checkout, and native/background-fetch at the fix branch
+# instead of 5de5242.  iOS only (native_source has no android commit): the fix touches TSBackgroundFetch.m alone,
+# and a sweep runs it with --os ios.  The label is published by labs/harness/publish_native_fetch_ios.sh, and its
+# provenance (labs/xcframeworks/.provenance/<label>.txt) records the native commit and dirty flag in every run.json.
+# native: 4.1.1-WO-004-0670713, published from a detached worktree of native/background-fetch at the fix commit
+#   0670713 (dirty: no).  fetch_pack._native_ios rebuilds it from native_source.ios when labs/xcframeworks lacks it
+#   and the commit is reachable: as of 2026-11-11 fix/WO-004-ios-stop-legacy-fetch is not pushed (WO-004 Log).
+#   Its Simulator slice is byte-identical (sha256_sim 81b54bae8) to 4.1.1-WO-004-r3-dirty, the uncommitted build after
+#   WO-004's second review, swept green in 20261111-142356 and 20261111-142842 (WO-004 Log).
+native: 4.1.1-WO-004-0670713
+native_source:
+  ios: 06707138c2938328e1f07ba28f42d2851e4d215e
+plugin: worktree
