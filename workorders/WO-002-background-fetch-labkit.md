@@ -69,6 +69,11 @@ Each one that a scenario confirms becomes its own work order.
 9. **A `delay` above 2³¹−1 ms** breaks the `getInt`/`getInteger`/`Integer` casts in RN, Capacitor and Flutter.
 10. **RN: a configuration-change recreation leaves the SDK headless** (added 2026-11-09, INFERRED from code). React Native runs the old Activity's `onHostDestroy` on a recreation, and the plugin calls `LifecycleManager.setHeadless(true)` (`RNBackgroundFetchModule.java:113-117`). Nothing resets it: `onHostResume` does not (`:98-103`), and `ProcessLifecycleOwner` sends no ON_START/ON_RESUME when the new Activity resumes within 700 ms. The next fetch, with the app on screen, is then stopped (`stopOnTerminate: true`, the default: `- Stopping on terminate`) or silently stranded (`false`: `HeadlessTask.java:68-70`). `recreate-foreground-android` measures it. **MEASURED** red 2026-11-09 on Lab1 (`Stopping on terminate` with the app on screen): **WO-003**.
 11. **iOS: a timed-out fetch is reported to the OS as a success** (added 2026-11-10; PROVEN in source, legacy path MEASURED, device path NOT MEASURED). Once every subscriber has finished, the SDK's `finish` calls `setTaskCompletedWithSuccess:YES` on a BGAppRefreshTask, or the legacy handler with `UIBackgroundFetchResultNewData`, however the fetch ended (`TSBackgroundFetch.m:368-377`). So a fetch the plugin finishes from its onTimeout is reported as a success, which may skew iOS's scheduling of later refreshes. `ios-timeout-sim` measured the legacy half on the Simulator (`newData`, SpringBoard `RetrievedNewData`). The device half needs the manual tier.
+12. **iOS (Simulator): `stop()` leaves the legacy fetch armed, and a fetch after it is never completed** (added 2026-11-11; MEASURED on the Simulator, not a device).
+    - Where BGTaskScheduler is unavailable, configure() falls back to UIKit's legacy minimum fetch interval (`TSBackgroundFetch.m:117-122`). `stop()`'s `cancelBGAppRefresh` only cancels the BGTaskScheduler request on iOS 13+ and leaves that interval set (`:140-145`).
+    - A SpringBoard fetch after `stop()` still reaches `performFetchWithCompletionHandler`, which requests the fetch again (`:182-183`), holds UIKit's completion handler with no listener to finish it, and never calls it when its UIBackgroundTask expires (`:188-196`; `TSBGAppRefreshSubscriber.m:80-96`). SpringBoard records `with result: Error`.
+    - `ios-stop-start` measures it: its `stopped` step reads red on both channels.
+    - Simulator-only on iOS 13+ as far as checked: on a device configure() takes BGTaskScheduler's path and never sets the legacy interval. NOT CHECKED: anywhere else BGTaskScheduler answers Unavailable (an iOS app on a Mac, for one).
 
 ### How events can be forced (PROVEN from source; each device command is INFERRED until a lab has run it — those marked MEASURED have, see the Log)
 
@@ -978,3 +983,32 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
   - **Committed with this entry:** fetch's `api-smoke-ios/FIX` `run.json` from `20261111-121805`, which records the eviction. Its `summary.txt` is unchanged.
   - **Verification:** the back-to-back box now cites the iOS runs.
   - **Still not done:** the other platforms' iOS hosts, Tier 2 (including `ios-stop-start`, for the Simulator `stop()` question in the `api-smoke-ios` entry), the mutation variants, and the manual device tier.
+- 2026-11-11 — **`ios-stop-start` (Tier 2): `start()` after `stop()` works on iOS, and `stop()` leaves the Simulator's legacy fetch armed, MEASURED red** (uncommitted, awaiting Chris's diff review). Branch `feat/WO-002-ios-stop-start`, from `master` `5f1c7b4`. Chris chose it ("ios-stop-start"). It is suspected defect 12, added to the Diagnosis.
+  - **The scenario (no host or pack change; existing metrics):**
+    - **`stopped`:** `stop()`, then `fire: fetch` 3 s later, the app in front. It asserts what `stop()` should leave, without prescribing the fix:
+      - no delivery to the driver;
+      - no new fetch request (`bgSubmits` = configure's alone);
+      - SpringBoard's `NoNewDataAvailable` rather than `Error`.
+    - **`restarted`:** `stop()`, `start()`, then `fire: fetch` 3 s later.
+    - Both steps run their full window (`end: window`), so the held fetch's expiry and SpringBoard's verdict are inside it.
+    - Android is excused, dated.
+    - `SUITE` and the README's suite row gain it.
+  - **Measured:** a draft on Lab1 (`FIX`), then sweeps `20261111-122633` (`FIX`) and `20261111-122826` (`FIX-SPM`), both on Lab1. Each reads `stopped` FAIL and `restarted` PASS.
+    - **`stopped`, the same on both channels:**
+      - `stop()`: `cancelTaskRequestWithIdentifier: com.transistorsoft.fetch`, then `[TSBackgroundFetch stop] (null)`; the probe then shows no subscriber.
+      - The push 3 s later: SpringBoard `Executing <SBBackgroundFetchTask …>`, UIKit called the delegate (`legacyFetch state=active remaining=30.0`), and the SDK's `performFetchWithCompletionHandler` ran.
+      - The SDK then made a second `submitTaskRequest: <BGAppRefreshTaskRequest: com.transistorsoft.fetch …>`, refused and fallen back to the legacy API again: `bgSubmits` `appRefresh=2`, red.
+      - No driver event. The probe read `pendingFetch=true bgTask=true` until the UIBackgroundTask ended (between +24.6 and +28.7 s after the delivery), and `pendingFetch=true` to the end: the completion handler was never called.
+      - SpringBoard at +31.2 s (`FIX`) and +31.3 s (`FIX-SPM`): `Error completing <SBBackgroundFetchTask …>: invalid response (the process probably exited)`, then `with result: Error` (`springboardResults` `Error=1`, red).
+      - `bgCancels`, `driverEvents` and `crashes` held.
+    - **`restarted`, the same on both:**
+      - the cancel; `[TSBackgroundFetch start] (null)` with a new request (`stop()` had cleared `fetchScheduled`);
+      - the fetch delivered to configure()'s callback, finished 1.005 s (`FIX`) and 1.015 s (`FIX-SPM`) later, `newData`, SpringBoard `RetrievedNewData`;
+      - the plugin's listener back (`sdkSubscribers`), and `bgSubmits` `appRefresh=3`: configure, `start()`, and the fetch's own reschedule.
+      - Unlike Android's suspected defect 2, `start()` after `stop()` works here.
+  - **What this cannot show:**
+    - whether anything other than the Simulator answers BGTaskScheduler Unavailable to a configured app, which is where defect 12 would reach users;
+    - what the right fix is. Two candidates would turn `stopped` green: setting the legacy interval to Never in `cancelBGAppRefresh`, or completing a fetch with no listener at once with `noData`. The second alone would still leave `bgSubmits` red, because the fetch is requested again.
+  - **Selftest:** 180 PASS (the new scenario loads). `vendor_check` PASS.
+  - **Not re-swept:** the other iOS cells, since no app source or pack code changed.
+  - **Still not done:** a work order for defect 12, if Chris wants one; the other platforms' iOS hosts; the rest of Tier 2; the mutation variants; and the manual device tier.
