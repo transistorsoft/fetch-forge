@@ -85,7 +85,7 @@ SUITE = ["termination-calibration", "api-smoke", "events-fetch-android",
          "api-constants", "events-initial-ignored", "events-duplicate", "events-task-android", "events-timeout-sdk",
          "stop-on-terminate", "headless-kill", "headless-activity-destroyed", "recreate-foreground-android",
          "ios-fetch-sim", "ios-timeout-sim", "ios-task-sim",
-         "ios-registration"]                                      # (WO-002 phase 2a) iOS's, n/a on Android
+         "ios-registration", "api-smoke-ios"]                     # (WO-002 phase 2a) iOS's, n/a on Android
 LISTS = {}
 
 OVERRIDES = []                                      # (symbol, kind, seam, why) — the Phase B cut list
@@ -709,7 +709,7 @@ seam("labkit.HEADLESS_NAMES", "hook", "labkit.py:3613-3618",
 seam("labkit.METRICS", "extend", "labkit.py:3445-3451 (the registry: no override)",
      "fetch's metrics: SDK-line counts, fetchTally, jobIds, jobsRegistered, configureOutcome; (Tier 1) jobStops, "
      "jobsCancelled, React Native HeadlessTask counts, driverEvents/driverTally/driverFinishes, appProcesses, timing "
-     "metrics; (phase 2a) the iOS legacy-fetch, custom-task and registration metrics")
+     "metrics; (phase 2a) the iOS legacy-fetch, custom-task, registration and request metrics")
 seam("labkit.IMPLICIT / EARLY_METRICS", "hook", "labkit.py:4548, :4571",
      "adds `configureOutcome: ok` and `foreignLines: 0` to every step that expects anything, both early (whole-log) "
      "metrics, in place")
@@ -930,6 +930,36 @@ def _fetch_metrics(m):
         return tally([hit.group(1) for hit in (re.search(r"point=sdkLaunchCall at=(\w+)", l)
                                                for l in c.window if m.line_pid(l) in own) if hit])
     _extend(m.METRICS, "sdkLaunchCalls", sdkLaunchCalls)
+
+    def bgSubmits(c):
+        """(api-smoke-ios) iOS: the requests the SDK handed BGTaskScheduler in the app's processes (its own line,
+        `submitTaskRequest: <BG<Kind>TaskRequest: <id>, …>`), `<id>:<kind>=n` with kind appRefresh or processing:
+        configure()'s fetch request and scheduleTask()'s; Android's jobsRegistered is the counterpart.  It shows the
+        SDK asked, not that the OS took it: the Simulator refuses every one (taskSubmitErrors, and the SDK's legacy
+        fallback for the fetch).  '-' for none, and on Android."""
+        own = launch_pids(c)
+        kinds = {"BGAppRefreshTaskRequest": "appRefresh", "BGProcessingTaskRequest": "processing"}
+        return tally(["%s:%s" % (hit.group(2), kinds.get(hit.group(1), hit.group(1))) for hit in (
+            re.search(r"\): submitTaskRequest: <(\w+): ([^,>\s]+)", l) for l in c.window if m.line_pid(l) in own) if hit])
+    _extend(m.METRICS, "bgSubmits", bgSubmits)
+
+    def bgCancels(c):
+        """(api-smoke-ios) iOS: the requests the SDK asked BGTaskScheduler to cancel in the app's processes (its own
+        `cancelTaskRequestWithIdentifier: <id>`), `<id>=n`: stop(taskId) cancels the task's (TSBGTask.m:192-199), and
+        stop() cancels the fetch's once the plugin's listener, the last, is removed (TSBackgroundFetch.m:288-290,
+        :140-145).  Android's jobIds at the step's end is the counterpart.  '-' for none, and on Android."""
+        own = launch_pids(c)
+        return tally([hit.group(1) for hit in (re.search(r"\): cancelTaskRequestWithIdentifier: (\S+)$", l.rstrip())
+                                               for l in c.window if m.line_pid(l) in own) if hit])
+    _extend(m.METRICS, "bgCancels", bgCancels)
+
+    def sdkSubscribers(c):
+        """(api-smoke-ios) iOS: the fetch listeners the SDK holds at the step's end (TSBGAppRefreshSubscriber's, the
+        probe's `subscribers=` in the last tick), sorted: '-' for none — stop() removes the plugin's
+        (RNBackgroundFetch.mm:92-94 at 85a6bf4).  `no-probe` where no tick carries the field (Android's probe has
+        none)."""
+        return c.last_state("subscribers", "no-probe")
+    _extend(m.METRICS, "sdkSubscribers", sdkSubscribers)
 
     def fetchTally(c):
         """(WO-002) Fetch events the SDK received, `taskId=n,…` sorted ('-' for none): recorded, for the taskIds a step

@@ -84,7 +84,7 @@ What it changes:
 | Vocabulary | [`harness/vocabulary.yaml`](harness/vocabulary.yaml) is seeded from `types/background-fetch` and has no State tree. `configure(config, onEvent, onTimeout?)` is an `events:` declaration (`subscribe: configure`, `args:` the config, `errors: true` for onTimeout); it can never be an `api:` hook. The `STATUS_*` and `NETWORK_TYPE_*` constants are probed: `{api: STATUS_AVAILABLE, probe: true, returns: {$: {equals: 2}}}` |
 | Headless names | `fetch` and `timeout` (`fetch_pack.HEADLESS_NAMES`, labkit's `HEADLESS_NAMES` hook). A lab driver logs `LAB point=headless event=fetch` for a HeadlessEvent with `timeout: false`, and `event=timeout` otherwise: fetch's HeadlessEvent has no name |
 | Implicit expectations | Every step that expects anything also expects `configureOutcome: ok` and `foreignLines: 0` (below). Both are early metrics, so a step can still end on its evidence |
-| Suite | `sweep.SUITE`: the first slice (`termination-calibration`, `api-smoke`, `events-fetch-android`), then Tier 1 on react-native Android (`api-constants`, `events-initial-ignored`, `events-duplicate`, `events-task-android`, `events-timeout-sdk`, `stop-on-terminate`, `headless-kill`, `headless-activity-destroyed`) and the measurement `recreate-foreground-android` (WO-002, suspected defect 10) |
+| Suite | `sweep.SUITE`: the first slice (`termination-calibration`, `api-smoke`, `events-fetch-android`), then Tier 1 on react-native Android (`api-constants`, `events-initial-ignored`, `events-duplicate`, `events-task-android`, `events-timeout-sdk`, `stop-on-terminate`, `headless-kill`, `headless-activity-destroyed`) and the measurement `recreate-foreground-android` (WO-002, suspected defect 10); then iOS's (`ios-fetch-sim`, `ios-timeout-sim`, `ios-task-sim`, `ios-registration`, `api-smoke-ios`) |
 | Setup / doctor | The fetch submodules, `capacitor/background-fetch`, the `tsbackgroundfetch` pin through `publish_native_fetch.sh`. The iOS pin is not built yet, so `./labkit setup` without `--os android` stops at the iOS native step even when doctor counts it as a to-do |
 
 **What a fetch lab driver logs, beyond bg-forge's protocol.** `LAB app=config json=<config>` before
@@ -237,7 +237,15 @@ actions:
 
     A second registration of one identifier crashes the app (BGTaskScheduler raises), so `crashes` catches it.
   - `sdkLaunchCalls`: where the host made its call, e.g. `scene=1`; `-` for none.
-- **Not on iOS yet:** `api-smoke`'s JobScheduler expectations have no iOS counterpart.
+- **API smoke (`api-smoke-ios`):** `api-smoke`'s hooks on iOS, in a scenario of its own, as bg-forge splits an API
+  scenario per OS. On the Simulator `scheduleTask` rejects (`outcome: rejected`, with the task identifier the iOS
+  host permits), and BGTaskScheduler's own lines replace JobScheduler's reads:
+  - `bgSubmits`: the requests the SDK handed BGTaskScheduler, by kind, e.g.
+    `com.transistorsoft.fetch:appRefresh=1,com.transistorsoft.fetchlab.task:processing=1`. It is the counterpart of
+    `jobsRegistered`, and like it, shows the SDK asked, not that the OS took the request.
+  - `bgCancels`: the requests the SDK asked it to cancel, e.g. `com.transistorsoft.fetch=1`.
+  - `sdkSubscribers`: the fetch listeners the SDK holds at the step's end (the last tick's probe), `-` for none.
+    With `sdkTasks`, it is the counterpart of `jobIds`.
 
 ## Pinning
 
