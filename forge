@@ -694,11 +694,20 @@ forge publish <target> [args...]
 
 Targets:
   native ios [args...]       Publish XCFramework (CocoaPods + SPM)
-    --version X.Y.Z          Explicit version
-    --bump patch|minor|major  Bump from latest tag
-    --push-cocoapods          Push to CocoaPods trunk
+                             Interactive: commits the version bump before
+                             it asks "Proceed with publish? [y/N]"
+    --version X.Y.Z          Explicit version (use this, not --bump)
+    --bump patch|minor|major  Bump from latest remote tag (falls back to
+                              0.0.0 if the tag lookup fails)
+    --no-cocoapods            Skip the CocoaPods Trunk push, which runs by
+                              default (--push-cocoapods changes nothing).
+                              Then push the podspec by hand, following
+                              WO-001's Trunk retry rules
     --dry-run                 Preview without publishing
-    --create-branch --create-pr  Release branch + PR workflow
+    --create-branch --create-pr  Not for releases: the version bump stays on
+                              the current branch, so the framework reports
+                              the previous version. Switches branch even
+                              with --dry-run
 
   native android [args...]   Publish AAR to Maven Central (Sonatype)
     --bump patch|minor|major  Bump version, stamp changelog, publish
