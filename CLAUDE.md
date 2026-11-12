@@ -75,12 +75,11 @@ imports types from `@transistorsoft/background-fetch-types` and calls `cordova/e
 ./forge build cordova          # tsc → www/index.js
 ./forge build all              # everything
 
-# Publish — Native iOS
-./forge publish native ios --bump patch              # bump, build, publish
-./forge publish native ios --version 4.0.7           # explicit version
-./forge publish native ios --push-cocoapods          # include CocoaPods trunk push
-./forge publish native ios --create-branch --create-pr  # release branch workflow
-./forge publish native ios --dry-run                 # preview without publishing
+# Publish — Native iOS. Interactive, and it pushes to CocoaPods Trunk by default:
+# read "Native iOS build + publish" below before running it.
+./forge publish native ios --version X.Y.Z --dry-run       # preview: builds, no commits/tags/uploads
+./forge publish native ios --version X.Y.Z                 # publish, INCLUDING the Trunk push
+./forge publish native ios --version X.Y.Z --no-cocoapods  # publish, skip Trunk (push by hand)
 
 # Publish — Native Android
 ./forge publish native android --bump patch          # bump, changelog, test, publish
@@ -131,9 +130,29 @@ Scripts live at `native/background-fetch/scripts/`:
 
 - **`publish-ios.sh`** — Full publish pipeline: version bump, changelog generation
   (opens `$EDITOR`), build, zip, GitHub Release + asset upload, Package.swift +
-  podspec update, tag, push, post-upload checksum verification.
-  Flags: `--version`, `--bump`, `--push-cocoapods`, `--create-branch`, `--create-pr`,
-  `--auto-merge`, `--dry-run`, `--yes`, `--retag`, `--no-build`
+  podspec update, tag, push, post-upload checksum verification, SwiftPM tag, and
+  last, the CocoaPods Trunk push (on by default).
+  Flags: `--version`, `--bump`, `--no-cocoapods`, `--push-cocoapods`, `--create-branch`,
+  `--create-pr`, `--auto-merge`, `--dry-run`, `--yes`, `--retag`, `--no-build`
+  - **It pushes to CocoaPods Trunk by default** (`PUSH_COCOAPODS=1`). Only `--no-cocoapods`
+    turns that off; `--push-cocoapods` changes nothing. A Trunk push is permanent. Unless
+    `--no-cocoapods` is passed, the script also stops at startup if `pod trunk me` shows no
+    session for the publishing account.
+  - **To skip Trunk,** pass `--no-cocoapods`, then push the podspec by hand from the tagged
+    release commit (`pod trunk push TSBackgroundFetch.podspec --skip-import-validation
+    --allow-warnings`), following the Trunk retry rules in WO-001's 2026-11-07 Log entry.
+    Never re-run the script to retry Trunk (WO-001, "Not an acceptable shortcut"). Trunk is
+    read-only from 2026-12-02: from then until WO-001 Phase 3 flips the default, always pass
+    `--no-cocoapods`.
+  - **Pass `--version X.Y.Z`** (or `--bump`, which reads the latest tag with `git ls-remote`
+    and stops if that fails). With neither, the script stops: there is no default, because
+    `versioning/TSBackgroundFetch.properties` normally holds the version already released.
+  - **`--create-branch` is not for releases.** The "Bump version" commit is made on the
+    current branch before the release branch is cut from `origin/<base>`, so the framework
+    is built reporting the previous version. It switches branches even under `--dry-run`.
+  - **It needs an interactive terminal, and it commits before it asks.** "Bump version to
+    X.Y.Z" (and "Update CHANGELOG for X.Y.Z", after `$EDITOR`) are committed before the
+    "Proceed with publish? [y/N]" prompt, so answering N leaves them on the branch.
 
 ## Native Android build + publish
 

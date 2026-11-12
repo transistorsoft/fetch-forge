@@ -70,7 +70,7 @@ git submodule update --init native/background-fetch react-native/background-fetc
 ### Publish
 
 ```bash
-./forge publish native ios                 # CocoaPods + SPM release
+./forge publish native ios --version X.Y.Z # CocoaPods + SPM release
 ./forge publish native android             # Maven Central (Sonatype)
 ./forge publish native android --snapshot  # Sonatype SNAPSHOT
 ./forge publish react-native               # npm publish
@@ -160,7 +160,7 @@ Options are forwarded to `build-ios.sh`:
 ### Release
 
 ```bash
-./forge publish native ios
+./forge publish native ios --version X.Y.Z
 ```
 
 This runs `native/background-fetch/scripts/publish-ios.sh`, which:
@@ -168,6 +168,8 @@ This runs `native/background-fetch/scripts/publish-ios.sh`, which:
 2. Packages and uploads to GitHub Releases
 3. Updates `Package.swift` checksum
 4. Pushes the CocoaPods podspec
+
+Pass `--version` (or `--bump`): the script stops without one, as there is no default version.
 
 ---
 
