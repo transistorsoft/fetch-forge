@@ -20,6 +20,8 @@ description: >
       UIKit's result `newData`, and SpringBoard's `RetrievedNewData`.
 platforms: [react-native]
 not_applicable:
+  capacitor: "2026-11-12 — no Capacitor iOS host yet (WO-002: Capacitor Android first, then iOS on CocoaPods
+    and SwiftPM)."
   android: "2026-11-10 — `fire:`, `background:` and `terminate:` are the Simulator's (a SpringBoard background fetch);
     Android's fetches are JobScheduler's, events-fetch-android's."
 measure_from: launch

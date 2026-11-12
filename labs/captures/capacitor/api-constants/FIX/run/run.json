@@ -1,0 +1,373 @@
+{
+ "label": "capacitor.api-constants.FIX.run",
+ "platform": "capacitor",
+ "os": "android",
+ "package": "com.transistorsoft.fetchlab.capacitor",
+ "scenario": "api-constants",
+ "variant": "FIX",
+ "step": "run",
+ "serial": "emulator-5580",
+ "evicted": [
+  "com.transistorsoft.backgroundgeolocation.react",
+  "com.transistorsoft.fetchlab.react"
+ ],
+ "foreignTransistorApps": [
+  "com.transistorsoft.backgroundgeolocation.react"
+ ],
+ "native": "4.1.1-master-399765c",
+ "native_source": {
+  "branch": "",
+  "commit": "399765cc89f03ccaec19464ea87f47c3f3d66f4d",
+  "dirty": "no"
+ },
+ "channel": null,
+ "native_resolved": null,
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "capacitor/background-fetch",
+  "commit": "9dd204a157a3da89b7ba983e7849ac25ea1e4f4a",
+  "dirty": "no"
+ },
+ "device": {
+  "avd": "Lab1",
+  "model": "sdk_gphone64_arm64",
+  "os": "Android 16",
+  "sdk": "36",
+  "data_free_mb": 2453,
+  "display": "awake",
+  "fgs_timeout_ms": null,
+  "play_services": 263635035
+ },
+ "activity": ".MainActivity",
+ "process": null,
+ "settle": 10,
+ "after": 15,
+ "end": {
+  "policy": "evidence",
+  "ended": "evidence",
+  "evidence_s": 0.3,
+  "end_s": 2.6,
+  "grace": {
+   "rule": "fgs",
+   "grace_s": 2,
+   "held": null,
+   "fgs_promotions": 0,
+   "floor_s": 0.0
+  },
+  "poll_s": 0.25,
+  "parse_ms": 1.7,
+  "parse_ms_max": 3.2
+ },
+ "timings": {
+  "install_s": 0.1,
+  "step_s": 3.7,
+  "t0": 1794499649.616,
+  "phases": {
+   "terminated": 0.025,
+   "others_stopped": 0.1,
+   "reset": 0.131,
+   "swept": 0.156,
+   "neutral_pre": 0.21,
+   "accuracy": 0.302,
+   "permissions": 0.302,
+   "sleep_end": 0.302,
+   "log_begun": 0.422,
+   "launch_mark": 0.44,
+   "verdict_cleared": 0.465,
+   "launch": 0.906,
+   "evidence": 1.159,
+   "grace_end": 3.196,
+   "alive": 3.493,
+   "trigger": 3.537,
+   "end": 3.537,
+   "capture_mark": 3.567,
+   "pusher_joined": 3.567,
+   "log_ended": 3.596,
+   "log_written": 3.596,
+   "capture_extras": 3.625,
+   "db_pulled": 3.628,
+   "run_json": 3.676,
+   "judged": 3.694,
+   "verdict_pushed": 3.733,
+   "settled": 4.238,
+   "snapshot": 4.982,
+   "neutral_post": 5.039,
+   "terminated_post": 5.066
+  },
+  "calls": {
+   "_adb": {
+    "n": 21,
+    "s": 0.813,
+    "bg_n": 1,
+    "bg_s": 0.046
+   },
+   "_stop_stream": {
+    "n": 2,
+    "s": 0.001,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.12,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.025,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.028,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "evict": {
+    "n": 2,
+    "s": 0.05,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fgs_all_foreground": {
+    "n": 1,
+    "s": 0.044,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "installed": {
+    "n": 1,
+    "s": 0.025,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.441,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "location_accuracy": {
+    "n": 2,
+    "s": 0.092,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 3,
+    "s": 0.09,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "native_resolved": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "network_default": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.111,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 13,
+    "s": 0.006,
+    "bg_n": 2,
+    "bg_s": 0.001
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 3,
+    "s": 0.11,
+    "bg_n": 1,
+    "bg_s": 0.046
+   },
+   "reset_app": {
+    "n": 1,
+    "s": 0.031,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.744,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 4,
+    "s": 0.102,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": -1.565,
+  "clock_offset_rtt_s": 0.018,
+  "log_phases": {
+   "boot": 0.96,
+   "evidence": 0.965,
+   "beat": 3.461
+  }
+ },
+ "measure_from": "trigger",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": true,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": null,
+ "host": null,
+ "network": {
+  "read": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "default": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "differs": [],
+  "put": false
+ },
+ "privacy": null,
+ "location_accuracy": {
+  "want": true,
+  "was": true,
+  "now": true
+ },
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [],
+ "hooks": [
+  {
+   "api": "NETWORK_TYPE_NONE",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 0
+    }
+   }
+  },
+  {
+   "api": "NETWORK_TYPE_ANY",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 1
+    }
+   }
+  },
+  {
+   "api": "NETWORK_TYPE_UNMETERED",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 2
+    }
+   }
+  },
+  {
+   "api": "NETWORK_TYPE_NOT_ROAMING",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 3
+    }
+   }
+  },
+  {
+   "api": "NETWORK_TYPE_CELLULAR",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 4
+    }
+   }
+  },
+  {
+   "api": "STATUS_RESTRICTED",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 0
+    }
+   }
+  },
+  {
+   "api": "STATUS_DENIED",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 1
+    }
+   }
+  },
+  {
+   "api": "STATUS_AVAILABLE",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "number",
+     "equals": 2
+    }
+   }
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-12 11:07:33"
+}

@@ -38,6 +38,8 @@ description: >
       +load alone in a background launch is not measured: no argument reaches that process.
 platforms: [react-native]
 not_applicable:
+  capacitor: "2026-11-12 — no Capacitor iOS host yet (WO-002: Capacitor Android first, then iOS on CocoaPods
+    and SwiftPM)."
   android: "2026-11-11 — BGTaskScheduler's launch-handler registration is iOS's; Android schedules JobScheduler jobs at
     configure() and scheduleTask() (api-smoke, events-task-android)."
 measure_from: launch

@@ -28,6 +28,10 @@ description: >
     * headlessEvents.fetch 0: the app is in the foreground throughout.
 platforms: [react-native]
 not_applicable:
+  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
+    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
+    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
+    bridge-neutral first."
   ios: "2026-11-05 — `job:` is JobScheduler's (`actions:` are Android's); an iOS fetch is fired by the lab hook (WO-002
     D3), which is ios-fetch-sim's."
 measure_from: launch

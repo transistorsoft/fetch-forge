@@ -1050,3 +1050,28 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - Neither Xcode 27.2's debugger nor `devicectl` delivers a legacy fetch to a device. Instruments 27.2 still has a Background Fetch simulation (`simulateBackgroundFetchForPID:`, through the device's process-control service), not yet tried on a device (NOT CHECKED).
     - `device process attach` returns before the attach completes, so wait for the process to be stopped.
     - `log collect` from a device needs root and ignores `--predicate`. The lab's `LAB` lines are `<private>` in a device log, so LLDB carried the values.
+- 2026-11-12 — **Capacitor host, Android: the first slice (MEASURED).** Chris chose the order Capacitor, Flutter, Cordova; Capacitor iOS on CocoaPods and SwiftPM; Android first; Capacitor 8.5.3.
+  - **`labs/platforms/capacitor`**, ported from bg-forge's Capacitor host (`addc50501`) with the React Native fetch host's driver, staging and native pin:
+    - `lab.yaml`: column 3, `cap`, package `com.transistorsoft.fetchlab.capacitor`, Android only for now.
+    - `build.sh`: it stages the checkout, refuses an APK that doesn't resolve the label with labs/m2's AAR, and proves which `bg.js` and `index.html` the APK carries.
+    - `app/`: the Capacitor 8.5.3 template, a `www/index.html` driver, and four Java classes (`MainActivity`, `LabApplication`, `LabPlugin`, `BackgroundFetchHeadlessTask`).
+  - **The driver** is React Native's, except that a recreation reloads the page. So it calls `configure()` on every page boot, and runs the first api batch on boot 1 only.
+  - **The closed world.** `api-constants` and `termination-calibration` list `capacitor`. The other 14 api scenarios excuse it with a dated reason:
+    - the 8 Android ones until the shared scenarios are made bridge-neutral, since they carry React Native's taskId, returns and metrics;
+    - the 6 iOS ones until the Capacitor iOS host exists.
+  - **The build** (`FIX`, label `4.1.1-master-399765c`): the plugin is staged from `capacitor/background-fetch` `9dd204a`, clean. `tsbackgroundfetch` resolves to the label with labs/m2's AAR (`74b20be4…`). `bg.js` inlines `@capacitor/core` 8.5.3 from the lab app; the checkout's own lock holds 8.3.0.
+  - **Found on the first run (MEASURED): `bg.js` died at load with `ReferenceError: BackgroundFetch is not defined`,** so no driver line ran.
+    - The cause: the plugin's `src/definitions.ts` re-exports three interfaces from `@transistorsoft/background-fetch-types` with a value-form `export {…} from`. The plugin's own `tsc` build erases them, but esbuild keeps the import.
+    - And the types package's runtime JS throws on load (1.0.0 `dist/BackgroundFetch.js`: `exports.default = BackgroundFetch;`, never defined).
+    - The lab now aliases the package to an empty module. A guard refuses that if `src` ever takes anything from it but the erased type names.
+    - Customers on the plugin's `tsc`-built `dist` are not affected: its `dist/esm/definitions.js` imports nothing from the package (PROVEN by reading).
+    - The types package's runtime JS is a finding for `types/background-fetch`: any runtime import of it throws. Not yet a work order.
+  - **Scored on Lab1** (`emulator-5580`):
+    - `api-constants` PASS: all 8 probes OK.
+    - `termination-calibration` PASS. `kill`: a headless fetch through the lab's Java task, finished OK, with `jobFinished`. `force-stop`: job 999 removed.
+    - Sweep `20261112-110552`: PASS 2, n/a 16 (14 excused, 2 not listed).
+  - **The selftest** now checks each platform's board column, board name and hosts (189 checks).
+  - **Next:**
+    1. Make the shared scenarios bridge-neutral and run Capacitor Android Tier 1. `stop-on-terminate`'s `finish` and `headless-activity-destroyed` are predicted red there (suspected defect 4).
+    2. Capacitor iOS: a WKWebView background spike first, then CocoaPods and SwiftPM.
+    3. Flutter, then Cordova.

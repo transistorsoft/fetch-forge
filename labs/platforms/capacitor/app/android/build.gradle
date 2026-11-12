@@ -1,0 +1,55 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.0'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+apply from: "variables.gradle"
+
+// LAB (WO-002): the native SDK under test, a label build.sh passes as -PlabNativeVersion.  The plugin reads it as
+// safeExtGet('backgroundFetchVersion', '4.1.+') (its android/build.gradle); there is NO fallback here, because the
+// plugin's own 4.1.+ would build an APK against whatever labs/m2 happens to hold and no label would name it.
+if (!project.hasProperty("labNativeVersion")) {
+    throw new GradleException("[lab] -PlabNativeVersion=<label> is required: the tsbackgroundfetch snapshot in " +
+        "labs/m2 this APK is built against (use ../../build.sh <label> <plugin>)")
+}
+ext.backgroundFetchVersion = project.labNativeVersion
+println("[lab] backgroundFetchVersion=${ext.backgroundFetchVersion}")
+
+// LAB (WO-002): com.transistorsoft:tsbackgroundfetch resolves from labs/m2 and NOWHERE else.  exclusiveContent makes
+// labs/m2 the only repository searched for that module in every project — the plugin's own `repositories {
+// mavenCentral() }` included — so a label missing from labs/m2 fails the build instead of quietly resolving a released
+// SDK.  Relative by default (from platforms/capacitor/app/android, ../../../../m2 = labs/m2); build.sh passes
+// -PlabMavenRepo.
+allprojects {
+    repositories {
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "labM2"
+                    url = rootProject.hasProperty("labMavenRepo") ? rootProject.property("labMavenRepo")
+                                                                  : "${rootProject.projectDir}/../../../../m2"
+                }
+            }
+            filter {
+                includeModule("com.transistorsoft", "tsbackgroundfetch")
+            }
+        }
+        google()
+        mavenCentral()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

@@ -1,0 +1,322 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fetch Capacitor lab</title>
+<style>
+  body { margin: 0; padding: calc(env(safe-area-inset-top, 20px) + 16px) 10px 12px 10px;
+         background: #fff; color: #111;
+         font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  #top    { position: sticky; top: 0; background: #fff;
+            margin: calc(-1 * (env(safe-area-inset-top, 20px) + 16px)) -10px 12px -10px; }
+  #head   { background: #fedd1e; color: #000; font-weight: 600; font-size: 13px;
+            display: flex; align-items: center; gap: 9px;
+            padding: calc(env(safe-area-inset-top, 20px) + 8px) 10px 8px 10px; }
+  #head img { width: 30px; height: 30px; border-radius: 6px; flex: none; }
+  #head-sub { font-weight: 400; font-size: 10px; color: #5a4a00; }
+  #tabs   { display: flex; border-bottom: 1px solid #e5e5ea; font-size: 12px; }
+  #tabs span    { padding: 8px 14px; color: #8a8a8e; cursor: pointer;
+                  border-bottom: 2px solid transparent; }
+  #tabs span.on { color: #1c1c1e; font-weight: 600; border-bottom-color: #1c1c1e; }
+  #view   { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
+  #status { margin: 14px 0 0 0; white-space: pre-wrap; font-size: 9px; color: #777; }
+  #log div { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; }
+</style>
+</head>
+<body>
+<!-- The page shell is bg-forge's Capacitor lab's (addc50501): the view under a header that stays on screen, Test and
+     Log tabs.  The driver below is the fetch lab's React Native driver (labs/platforms/react-native/app/index.js),
+     ported to a page that a recreation reloads. -->
+<div id="top">
+<div id="head"><img id="logo" alt=""><div><div id="head-title">Fetch Cap Lab</div><div id="head-sub"></div></div></div>
+<div id="tabs"><span id="tab-test" class="on" onclick="showTab('test')">Test</span><span id="tab-log" onclick="showTab('log')">Log</span></div>
+</div>
+<div id="test">
+<pre id="view">configure pending</pre>
+<pre id="status">booting</pre>
+</div>
+<div id="log" hidden></div>
+<script src="bg.js"></script>
+<script src="labapi.js"></script>
+<script src="logo.js"></script>
+<script src="labevents.js"></script>
+<script>
+// Capacitor fetch-lab driver (WO-002) — bg-forge's lab protocol, driving @transistorsoft/capacitor-background-fetch.
+// Capacitor recreates the WebView with the Activity, so this page boots again after a recreation: unlike React
+// Native's driver, it calls configure() on EVERY page boot (the new plugin instance must re-bind the SDK's callback),
+// while the first api batch, the anchor line and the slots run on boot 1 only.
+// Every line is `LAB app=…`; logcat carries them under the tag Capacitor/Console, so the harness matches on
+// substrings, never on line starts.
+const TAG = 'LAB';
+const LOG_KEEP = 200, logLines = [];
+let tab = 'test';
+const logRow = (s) => { const d = document.createElement('div'); d.textContent = s; return d; };
+const log = (s) => {
+  console.log(TAG + ' app=' + s);
+  logLines.push(s);
+  if (logLines.length > LOG_KEEP) logLines.shift();
+  if (tab !== 'log') return;
+  const pane = document.getElementById('log'), page = document.documentElement;
+  const atEnd = window.scrollY + window.innerHeight >= page.scrollHeight - 8;   // else a reader scrolled back
+  pane.appendChild(logRow(s));
+  if (pane.childNodes.length > LOG_KEEP) pane.removeChild(pane.firstChild);
+  if (atEnd) window.scrollTo(0, page.scrollHeight);
+};
+// The PUBLISHED surface — the class a customer imports (src/index.ts's named export BackgroundFetch), bundled by
+// build.sh into bg.js as the global BGFetch — never Capacitor.Plugins.BackgroundFetch, the native @PluginMethod roster.
+const BG = BGFetch.BackgroundFetch;
+const Lab = Capacitor.Plugins.Lab;
+
+// A value for a `key=value` field: the host reads `key=(\S+)`, so whitespace would cut it.
+const field = (v) => encodeURIComponent(String(v && v.message ? v.message : v));
+
+// --- finishing a delivery (React Native's) ----------------------------------------------------------------------
+
+const DEFAULT_KNOBS = {finishDelayMs: 1000, withholdFinish: false, finishOnTimeout: true};
+
+/** ms until finish(taskId), or null to withhold it: a fetch after finishDelayMs unless withholdFinish; a timeout at
+ *  once unless finishOnTimeout is false. */
+function finishAfter(timeout, knobs) {
+  if (timeout) return knobs.finishOnTimeout === false ? null : 0;
+  if (knobs.withholdFinish) return null;
+  const ms = Number(knobs.finishDelayMs);
+  return isFinite(ms) && ms > 0 ? ms : 0;
+}
+
+/** Calls finish(taskId) as the knobs say and reports it through `say(outcome, afterMs[, error])`.  Capacitor's
+ *  finish() returns a Promise: awaited, and a rejection is its own outcome. */
+function finishPer(taskId, timeout, knobs, say) {
+  const after = finishAfter(timeout, knobs);
+  if (after === null) { say('withheld', '-'); return Promise.resolve(); }
+  return new Promise((resolve) => setTimeout(async () => {
+    try {
+      await BG.finish(taskId);
+      say('ok', after);
+    } catch (e) {
+      say('rejected', after, e);
+    }
+    resolve();
+  }, after));
+}
+
+// --- the driver -------------------------------------------------------------------------------------------------
+
+let ticks = 0, boot = 0, beats = 0, fetches = 0, timeouts = 0, finished = 0;
+let hooks = [], knobs = DEFAULT_KNOBS, apiRan = 0;
+let configuring = null;            // the last configure() promise: the first batch waits for it
+let batchChain = Promise.resolve();   // one batch at a time, slots and the first batch alike
+let labEvents = [], labEventsArmed = 0, labEventsRender = null;
+let labView = 'title', labHeader = '', labTitle = 'lab';
+const LAB_TONE = {dim: '#8a8a8e', plain: '#1c1c1e', mark: '#3d6fa3', pass: '#1a7f37', fail: '#c0392b'};
+let lastVerdict = '';
+const labHtml = (lines) => lines.map((segs) => segs.map((s) =>
+  '<span style="color:' + (LAB_TONE[s.tone] || LAB_TONE.plain) + '">' +
+  String(s.text).replace(/&/g, '&amp;').replace(/</g, '&lt;') +   // pre-wrap keeps the spaces, and wraps AT them
+  '</span>').join('')).join('<br>');
+
+function redraw() {
+  const draw = (lines) => { document.getElementById('view').innerHTML = labHtml(LabApi.frame(lines, hooks)); };
+  if (labView === 'api') draw(LabApi.lines(labHeader));
+  else if (labView === 'events') { if (labEventsRender) labEventsRender(); }
+  else draw([[{text: labTitle, tone: 'plain'}], [{text: labHeader, tone: 'dim'}]]);
+}
+
+function showTab(name) {
+  if (name === tab) return;
+  tab = name;
+  document.getElementById('tab-test').className = name === 'test' ? 'on' : '';
+  document.getElementById('tab-log').className = name === 'log' ? 'on' : '';
+  document.getElementById('test').hidden = name !== 'test';
+  const pane = document.getElementById('log');
+  pane.hidden = name !== 'log';
+  if (name === 'log') {
+    pane.textContent = '';
+    logLines.forEach((s) => pane.appendChild(logRow(s)));
+  }
+  window.scrollTo(0, name === 'log' ? document.documentElement.scrollHeight : 0);
+}
+
+// The host's verdict, as run.py last pushed it: display only, never logged.
+async function pollVerdict() {
+  try {
+    const text = (await Lab.verdict()).value || '';
+    if (text === lastVerdict) return;
+    lastVerdict = text;
+    let v = null;
+    try { v = text ? JSON.parse(text) : null; } catch (e) { v = null; }
+    LabApi.setVerdict(v);
+    if (v && v.final) showTab('test');
+    redraw();
+  } catch (e) { /* display only */ }
+}
+
+// --- deliveries (React Native's) --------------------------------------------------------------------------------
+
+// The `events:` declarations of `configure` armed so far: {onEvent, onTimeout|null}, each handed every delivery.
+const subscribers = [];
+
+/** One delivery from configure()'s callbacks.  Logged first, then handed to the declarations, then finished: the
+ *  `event` line always precedes the `finish` line it causes.  A declaration is handed what the bridge hands a
+ *  customer's callbacks: the bare taskId string. */
+function onDelivery(taskId, timeout) {
+  const n = timeout ? ++timeouts : ++fetches;
+  log('event=' + (timeout ? 'timeout' : 'fetch') + ' n=' + n + ' taskId=' + field(taskId));
+  for (const s of subscribers.slice()) {
+    try {
+      if (!timeout) s.onEvent(taskId);
+      else if (s.onTimeout) s.onTimeout(taskId);
+    } catch (e) {
+      log('event-dispatch outcome=threw message=' + field(e));
+    }
+  }
+  finishPer(taskId, timeout, knobs, (outcome, after, e) => {
+    if (outcome === 'ok') finished++;
+    log('finish taskId=' + field(taskId) + ' timeout=' + timeout + ' after_ms=' + after + ' outcome=' + outcome +
+        (e ? ' message=' + field(e) : ''));
+  });
+}
+
+const fgEvent = (taskId) => onDelivery(taskId, false);
+const fgTimeout = (taskId) => onDelivery(taskId, true);
+
+/** The real configure(), always with the driver's own callbacks, echoing the config first (configDropped reads the
+ *  last `config json=` line, which must END with the JSON). */
+function configureWith(config, source) {
+  log('config json=' + JSON.stringify(config));
+  const t0 = Date.now();
+  const done = (async () => {
+    try {
+      const status = await BG.configure(config, fgEvent, fgTimeout);
+      log('configure source=' + source + ' outcome=ok status=' + status + ' ms=' + (Date.now() - t0));
+      return status;
+    } catch (e) {
+      log('configure source=' + source + ' outcome=rejected ms=' + (Date.now() - t0) + ' message=' + field(e));
+      return null;
+    }
+  })();
+  configuring = done;
+  return done;
+}
+
+// labevents.js arm() calls BG[decl.on](args?, delivered[, failed]).  For fetch the only member that delivers is
+// configure, whose callbacks are configure()'s own: so `configure` here SUBSCRIBES the declaration to the driver's
+// deliveries and, when the declaration carries `args`, makes the real configure() with them, as given.
+const EventBG = {
+  configure: function (...given) {
+    const fns = given.filter((a) => typeof a === 'function');
+    if (!fns.length) throw new Error('configure: no callback to deliver to');
+    const sub = {onEvent: fns[0], onTimeout: fns[1] || null};
+    subscribers.push(sub);
+    if (typeof given[0] !== 'function') configureWith(given[0], 'event-arm');
+    return {remove: () => {
+      const i = subscribers.indexOf(sub);
+      if (i >= 0) subscribers.splice(i, 1);
+    }};
+  },
+};
+
+// --- the schedule -----------------------------------------------------------------------------------------------
+
+// One `at_s` slot: its api hooks, then the declarations armed in it, then its removals.
+function onSlot(s, due) {
+  batchChain = batchChain.then(async () => {
+    log('slot at_s=' + s + ' late_ms=' + Math.max(0, Math.round(Date.now() - due)));
+    apiRan = await LabApi.runBatch(BG, hooks, log, s, apiRan);
+    redraw();
+    if (labEvents.length) {
+      labEventsArmed = LabEvents.arm(EventBG, labEvents, log, LabApi.ret, LabApi.walk, labEventsRender, s, labEventsArmed);
+      await LabEvents.remove(labEvents, log, s);
+    }
+  });
+}
+
+// Legacy tick-counted `call` hooks: fetch has none (lab.yaml supports.calls: []), so any is reported unsupported.
+async function runHooks(n) {
+  for (const hook of hooks.filter((h) => 'call' in h && h.at === n)) {
+    log('call=' + hook.call + ' outcome=unsupported');
+  }
+}
+
+async function tick() {
+  const n = ++ticks;
+  await batchChain;
+  let status = '-';
+  try { status = await BG.status(); } catch (e) { status = 'rejected'; }
+  let probe = '';
+  try { probe = (await Lab.probe()).probe; } catch (e) { probe = 'probeError=' + field(e); }
+  const line = 'tick n=' + n + ' boot=' + boot + ' status=' + status + ' fetches=' + fetches + ' timeouts=' + timeouts +
+      ' finished=' + finished + ' ' + probe;
+  log(line);
+  document.getElementById('status').textContent = line;
+  await runHooks(n);
+}
+
+async function main() {
+  const t0 = Date.now();
+  const args = await Lab.args();
+  const argsMs = Date.now() - t0;
+  boot = args.boot;
+  log('boot n=' + boot + ' args=' + JSON.stringify(args));
+  // The beat: every 0.5 s from the boot line, touching neither the SDK nor the Lab plugin.  Once per page.
+  setInterval(() => log('beat n=' + (++beats)), 500);
+  setInterval(pollVerdict, 250);
+  labTitle = args.scenario || 'lab';
+  document.getElementById('head-title').textContent = 'Fetch Cap Lab: ' + labTitle;
+  document.getElementById('logo').src = LabLogo;
+  document.getElementById('head-sub').textContent =
+    ['capacitor', Capacitor.getPlatform(), args.nativeLabel].filter(Boolean).join(' · ');
+
+  hooks = JSON.parse(args.hooks || '[]');
+  knobs = {finishDelayMs: args.finishDelayMs, withholdFinish: !!args.withholdFinish,
+           finishOnTimeout: args.finishOnTimeout !== false};
+  labEvents = JSON.parse(args.events || '[]');
+  labView = ['api', 'events', 'title'].includes(args.view) ? args.view
+    : labEvents.length ? 'events' : hooks.some((h) => h && typeof h.api === 'string') ? 'api' : 'title';
+  labHeader = 'boot=' + boot;
+  if (labView === 'events') {
+    labEventsRender = () => { document.getElementById('view').innerHTML = labHtml(LabApi.frame(LabEvents.lines(labEventsRender.header, LabApi), hooks)); };
+    labEventsRender.header = labHeader + '  armed ' + labEvents.length;
+  }
+  redraw();
+
+  // Every page boot: the arm, and the configure() it may make or the driver makes instead.  The declarations armed
+  // at boot come BEFORE the configure() that causes their deliveries; a boot-armed `configure` declaration with args
+  // makes that configure() itself (EventBG), so the driver then makes none of its own.
+  labEventsArmed = LabEvents.arm(EventBG, labEvents, log, LabApi.ret, LabApi.walk, labEventsRender, 'boot', 0);
+  const armConfigured = labEvents.some((d) => d && d.on === 'configure' && d.at_s === undefined && 'args' in d);
+  if (args.noConfigure) {
+    log('configure source=boot outcome=skipped reason=noConfigure');
+  } else if (armConfigured) {
+    log('configure source=boot outcome=skipped reason=event-arm');
+  } else {
+    // BackgroundFetchConfig is flat: configB64's keys are merged over the lab's defaults.
+    const extra = JSON.parse(args.config || '{}');
+    configureWith(Object.assign({minimumFetchInterval: 15, stopOnTerminate: args.stopOnTerminate,
+                                 startOnBoot: false, enableHeadless: true}, extra), 'boot');
+  }
+  const tickGcp = LabApi.tickGcpFor(hooks, labEvents);   // the protocol's derived flag; no per-tick cause here
+
+  const tConf = Date.now();
+  if (configuring) await configuring;
+  log('timing argsMs=' + argsMs + ' configureMs=' + (Date.now() - tConf));
+
+  // The first batch — every `api` hook with no `at_s` — once configure() has settled, then the anchor line and one
+  // timer per distinct `at_s` (labapi.js startSlots).  Boot 1 only: a recreated page runs no batch.
+  if (boot === 1) {
+    const tBatch = Date.now();
+    batchChain = batchChain.then(async () => {
+      apiRan = await LabApi.runBatch(BG, hooks, log, 'first', apiRan);
+      redraw();
+      const times = LabApi.slotTimes(hooks, labEvents);
+      log(LabApi.anchorLine(Date.now() - tBatch, times, tickGcp));
+      LabApi.startSlots(times, onSlot);
+    });
+  }
+  setInterval(tick, 4000);
+}
+
+main().catch((e) => log('error ' + field(e)));
+</script>
+</body>
+</html>

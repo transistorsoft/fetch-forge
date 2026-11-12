@@ -34,6 +34,10 @@ description: >
   jobIds is read at the step's end, so the step keeps its full window rather than ending on its evidence.
 platforms: [react-native]
 not_applicable:
+  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
+    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
+    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
+    bridge-neutral first."
   ios: "2026-11-11 — iOS has its own scenario, api-smoke-ios: there scheduleTask rejects on the Simulator, and what
     else is read is BGTaskScheduler's requests, not JobScheduler's jobs (one scenario per OS, as bg-forge's
     api-*-ios / -android pairs)."

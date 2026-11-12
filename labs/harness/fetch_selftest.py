@@ -1297,6 +1297,14 @@ def test_shipped():
             except (SystemExit, FileNotFoundError) as e:
                 why = str(e)
             check("variant %s loads" % name, why, None)
+    # (WO-002) Every platform this lab ships registers with its board column, board name and hosts; a new host's
+    # lab.yaml that loses one shows up here, not as a board with a missing or misplaced column.
+    for name, column, short, hosts in (("react-native", 2, "rn", ["android", "ios"]),
+                                       ("capacitor", 3, "cap", ["android"])):
+        check("platform %s column" % name, labkit.platform(name).get("column"), column)
+        check("platform %s board name" % name, labkit.board_name(name), short)
+        check("platform %s hosts" % name, labkit.hosts(name), hosts)
+    check("board order", labkit.board_order(), ["react-native", "capacitor"])
 
 
 def main():
