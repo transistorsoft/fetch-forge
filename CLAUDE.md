@@ -144,10 +144,9 @@ Scripts live at `native/background-fetch/scripts/`:
     Never re-run the script to retry Trunk (WO-001, "Not an acceptable shortcut"). Trunk is
     read-only from 2026-12-02: from then until WO-001 Phase 3 flips the default, always pass
     `--no-cocoapods`.
-  - **Always pass `--version X.Y.Z`; don't use `--bump`.** With neither, the script targets
-    `MARKETING_VERSION` from `versioning/TSBackgroundFetch.properties`, normally the version
-    already released, with no version prompt. `--bump` reads the latest tag with
-    `git ls-remote` and falls back to 0.0.0 if that fails, so `--bump patch` gives 0.0.1.
+  - **Pass `--version X.Y.Z`** (or `--bump`, which reads the latest tag with `git ls-remote`
+    and stops if that fails). With neither, the script stops: there is no default, because
+    `versioning/TSBackgroundFetch.properties` normally holds the version already released.
   - **`--create-branch` is not for releases.** The "Bump version" commit is made on the
     current branch before the release branch is cut from `origin/<base>`, so the framework
     is built reporting the previous version. It switches branches even under `--dry-run`.

@@ -169,8 +169,7 @@ This runs `native/background-fetch/scripts/publish-ios.sh`, which:
 3. Updates `Package.swift` checksum
 4. Pushes the CocoaPods podspec
 
-Always pass `--version`. Without it, the script targets the version already in
-`native/background-fetch/versioning/TSBackgroundFetch.properties`, normally the last release.
+Pass `--version` (or `--bump`): the script stops without one, as there is no default version.
 
 ---
 

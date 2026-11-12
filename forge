@@ -696,9 +696,9 @@ Targets:
   native ios [args...]       Publish XCFramework (CocoaPods + SPM)
                              Interactive: commits the version bump before
                              it asks "Proceed with publish? [y/N]"
-    --version X.Y.Z          Explicit version (always pass it; not --bump)
-    --bump patch|minor|major  Bump from latest remote tag (falls back to
-                              0.0.0 if the tag lookup fails)
+    --version X.Y.Z          Explicit version (this or --bump is required)
+    --bump patch|minor|major  Bump from latest remote tag (stops if the tag
+                              lookup fails)
     --no-cocoapods            Skip the CocoaPods Trunk push, which runs by
                               default (--push-cocoapods changes nothing).
                               Then push the podspec by hand, following
