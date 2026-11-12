@@ -9,16 +9,16 @@
  "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
  "evicted": [],
  "foreignTransistorApps": [],
- "native": "4.1.1-master-5de5242",
+ "native": "4.1.1-master-399765c",
  "native_source": {
   "branch": "",
-  "commit": "5de52423e1c5388afffa3d520f97dcb9b287ed29",
+  "commit": "399765cc89f03ccaec19464ea87f47c3f3d66f4d",
   "dirty": "no",
-  "marketing": "4.2.0",
-  "build": "4200"
+  "marketing": "4.2.1",
+  "build": "4201"
  },
  "channel": "spm",
- "native_resolved": "4200",
+ "native_resolved": "4201",
  "plugin": "default",
  "plugin_source": {
   "checkout": "react-native/background-fetch",
@@ -39,57 +39,57 @@
  },
  "timings": {
   "step_s": 15.7,
-  "t0": 1794415126.976,
+  "t0": 1794492273.289,
   "phases": {
-   "terminated": 0.088,
+   "terminated": 0.089,
    "others_stopped": 0.189,
-   "reset": 0.755,
-   "swept": 0.94,
-   "neutral_pre": 0.94,
-   "permissions": 0.94,
-   "sleep_end": 0.94,
-   "log_begun": 1.35,
-   "launch_mark": 1.48,
-   "verdict_cleared": 1.588,
-   "launch": 1.712,
-   "settle_end": 9.715,
-   "trigger": 9.862,
-   "end": 15.271,
-   "capture_mark": 15.404,
-   "pusher_joined": 15.404,
-   "log_ended": 15.654,
-   "log_written": 15.654,
-   "capture_extras": 15.654,
-   "db_pulled": 15.655,
-   "run_json": 15.715,
-   "judged": 15.727,
-   "verdict_pushed": 15.728,
-   "settled": 16.233,
-   "neutral_post": 16.233,
-   "terminated_post": 16.372
+   "reset": 0.774,
+   "swept": 0.97,
+   "neutral_pre": 0.97,
+   "permissions": 0.97,
+   "sleep_end": 0.97,
+   "log_begun": 1.376,
+   "launch_mark": 1.496,
+   "verdict_cleared": 1.6,
+   "launch": 1.728,
+   "settle_end": 9.729,
+   "trigger": 9.871,
+   "end": 15.291,
+   "capture_mark": 15.421,
+   "pusher_joined": 15.421,
+   "log_ended": 15.666,
+   "log_written": 15.667,
+   "capture_extras": 15.667,
+   "db_pulled": 15.667,
+   "run_json": 15.728,
+   "judged": 15.741,
+   "verdict_pushed": 15.741,
+   "settled": 16.245,
+   "neutral_post": 16.245,
+   "terminated_post": 16.382
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.243,
+    "s": 0.238,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.262,
+    "s": 2.261,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_tap_text": {
     "n": 15,
-    "s": 0.004,
+    "s": 0.003,
     "bg_n": 13,
-    "bg_s": 0.004
+    "bg_s": 0.003
    },
    "begin_log": {
     "n": 1,
-    "s": 0.41,
+    "s": 0.406,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -101,19 +101,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.216,
+    "s": 0.212,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.186,
+    "s": 0.196,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.25,
+    "s": 0.245,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -125,25 +125,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.101,
+    "s": 0.1,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.124,
+    "s": 0.128,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.409,
+    "s": 0.391,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.118,
+    "s": 0.119,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,9 +155,9 @@
    },
    "peek": {
     "n": 13,
-    "s": 0.015,
+    "s": 0.011,
     "bg_n": 13,
-    "bg_s": 0.015
+    "bg_s": 0.011
    },
    "permissions": {
     "n": 1,
@@ -167,13 +167,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.109,
+    "s": 0.105,
     "bg_n": 2,
     "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.453,
+    "s": 0.472,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -185,13 +185,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.405,
+    "s": 0.417,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.227,
+    "s": 0.223,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -200,7 +200,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.132
+   "boot": 3.334
   }
  },
  "measure_from": "launch",
@@ -251,5 +251,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-11 11:39:02"
+ "when": "2026-11-12 09:04:49"
 }

@@ -4,16 +4,20 @@ description: everything under test, fixed — the native master and each bridge'
 # 23f448c42), whose schema this follows: `native` a label published to labs/m2 and labs/xcframeworks, `native_source`
 # the full commit it was built from, `plugin` the checkout each platform builds.
 #
-# native: com.transistorsoft:tsbackgroundfetch:4.1.1-master-5de5242 in labs/m2, published by
+# native: com.transistorsoft:tsbackgroundfetch:4.1.1-master-399765c in labs/m2, published by
 #   labs/harness/publish_native_fetch.sh from a detached worktree of native/background-fetch at origin/master
-#   5de52423e ("chore: TSBackgroundFetch 4.2.0 (url + checksum)"); android/versioning/tsbackgroundfetch.properties
-#   still reads VERSION_NAME=4.1.1, so the label is 4.1.1-<branch>-<commit>.  The commit is in
-#   labs/m2/.provenance/4.1.1-master-5de5242.txt (dirty: no), which run.py's native_source() reads into every
-#   capture's run.json.  `./labkit setup` rebuilds the label from native_source.android when labs/m2 lacks it
-#   (labs/m2 is gitignored; fetch_pack._native_android, labkit.NATIVE's Android slot).
-# native_source.ios: (WO-002 phase 2) the same commit, its Simulator slice in labs/xcframeworks/4.1.1-master-5de5242,
+#   399765cc8 ("chore: TSBackgroundFetch 4.2.1 (url + checksum)", the 4.2.1 release, which carries WO-004's fix);
+#   android/versioning/tsbackgroundfetch.properties still reads VERSION_NAME=4.1.1, so the label is
+#   4.1.1-<branch>-<commit>.  The commit is in labs/m2/.provenance/4.1.1-master-399765c.txt (dirty: no), which run.py's
+#   native_source() reads into every capture's run.json.  `./labkit setup` rebuilds the label from
+#   native_source.android when labs/m2 lacks it (labs/m2 is gitignored; fetch_pack._native_android, labkit.NATIVE's
+#   Android slot).
+# (WO-004, 2026-11-12) Moved from 5de5242 (4.2.0, label 4.1.1-master-5de5242), where ios-stop-start's `stopped` was red.
+#   android/ is the same at both commits and the AAR is byte-identical (sha256 74b20be4…), so FIX's Android captures,
+#   swept on 5de5242's label, were not re-swept; only react-native iOS was, on both channels.
+# native_source.ios: (WO-002 phase 2) the same commit, its Simulator slice in labs/xcframeworks/4.1.1-master-399765c,
 #   built and published by labs/harness/publish_native_fetch_ios.sh (fetch_pack._native_ios).  The label keeps
-#   Android's version: versioning/TSBackgroundFetch.properties at 5de5242 reads 4.2.0 (4200), which the provenance
+#   Android's version: versioning/TSBackgroundFetch.properties at 399765c reads 4.2.1 (4201), which the provenance
 #   records as marketing/build, and which the plugin podspecs' `~> 4.2` needs (D6).
 # plugin: `worktree`, which each platform's lab.yaml maps to its own checkout; react-native maps it to `default`,
 #   i.e. default_checkout {repo}/react-native/background-fetch (build.sh stages a copy of it).  run.json records the
@@ -22,8 +26,8 @@ description: everything under test, fixed — the native master and each bridge'
 #   75d3ed0..2acdc21 touches only CHANGELOG.md, the podspec, ios/Package.swift, the deleted iOS xcframework and
 #   package.json `swiftpmConfig` (read only by RN's Apple SwiftPM scripts): the Android plugin built is 4.4.2's
 #   either way, but a checkout at the parent's pin records plugin 75d3ed0 in run.json, not 2acdc21.
-native: 4.1.1-master-5de5242
+native: 4.1.1-master-399765c
 native_source:
-  android: 5de52423e1c5388afffa3d520f97dcb9b287ed29
-  ios: 5de52423e1c5388afffa3d520f97dcb9b287ed29
+  android: 399765cc89f03ccaec19464ea87f47c3f3d66f4d
+  ios: 399765cc89f03ccaec19464ea87f47c3f3d66f4d
 plugin: worktree

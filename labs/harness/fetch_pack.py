@@ -725,8 +725,9 @@ seam("labkit.expectations", "wrap", "labkit.py:4968",
 
 # ---------------------------------------------------------------------------------------------------- metrics
 
-# Android SDK lines (native/background-fetch 5de5242, the FIX label; unchanged from 71718f9).  Counted in the window,
-# as every vendored metric is, from the app under test's own processes (Capture.sdk).
+# Android SDK lines (native/background-fetch 5de5242; android/ is the same at 399765c, FIX's pin since 2026-11-12;
+# unchanged from 71718f9).  Counted in the window, as every vendored metric is, from the app under test's own
+# processes (Capture.sdk).
 SDK_COUNTS = {
     "fetchReceived": ("%- Background Fetch event received: %", "BackgroundFetch.java:225"),
     "fetchFinished": ("%- finish: %", "BackgroundFetch.java:196"),
