@@ -1,0 +1,56 @@
+# Capacitor platform manifest — fetch lab (WO-002).  Ported from bg-forge's labs/platforms/capacitor (bg-forge
+# addc50501, byte-identical there to the vendored 76f6536ac): a stock Capacitor 8.5.3 Android project, never run
+# through `cap sync`, here driving @transistorsoft/capacitor-background-fetch.  The template's android:configChanges
+# are untouched — that omission is what makes the bold and fontscale triggers recreate the Activity.
+#
+# (WO-002, 2026-11-12) Android only so far: no `ios:` block, so labkit.hosts() offers no iOS cell.  Chris's order:
+# Capacitor Android, then Capacitor iOS on both channels (pods, spm), then Flutter, then Cordova.
+name: capacitor
+# Its column on a board, and its place in a sweep's queue and build pass (bg-forge's Capacitor column).
+column: 3
+short: cap                        # its name in a board's eight-character column (labkit.board_name)
+# Distinct from bg-forge's com.transistorsoft.labs.* (WO-002 "Distinct package ids"): the two labs share the Lab
+# devices and their claims, and each lab's first step evicts every other lab app by prefix (bg-forge WO-191).
+package: com.transistorsoft.fetchlab.capacitor
+activity: .MainActivity
+
+build:
+  cwd: platforms/capacitor
+  cmd: ["./build.sh", "{native}", "{plugin}"]
+  apk: platforms/capacitor/app/android/app/build/outputs/apk/debug/app-debug.apk
+
+# Web assets are copied by hand (run.py copies www/ before the build): `npx cap sync` would regenerate
+# capacitor.plugins.json and the plugin wiring, silently swapping the plugin under test for the published one.
+# build.sh writes capacitor.plugins.json itself and bundles the plugin's PUBLISHED surface (src/index.ts) into
+# assets/public/bg.js beside the copied www/.
+web:
+  src: platforms/capacitor/app/www
+  dest: platforms/capacitor/app/android/app/src/main/assets/public
+
+plugins:
+  worktree: default          # the checkout default_checkout names (build.sh stages a copy of it)
+
+# The checkout `default` builds.  run.py hashes its HEAD and working tree into the source stamp, so a plugin
+# commit invalidates the installed app instead of passing for it.
+default_checkout: "{repo}/capacitor/background-fetch"
+
+supports:
+  # The template's android:configChanges omits fontScale and fontWeightAdjustment, so bold and fontscale recreate
+  # the Activity; `finish` is the second `am start --ez finishNow true`.
+  triggers: [bold, fontscale, finish, none]
+  calls: []                  # no legacy tick-counted `call` hooks: fetch scenarios use `api` hooks
+
+notes:
+  - "(WO-002) Launch extras honoured, as React Native's: configB64/hooksB64/eventsB64/scenario/nativeLabel/view/stopOnTerminate/finishNow, and the fetch knobs noConfigure (bool), finishDelayMs (int, default 1000), withholdFinish (bool), finishOnTimeout (bool, default true). Read whatever type `am start` sent them as (--ez/--ei/--es). The boot line's args= lists what was honoured."
+  - "(WO-002) The three finish knobs are also written to SharedPreferences `lab-knobs` by MainActivity.onCreate (commit, not apply), because the headless task has no launch intent: it reads the LAST launch's knobs."
+  - "(WO-002) configB64 is FLAT (BackgroundFetchConfig has no groups) and is merged over the driver's defaults {minimumFetchInterval: 15, stopOnTerminate: <the extra>, startOnBoot: false, enableHeadless: true} before the boot configure(). The driver echoes `LAB app=config json={…}` before every configure() it makes."
+  - "(WO-002) A recreation builds a new Bridge, new plugin instances and a new WebView, so the page reloads: unlike React Native, the driver calls configure() on EVERY page boot, which re-binds the SDK's callback to the new plugin instance. The first api batch, the anchor line and the slots run on boot 1 only (labkit expects that of a page-reload host)."
+  - "(WO-002) Fetch events arrive through configure()'s two callbacks. The driver logs `LAB app=event=fetch|timeout n=<k> taskId=<id>`, hands the taskId to every armed `events:` declaration of `configure` (EventBG, as React Native's), then finishes per the knobs: `LAB app=finish taskId=… timeout=… after_ms=… outcome=ok|withheld|rejected|threw` (Capacitor's finish() returns a Promise, so it is awaited)."
+  - "(WO-002) `api` hooks run against the PUBLISHED surface — BGFetch.BackgroundFetch, the class src/index.ts exports and a customer imports, bundled by build.sh — never Capacitor.Plugins.BackgroundFetch, the native @PluginMethod roster."
+  - "(WO-002) Headless is Java-only on Capacitor: no JavaScript runs headless. BackgroundFetchHeadlessTask sits at <applicationId>.BackgroundFetchHeadlessTask (BackgroundFetchPlugin.java's lookup: getPackageName() + '.BackgroundFetchHeadlessTask', so no applicationIdSuffix). It logs `LAB point=headless event=fetch|timeout taskId=<id> timeout=<bool>`, then `LAB point=task-probe <probe>`, then finishes per the persisted knobs: `LAB point=task-api api=finish args=<taskId> outcome=ok|withheld|threw after_ms=<ms>`. Nothing it logs starts with `point=headless-`."
+  - "(WO-002) The probe (`Lab.probe()`, every tick and at onCreate/resume/onDestroy, and `point=appCreate` in LabApplication.onCreate in every process) is React Native's: reflective, never building an SDK singleton — LifecycleManager's and BackgroundFetch's own static instances read BY TYPE (`headless=`, `background=`, `adapter=`), and the SDK's persisted task ids from SharedPreferences TSBackgroundFetch `tasks`."
+  - "(WO-002) Native pin: build.sh <label> resolves com.transistorsoft:tsbackgroundfetch:<label> ONLY from labs/m2 (exclusiveContent in android/build.gradle; the label is required, the plugin's own `4.1.+` never applies), then refuses an APK whose resolved version is not the label or whose AAR is not byte-identical to labs/m2's."
+  - "(WO-002) The plugin is STAGED, not linked: build.sh copies the checkout's working-tree files (minus example/) into .stage/capacitor-background-fetch (gitignored), records the checkout, HEAD, dirty flag and a content hash in .lab-source, and builds the plugin's android/ from there, so Gradle never writes into the submodule."
+  - "(WO-002) bg.js is bundled by esbuild from the stage's src/index.ts with @capacitor/core resolved from THIS app's node_modules (NODE_PATH), never the checkout's: the core inlined into bg.js must be the version whose native bridge the app runs (@capacitor/android 8.5.3; the checkout's lock holds 8.3.0). build.sh proves it from esbuild's metafile."
+  - "(WO-002, 2026-11-12, MEASURED) @transistorsoft/background-fetch-types is aliased to an empty module while bundling, as the plugin's own tsc build erases it: src/definitions.ts re-exports three interfaces with a value-form `export {…} from`, which tsc drops (dist/esm/definitions.js imports nothing from the package) but esbuild keeps, and the types package's runtime JS throws on load (1.0.0 dist/BackgroundFetch.js: `exports.default = BackgroundFetch;`, never defined). The first api-constants run died in bg.js with `ReferenceError: BackgroundFetch is not defined`. build.sh refuses the alias if src ever takes anything but those erased type names from the package."
+  - "JS console lines reach logcat under the tag Capacitor/Console, wrapped in 'File: … - Msg: …'; the harness matches on substrings."

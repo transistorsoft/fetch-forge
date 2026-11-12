@@ -1,0 +1,86 @@
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import java.security.MessageDigest
+
+apply plugin: 'com.android.application'
+
+android {
+    // (WO-002) Distinct from bg-forge's com.transistorsoft.labs.*: the labs share the Lab devices.  No
+    // applicationIdSuffix: the plugin finds the headless task at <getPackageName()>.BackgroundFetchHeadlessTask.
+    namespace = "com.transistorsoft.fetchlab.capacitor"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.transistorsoft.fetchlab.capacitor"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    implementation project(':transistorsoft-capacitor-background-fetch')
+}
+
+apply from: 'capacitor.build.gradle'
+
+// LAB (WO-002): which tsbackgroundfetch the debug APK actually links, read from the RESOLVED graph, never from the
+// label it was asked for (React Native's task, labs/platforms/react-native/app/android/app/build.gradle).  build.sh
+// runs it beside assembleDebug and refuses an APK whose resolved version is not the label, or whose AAR is not
+// byte-identical to labs/m2's.  The configuration is captured here, at configuration time, so the action reads no
+// `project`.
+tasks.register("labNativeResolved") {
+    def classpath = configurations.named("debugRuntimeClasspath")
+    notCompatibleWithConfigurationCache("reads the resolved dependency graph")
+    doLast {
+        def cfg = classpath.get()
+        def result = cfg.incoming.resolutionResult
+        def comps = result.allComponents.findAll {
+            it.moduleVersion?.group == "com.transistorsoft" && it.moduleVersion?.name == "tsbackgroundfetch"
+        }
+        if (comps.isEmpty()) {
+            println("[lab] tsbackgroundfetch resolved=NONE")
+            return
+        }
+        def requested = result.allDependencies.findAll {
+            it.requested instanceof org.gradle.api.artifacts.component.ModuleComponentSelector &&
+                it.requested.group == "com.transistorsoft" && it.requested.module == "tsbackgroundfetch"
+        }.collect { "${it.from.id.displayName}->${it.requested.version}" }.unique().join(",")
+        comps.each { c ->
+            def reasons = c.selectionReason.descriptions.collect { it.description }.join("|").replace(' ', '_')
+            println("[lab] tsbackgroundfetch resolved=${c.moduleVersion.version} requested=${requested} reason=${reasons}")
+        }
+        def aars = cfg.incoming.artifactView { view ->
+            view.attributes { it.attribute(Attribute.of("artifactType", String), "aar") }
+            view.componentFilter { id ->
+                id instanceof ModuleComponentIdentifier && id.group == "com.transistorsoft" && id.module == "tsbackgroundfetch"
+            }
+        }.files.files
+        aars.each { f ->
+            def md = MessageDigest.getInstance("SHA-256")
+            f.withInputStream { s -> byte[] buf = new byte[1 << 16]; int n; while ((n = s.read(buf)) > 0) md.update(buf, 0, n) }
+            println("[lab] tsbackgroundfetch aar=${f} sha256=${md.digest().encodeHex()}")
+        }
+    }
+}

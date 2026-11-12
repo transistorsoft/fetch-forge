@@ -29,6 +29,10 @@ description: >
       not measured yet).
 platforms: [react-native]
 not_applicable:
+  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
+    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
+    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
+    bridge-neutral first."
   ios: "2026-11-09 — iOS has no headless mode and stopOnTerminate is a no-op there (TSBackgroundFetch.m:388-393);
     `actions:` are Android's."
 stopOnTerminate: true

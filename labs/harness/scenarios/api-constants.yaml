@@ -17,7 +17,7 @@ description: >
 
   `noConfigure`: the driver makes no configure() (configureOutcome '-'); the probes need none.  Every expectation is
   an early one, so the step ends on its evidence.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 settle: 10
 after: 15
 extras: {noConfigure: true}

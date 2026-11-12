@@ -1,0 +1,14 @@
+   crashes                          0                      expected 0            ok
+   jobsRegistered                   999                    expected 999          ok
+   jobsAtForceStop                  999                    expected 999          ok
+   jobIds                           -                      expected -            ok
+   fetchReceived                    0                      expected 0            ok
+   headlessEvents.fetch             0                      expected 0            ok
+   headlessTally                    -                      expected any          ok
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => PASS

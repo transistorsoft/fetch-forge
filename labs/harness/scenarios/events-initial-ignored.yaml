@@ -27,6 +27,10 @@ description: >
   after scheduling (a loaded emulator) is delivered as a real fetch — measured 26-40 ms after (api-smoke's history).
 platforms: [react-native]
 not_applicable:
+  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
+    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
+    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
+    bridge-neutral first."
   ios: "2026-11-09 — JobScheduler is Android's: iOS schedules BGAppRefresh with no immediate first run, and `job:` is an
     Android action."
 measure_from: launch

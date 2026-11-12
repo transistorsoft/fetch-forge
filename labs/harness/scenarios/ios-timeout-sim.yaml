@@ -13,6 +13,8 @@ description: >
   WO-002 suspected defect 11.
 platforms: [react-native]
 not_applicable:
+  capacitor: "2026-11-12 — no Capacitor iOS host yet (WO-002: Capacitor Android first, then iOS on CocoaPods
+    and SwiftPM)."
   android: "2026-11-10 — `fire:` and `background:` are the Simulator's; Android's SDK timeout is events-timeout-sdk's."
 measure_from: launch
 steps:

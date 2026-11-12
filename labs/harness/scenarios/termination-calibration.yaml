@@ -45,7 +45,7 @@ description: >
   run.py force-stops the app before and after every step (backends.Adb.terminate, `am force-stop`) — wipes the
   app's jobs between steps: every step must configure() again (the RN driver does at boot), and a job can never be
   carried from one step to the next except across a `process: live` step.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
   ios: "2026-11-05 — iOS has no headless mode and `stopOnTerminate` is a no-op there (TSBackgroundFetch.m:388-393);
     `actions:` (kill, force_stop, job) are Android's."

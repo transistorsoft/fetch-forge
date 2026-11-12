@@ -33,6 +33,8 @@ description: >
       stop() works here: MEASURED 2026-11-11.
 platforms: [react-native]
 not_applicable:
+  capacitor: "2026-11-12 — no Capacitor iOS host yet (WO-002: Capacitor Android first, then iOS on CocoaPods
+    and SwiftPM)."
   android: "2026-11-11 — `fire:` is the Simulator's (a SpringBoard background fetch); Android's stop()/start() is
     stop-start's (suspected defect 2)."
 measure_from: launch

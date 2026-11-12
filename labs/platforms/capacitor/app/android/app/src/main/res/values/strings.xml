@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Fetch Cap Lab</string>
+    <string name="title_activity_main">Fetch Cap Lab</string>
+    <string name="package_name">com.transistorsoft.fetchlab.capacitor</string>
+    <string name="custom_url_scheme">com.transistorsoft.fetchlab.capacitor</string>
+</resources>
