@@ -408,6 +408,9 @@ This is the transition hazard. Picture an app that combines a fetch plugin on Sw
     - An app root needing `native-background-geolocation` `from: "4.8.0"` together with fetch `from: "4.2.0"` is still unresolvable: every TSLocationManager 4.8.0–4.8.3 requires 4.1.0..<4.2.0.
   - **So the pre-publish gate in "Release order" now covers SwiftPM as well as CocoaPods.** Releasing a fetch plugin before a TSLocationManager that accepts 4.2 makes an app that also uses geolocation fail to resolve its packages, on both channels. The planned widening (`~> 4.1` / `from: "4.1.0"`) is compatible with the 4.2.0 floor.
   - The Appendix A/B manifests are the 2026-11-05 experiment snapshots and still show `from: "4.1.0"`.
+- 2026-11-12 — **TSBackgroundFetch 4.2.1 released** (WO-004's fix; native `399765c`, tags `ios/4.2.1` and `4.2.1`), with no Catalyst slice. Chris chose "No Catalyst; defer D4", so D4 is deferred again.
+  - **Trunk, pushed by hand** (`--no-cocoapods`, then `pod trunk push` from the tag): both pushes, at 13:55:58Z and 14:01:52Z, printed "Calling the GitHub commit API timed out". 4.2.1 was in `Specs/c/4/1/TSBackgroundFetch/` and in Trunk's API (created 13:55:59 UTC) by 14:02:31Z: the same pattern as 4.2.0, above. The CDN index (`all_pods_versions_c_4_1.txt`) did not list it at 14:09:51Z and did at 14:30:22Z.
+  - The unreleased bridge branches' `~> 4.2` and `from: "4.2.0"` accept 4.2.1 unchanged.
 
 ## Appendix A: React Native `ios/Package.swift` (PROVEN in experiment A on RN 0.88.1)
 
