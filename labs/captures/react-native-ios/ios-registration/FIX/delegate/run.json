@@ -9,16 +9,16 @@
  "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
  "evicted": [],
  "foreignTransistorApps": [],
- "native": "4.1.1-master-5de5242",
+ "native": "4.1.1-master-399765c",
  "native_source": {
   "branch": "",
-  "commit": "5de52423e1c5388afffa3d520f97dcb9b287ed29",
+  "commit": "399765cc89f03ccaec19464ea87f47c3f3d66f4d",
   "dirty": "no",
-  "marketing": "4.2.0",
-  "build": "4200"
+  "marketing": "4.2.1",
+  "build": "4201"
  },
  "channel": null,
- "native_resolved": "4200",
+ "native_resolved": "4201",
  "plugin": "default",
  "plugin_source": {
   "checkout": "react-native/background-fetch",
@@ -38,46 +38,46 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 15.6,
-  "t0": 1794414947.407,
+  "step_s": 15.7,
+  "t0": 1794491997.296,
   "phases": {
-   "terminated": 0.084,
-   "others_stopped": 0.183,
-   "reset": 0.671,
-   "swept": 0.888,
-   "neutral_pre": 0.888,
-   "permissions": 0.888,
-   "sleep_end": 0.888,
-   "log_begun": 1.301,
-   "launch_mark": 1.438,
-   "verdict_cleared": 1.541,
-   "launch": 1.663,
-   "settle_end": 9.666,
-   "trigger": 9.809,
-   "end": 15.218,
-   "capture_mark": 15.347,
-   "pusher_joined": 15.347,
-   "log_ended": 15.582,
-   "log_written": 15.582,
-   "capture_extras": 15.582,
-   "db_pulled": 15.582,
-   "run_json": 15.638,
-   "judged": 15.651,
-   "verdict_pushed": 15.651,
-   "settled": 16.152,
-   "neutral_post": 16.152,
-   "terminated_post": 16.285
+   "terminated": 0.117,
+   "others_stopped": 0.23,
+   "reset": 0.736,
+   "swept": 0.934,
+   "neutral_pre": 0.934,
+   "permissions": 0.934,
+   "sleep_end": 0.934,
+   "log_begun": 1.342,
+   "launch_mark": 1.477,
+   "verdict_cleared": 1.583,
+   "launch": 1.708,
+   "settle_end": 9.713,
+   "trigger": 9.854,
+   "end": 15.264,
+   "capture_mark": 15.392,
+   "pusher_joined": 15.392,
+   "log_ended": 15.635,
+   "log_written": 15.636,
+   "capture_extras": 15.636,
+   "db_pulled": 15.636,
+   "run_json": 15.693,
+   "judged": 15.706,
+   "verdict_pushed": 15.707,
+   "settled": 16.209,
+   "neutral_post": 16.209,
+   "terminated_post": 16.335
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.228,
+    "s": 0.238,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.154,
+    "s": 2.22,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -89,7 +89,7 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.413,
+    "s": 0.408,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -101,19 +101,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.209,
+    "s": 0.216,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.217,
+    "s": 0.197,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.235,
+    "s": 0.243,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -125,25 +125,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.099,
+    "s": 0.113,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.123,
+    "s": 0.125,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.408,
+    "s": 0.404,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.116,
+    "s": 0.119,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,9 +155,9 @@
    },
    "peek": {
     "n": 13,
-    "s": 0.011,
+    "s": 0.01,
     "bg_n": 13,
-    "bg_s": 0.011
+    "bg_s": 0.01
    },
    "permissions": {
     "n": 1,
@@ -167,13 +167,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.104,
+    "s": 0.107,
     "bg_n": 2,
     "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.377,
+    "s": 0.391,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -191,7 +191,7 @@
    },
    "terminate": {
     "n": 2,
-    "s": 0.216,
+    "s": 0.242,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -200,7 +200,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.057
+   "boot": 3.221
   }
  },
  "measure_from": "launch",
@@ -251,5 +251,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-11 11:36:03"
+ "when": "2026-11-12 09:00:12"
 }

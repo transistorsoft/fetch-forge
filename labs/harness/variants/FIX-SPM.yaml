@@ -5,9 +5,9 @@ description: FIX, with the iOS apps getting TSBackgroundFetch through Swift Pack
 # build.channels runs it (react-native's ios: block); every other view is n/a (WO-192 D1).  The React Native SwiftPM
 # build resolves the plugin's own ios/Package.swift requirement against a mirror of the label's iOS package
 # (labs/platforms/react-native/build.sh).  Captures are keyed by variant name, so FIX-SPM has its own board rows.
-native: 4.1.1-master-5de5242
+native: 4.1.1-master-399765c
 native_source:
-  android: 5de52423e1c5388afffa3d520f97dcb9b287ed29
-  ios: 5de52423e1c5388afffa3d520f97dcb9b287ed29
+  android: 399765cc89f03ccaec19464ea87f47c3f3d66f4d
+  ios: 399765cc89f03ccaec19464ea87f47c3f3d66f4d
 plugin: worktree
 channel: spm

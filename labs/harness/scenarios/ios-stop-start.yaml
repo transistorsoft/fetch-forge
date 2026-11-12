@@ -20,10 +20,12 @@ description: >
       note).  It does not say how the SDK should get there.  MEASURED RED 2026-11-11 (Lab1, FIX): SpringBoard ran the fetch, UIKit called the
       delegate, the SDK requested the fetch again (appRefresh=2), held the handler (`pendingFetch=true`) past its
       UIBackgroundTask's expiry, and SpringBoard recorded `Error completing … invalid response (the process probably
-      exited)` and `with result: Error` 31.2 s after the delivery.  Not Simulator-only: a device app that does not
-      permit com.transistorsoft.fetch takes the legacy path too (TSBackgroundFetch.m:129-131, WO-004).  GREEN on
+      exited)` and `with result: Error` 31.2 s after the delivery.  Not Simulator-only: a device app with no
+      BGTaskSchedulerPermittedIdentifiers key takes the legacy path too (TSBackgroundFetch.m:129-131; MEASURED on an
+      iPhone 2026-11-12, WO-004).  GREEN on
       WO-004's fix (variants WO-004 and WO-004-SPM, 2026-11-11): the fetch is completed at once with noData, the SDK
-      requests nothing again, and SpringBoard records `NoNewDataAvailable`.
+      requests nothing again, and SpringBoard records `NoNewDataAvailable`.  GREEN on FIX and FIX-SPM since native
+      4.2.1 (2026-11-12, label 4.1.1-master-399765c).
     * restarted: stop(), then start(), then a fetch 3 s later.  start() re-adds the plugin's listener and requests the
       fetch again (stop() had cleared fetchScheduled); the fetch reaches configure()'s callback, the driver finishes it
       1 s later, and SpringBoard records `RetrievedNewData`.  bgSubmits counts configure's request, start()'s, and the

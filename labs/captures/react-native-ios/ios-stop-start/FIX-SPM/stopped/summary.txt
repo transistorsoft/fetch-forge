@@ -1,11 +1,11 @@
    crashes                          0                      expected 0            ok
    bgCancels                        com.transistorsoft.fetch=1 expected com.transistorsoft.fetch=1 ok
    driverEvents                     -                      expected -            ok
-   bgSubmits                        com.transistorsoft.fetch:appRefresh=2 expected com.transistorsoft.fetch:appRefresh=1 MISMATCH
-   springboardResults               Error=1                expected NoNewDataAvailable=1 MISMATCH
+   bgSubmits                        com.transistorsoft.fetch:appRefresh=1 expected com.transistorsoft.fetch:appRefresh=1 ok
+   springboardResults               NoNewDataAvailable=1   expected NoNewDataAvailable=1 ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok
    apiAssertions                    ok                     expected ok           ok
    actionsDone                      ok                     expected ok           ok
-   => FAIL
+   => PASS

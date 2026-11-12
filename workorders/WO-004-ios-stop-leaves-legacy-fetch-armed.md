@@ -1,7 +1,7 @@
 ---
 id: WO-004
 title: Where BGTaskScheduler is unavailable (the iOS Simulator), stop() leaves UIKit's legacy background fetch armed, and a fetch after it is requested again and its completion handler never called
-status: verify
+status: done
 created: 2026-11-11
 platforms: [ios]
 submodules: [native/background-fetch]
@@ -14,11 +14,11 @@ supersedes: []
 >
 > **Evidence markers:** **MEASURED** = seen in a lab capture; **PROVEN** = read in source; **INFERRED** = reasoning, not run; **NOT CHECKED** = not looked at.
 >
-> Source citations are native `5de5242` (the lab's pin); `TSBackgroundFetch.m` is unchanged at native `HEAD` (`fc74063`). The bridges' are their checked-out commits: React Native `85a6bf4`, Cordova `38ad0fe`, Capacitor `9dd204a`, Flutter `11d53b8`.
+> Source citations are native `5de5242`, the lab's pin until 2026-11-12, when `FIX` and `FIX-SPM` moved to 4.2.1's `399765c`. `TSBackgroundFetch.m` is the same at `fc74063`; the fix (`0670713`, released in 4.2.1) changes it. The bridges' are their checked-out commits: React Native `85a6bf4`, Cordova `38ad0fe`, Capacitor `9dd204a`, Flutter `11d53b8`.
 
 ## Diagnosis
 
-**MEASURED** (`labs/captures/react-native-ios/ios-stop-start/{FIX,FIX-SPM}/stopped`, sweeps `20261111-122633` and `20261111-122826`, Lab1, iPhone 17 Pro Simulator, iOS 27.2; native `4.1.1-master-5de5242` (iOS 4.2.0), react-native plugin `85a6bf4`; CocoaPods and SwiftPM alike).
+**MEASURED** (`labs/captures/react-native-ios/ios-stop-start/{FIX,FIX-SPM}/stopped`, sweeps `20261111-122633` and `20261111-122826`, Lab1, iPhone 17 Pro Simulator, iOS 27.2; native `4.1.1-master-5de5242` (iOS 4.2.0), react-native plugin `85a6bf4`; CocoaPods and SwiftPM alike). Those red captures are in git at `3f74ec3`; since 2026-11-12 the same paths hold `FIX`'s and `FIX-SPM`'s green ones, on native 4.2.1 (Log).
 
 The app in front, its boot `configure()` resolved, then `stop()`, then `fire: fetch` (`simctl push` with `content-available`) 3 s later:
 
@@ -41,7 +41,7 @@ The scenario's `stopped` step reads `bgSubmits com.transistorsoft.fetch:appRefre
 **Where it reaches users:**
 - **The iOS Simulator** (MEASURED): BGTaskScheduler is unavailable there, so every configured app takes the legacy fallback. A developer who tests `stop()` on the Simulator sees the app still fetched, and each fetch after it end in `Error` about 31 s later.
 - **A device** (INFERRED): not reached. configure() takes BGTaskScheduler's path, so the legacy interval is never set, and `cancelBGAppRefresh` cancels the request that was submitted.
-  - (Corrected 2026-11-11, from the review below.) That holds only when the app permits `com.transistorsoft.fetch`.
+  - (Corrected 2026-11-11, from the review below.) That holds only when the app permits `com.transistorsoft.fetch`. (Corrected 2026-11-12, the device check, Log: on a device it fails only for an app with no `BGTaskSchedulerPermittedIdentifiers` key, MEASURED. Apple documents that the key's presence disables the legacy fetch methods on iOS 13+, so an app whose key lacks `com.transistorsoft.fetch` takes the SDK's legacy branch but UIKit ignores it, INFERRED.)
     - React Native's install docs make listing it a manual "required" step (`docs/INSTALL-AUTO-IOS.md:41-45`); Cordova's `plugin.xml:28-33` adds it.
     - An app that skipped it never registers the refresh task, so `useTaskScheduler` stays NO. configure() then sets the legacy interval at `:129-131`, the iOS 13+ branch, on a device too (PROVEN, source).
     - Whether iOS then keeps running opportunistic legacy fetches after `stop()` is INFERRED.
@@ -95,7 +95,7 @@ The anchor `// (WO-004)` goes at both changes, and the native CHANGELOG entry ca
 
 ## Platform parity
 
-- **iOS:** affected where BGTaskScheduler is unavailable (MEASURED on the Simulator, on both distribution channels; device not affected, INFERRED, as above). (Corrected 2026-11-11: also on a device whose app does not permit `com.transistorsoft.fetch`, the `:129-131` path; PROVEN in source, not measured.) The fix is in native `TSBackgroundFetch.m` and reaches every bridge through the native library. Whether each bridge picks up a native patch release without a change: React Native's podspec requires `~> 4.2` (WO-002 Log, 2026-11-10); the others' iOS requirements are NOT CHECKED here.
+- **iOS:** affected where BGTaskScheduler is unavailable (MEASURED on the Simulator, on both distribution channels; device not affected, INFERRED, as above). (Corrected 2026-11-11 and 2026-11-12: also on a device for an app with no `BGTaskSchedulerPermittedIdentifiers` key, the `:129-131` path; that path MEASURED on an iPhone on the fix, the defect itself not run there. Log.) The fix is in native `TSBackgroundFetch.m` and reaches every bridge through the native library. Whether each bridge picks up a native patch release without a change: React Native's podspec requires `~> 4.2` (WO-002 Log, 2026-11-10); the others' iOS requirements are NOT CHECKED here.
 - **Android:** N/A. There is no legacy interval to leave armed. `stop()` with no taskId finishes any running task, cancels every job and clears the fetch callback (`BackgroundFetch.java:147-160`), and the app holds no job afterwards (MEASURED by `api-smoke`, `jobIds -`). Android's own stop/start question is WO-002's suspected defect 2 (`stop-start`), a different defect.
 
 ## Test plan
@@ -108,7 +108,7 @@ The anchor `// (WO-004)` goes at both changes, and the native CHANGELOG entry ca
 - **XCTest** (`TSBackgroundFetchTests.m`, 39 tests): all pass. A new `test_wo_004_…` for change 2 needs the expiration block reachable from a test (it is an inline block today), for instance factored into a method the test can call; INFERRED, not designed further.
   - (Revised 2026-11-11.) The target runs without a host app, so a stand-in replaces `UIApplication.sharedApplication` where a test must see what the SDK hands UIKit.
   - Tests for change 1 (the reset, and that a later listener-less fetch leaves it Never), change 2 (no subscriber; only finished subscribers; a subscriber that takes the timeout keeps it) and change 3 (completed at once with `NoData`, no interval written, no background task begun).
-- **On-device:** not needed for the defect, which a device does not reach (INFERRED). (Corrected 2026-11-11: needed for an app whose Info.plist does not permit `com.transistorsoft.fetch`, the `:129-131` path. Not yet designed.) A device check that `stop()`/`start()` still behave on BGTaskScheduler's path belongs to the manual tier (`ios-device-bgtask`), not yet designed.
+- **On-device:** not needed for the defect, which a device does not reach (INFERRED). (Corrected 2026-11-11: needed for an app whose Info.plist does not permit `com.transistorsoft.fetch`, the `:129-131` path. Not yet designed.) A device check that `stop()`/`start()` still behave on BGTaskScheduler's path belongs to the manual tier (`ios-device-bgtask`), not yet designed. (2026-11-12: both were run by hand on an iPhone with `devicectl` and LLDB, outside the lab's tooling, the first as an app with no `BGTaskSchedulerPermittedIdentifiers` key (Verification); the tier itself is still WO-002's to design. Log.)
 
 ## Out of scope
 
@@ -141,7 +141,7 @@ The anchor `// (WO-004)` goes at both changes, and the native CHANGELOG entry ca
 - [x] `TSBackgroundFetchTests` pass, including `test_wo_004_…` (2026-11-11: 45 of 45 at native `0670713`, a fresh build on the scratch Simulator. Five of the six `test_wo_004_…` shown red without their change; the sixth, `…LeavesHandlerToSubscriberTimeout`, is a guard that passes without it by design. Log)
 - [x] Native CHANGELOG entry carries `(WO-004)` (`CHANGELOG-iOS.md`, `## Unreleased`, in `0670713`)
 - [x] WO-002's suspected defect 12 points at this work order's result (2026-11-11)
-- [ ] On a device (the manual tier, not yet designed; Test plan): an app that does not permit `com.transistorsoft.fetch` (the `:129-131` path), and `stop()` then `start()` on BGTaskScheduler's path
+- [x] On a device (Test plan): an app with no `BGTaskSchedulerPermittedIdentifiers` key (the `:129-131` path), and `stop()` then `start()` on BGTaskScheduler's path (2026-11-12, iPhone 17 Pro, iOS 26.7.1, FetchLab with a device build of `0670713`, driven by `devicectl` and LLDB: both PASS; Log). (Corrected 2026-11-12: the box said "an app that does not permit `com.transistorsoft.fetch`". Apple documents that the key's presence disables the legacy fetch methods on iOS 13+, so on a device that path is live only for an app with no key, which is what was measured.)
 
 ## Log
 
@@ -293,3 +293,47 @@ The anchor `// (WO-004)` goes at both changes, and the native CHANGELOG entry ca
     - the device check (Verification);
     - merging the native branch into native `master`, and a release with it;
     - `FIX` and `FIX-SPM` pin `5de5242`, so `ios-stop-start` stays red there until that pin moves.
+- 2026-11-12 — **Device check passed; the fix released as TSBackgroundFetch 4.2.1; `FIX` and `FIX-SPM` green. Status `done`.** Chris chose, for the remaining items: "Run it on my phone", "Merge, release 4.2.1, Trunk", "No Catalyst; defer D4", "The 4.2.1 commit, iOS sweeps"; then "Go ahead, phone is ready".
+  - **The device check (MEASURED),** on iPhone 17 Pro (Chris), iOS 26.7.1, over Wi-Fi:
+    - **Builds:** TSBackgroundFetch archived for iphoneos from `labs/checkouts/native-06707138c` (`0670713`, clean), with code signing off and an ad-hoc signature after, like the lab's Simulator slice. That was the fix's first device compile, with no new warnings. FetchLab, Debug, was built against it through `LAB_TSBF` and signed with Apple Development for team `32A636YFGZ`, using the existing wildcard team profile (no account change). Its `FetchLab.debug.dylib` carries `_expireLegacyFetch` and the no-subscriber line. Check (a)'s build is the same app with `BGTaskSchedulerPermittedIdentifiers` deleted from its Info.plist, re-signed. Nothing tracked changed; the next sweep re-installed the lab app's gitignored Pods.
+    - **Driver:** `devicectl` launched the app suspended, with the lab's launch arguments (`status`; `stop()` at `at_s` 30; `start()` at 90). LLDB attached through CoreDevice and set breakpoints that log and continue: `submitTaskRequest:error:`, `cancelTaskRequestWithIdentifier:`, `setMinimumBackgroundFetchInterval:`, and TSBackgroundFetch's handler, `stop:`, `start:`, listener and `finish:` methods. Timed actions ran on the main thread. The driver was rehearsed first on a scratch Simulator, since deleted.
+    - **(b) The committed plist, BGTaskScheduler's path: PASS.**
+      - configure() submitted the request.
+      - A simulated launch (`_simulateLaunchForTaskWithIdentifier:`) at +17 s ran `handleBGAppRefreshTask`, which rescheduled. React Native's listener finished it 1 s later, and BackgroundTasks logged "Marking simulated task complete".
+      - `stop()` at +38 s removed the listener, cancelled the request, and called `setMinimumBackgroundFetchInterval:` with Never (a call Apple documents as disabled while the key is present).
+      - The launch at +60 s ran nothing; BackgroundTasks logged "No task request with identifier com.transistorsoft.fetch has been scheduled".
+      - `start()` at +98 s added the listener and submitted again. The launch at +120 s was delivered and finished.
+    - **(a) No key, the legacy path: PASS.**
+      - Nothing was registered or submitted; configure() set the interval to 900.
+      - `stop()` at +38.6 s removed the listener, called `cancelTaskRequestWithIdentifier:` (no request was pending), and set the interval to Never (change 1).
+      - With no subscriber left, a legacy fetch at +60 s was completed inside the call with `1` (NoData). The fetch was the app delegate's `application:performFetchWithCompletionHandler:`, called from LLDB. The SDK logged `no subscriber: completed with no data`, and nothing set the interval again (change 3).
+      - `start()` at +98.7 s set 900 again.
+    - **Limits:**
+      - Neither Xcode 27.2's debugger nor `devicectl` can make iOS deliver a legacy fetch to a device: the debugger has no Simulate Background Fetch, and `devicectl` has no such command. Xcode 27.2's Instruments still has one (its Background Fetch command, `simulateBackgroundFetchForPID:` over the device's process-control service); it was not tried (NOT CHECKED on iOS 26.7.1). So (a)'s fetch was called in-process, and whether iOS stops scheduling fetches after Never stays INFERRED.
+      - (b)'s launches were simulated by BackgroundTasks itself.
+      - The 5de5242 baseline was not run on the device.
+    - **The `:129-131` case on a device** (a correction to the Diagnosis's and the CHANGELOG's wording): Apple documents that a `BGTaskSchedulerPermittedIdentifiers` key disables `application:performFetchWithCompletionHandler:` and `setMinimumBackgroundFetchInterval:` on iOS 13+. So on a device the legacy path is live only for an app with no key. An app whose key lacks `com.transistorsoft.fetch` takes the SDK's legacy branch, but UIKit ignores it (INFERRED). The CHANGELOG entry shipped in 4.2.1 as written.
+    - **Evidence:** the LLDB transcripts, and FetchLab's lines from the phone's log.
+      - `log collect` from a device needs root (Chris authorized `sudo` in his terminal) and ignores `--predicate`. So the whole log from 13:29Z was collected; FetchLab's 1,469 log entries were kept and the archive deleted.
+      - The lab's own `LAB` lines are `<private>` in a device log.
+      - None of this is in the repo. FetchLab was uninstalled afterwards.
+  - **Native merge,** in the main checkout's submodule, following 4.2.0's convention: `release-4.2.1` was cut from `master`. `b6c6717` merges the fix branch into it, and `0459259` merges it into `master`, whose tree is `0670713`'s. Pushed `478767b..0459259`; `release-4.2.1` stays local.
+  - **TSBackgroundFetch 4.2.1,** published by Chris (`./forge publish native ios --version 4.2.1 --no-cocoapods`, confirmed at its prompt):
+    - Commits `7d277f3` (4.2.1, 4201), `c07623b` (the CHANGELOG heading) and `399765c` (url and checksum).
+    - Tags `ios/4.2.1` and `4.2.1` on `399765c`, and the GitHub Release, Latest, at 13:51Z.
+    - A fresh download matches Package.swift's checksum `93e8b3ac…`, and both slices read 4.2.1 (4201) and carry the fix.
+    - `master` was pushed by hand (`0459259..399765c`): the script pushes only the tags.
+    - No Catalyst slice (WO-001's D4, deferred again).
+  - **CocoaPods Trunk,** pushed by hand from the tag. Lint passed.
+    - Pushes at 13:55:58Z and at 14:01:52Z each printed "Calling the GitHub commit API timed out", as for 4.2.0 (WO-001). The Specs path was checked before the second push.
+    - 4.2.1 was in `CocoaPods/Specs` and in Trunk's API (created 13:55:59 UTC) at 14:02:31Z. Its source is the release zip, iOS 15.0. The CDN index did not list it at 14:09:51Z and did at 14:30:22Z.
+  - **`FIX` and `FIX-SPM` moved to the release commit,** label `4.1.1-master-399765c`.
+    - android/ is unchanged since `5de5242` and the AAR is byte-identical (`74b20be4…`), so Android was not re-swept.
+    - React Native iOS: sweeps `20261112-085802` (`FIX`) and `20261112-090249` (`FIX-SPM`), 7 of 7 each. `ios-stop-start`'s `stopped` went from FAIL to PASS on both: `bgSubmits` appRefresh 2 to 1, and `springboardResults` Error to NoNewDataAvailable.
+    - The red captures stay in git at `3f74ec3`.
+  - **Done:** every Verification box is ticked, and the previous entry's Still open items are closed.
+  - **Left as they are:** the variants `WO-004` and `WO-004-SPM` (runnable evidence); the gitignored WO-004 labels and `labs/checkouts`; the local `release-4.2.1` branch.
+  - **Follow-ups, not done:**
+    - CLAUDE.md, `forge help` and `publish-ios.sh`'s header call `--push-cocoapods` opt-in, but the script pushes Trunk unless given `--no-cocoapods`; and `--create-branch` builds the old version.
+    - TSLocationManager's use of the listener API, before its range widens to 4.2.
+    - This work order's Out of scope items.
