@@ -6,7 +6,7 @@
    legacyFetchStates                background=1           expected background=1 ok
    legacyResults                    newData=1              expected newData=1    ok
    springboardResults               RetrievedNewData=1     expected RetrievedNewData=1 ok
-   bgSilenceMs                      3382                   expected >=2000       ok
+   bgSilenceMs                      2924                   expected >=2000       ok
    driverTally                      fetch:capacitor-background-fetch=1 expected fetch:capacitor-background-fetch=1 ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
