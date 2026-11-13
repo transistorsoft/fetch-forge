@@ -1,0 +1,103 @@
+name: restart-foreground-android
+description: >
+  (WO-007's lab guard, 2026-11-13) An app that restarts itself must stay in the foreground as far as the SDK knows.
+  When an app calls finish() and then startActivity(), the new Activity resumes BEFORE the old one is destroyed
+  (MEASURED by WO-007's adb probe at 0.1 and 0.3 s), so the old bridge's destroy hook runs last, with the new page on
+  screen.  WO-007's first approved Capacitor fix went headless on every non-recreation destroy and sent that page's
+  next fetch to the headless path (MEASURED red by the probe); the fix acts only on the Activity resumed last, as
+  React Native does (ReactHostImpl acts on its current Activity alone).
+
+  Caused with `trigger: finish` and the launch extra restartOnFinish: the host answers finishNow with finish(), then
+  at once startActivity() of a copy of its own launch intent (finishNow absent), so the new Activity boots with the
+  same args (MainActivity onNewIntent, both hosts).  The job runs 4 s after the OLD Activity's `point=onDestroy`,
+  after the hook under test; the app is in the foreground throughout, in one process.
+
+  WHAT THE STEP READS (from the launch) — the values a sound bridge gives:
+    * restartOrder `resumed-first`: the old Activity's onDestroy probe names the new one as current, so the ordering
+      under test happened.  Without it the step proves nothing: a destroy before the relaunch resumes passes even on
+      the regressed fix (its new Activity's resume clears the flag; the probe's 1.5 s row).
+    * appProcesses 1: a restart, not a new process.
+    * configure@0: exactly one delivery, the bridge's own fetch taskId (driverTally per platform); driverEvents
+      `fetch=1`; fetchReceived 1, fetchFinished 1, jobFinished 1, stoppingOnTerminate 0; jobIds 999 at the end.
+    * headless false: the last probe in the window, from the new Activity (its ticks, resumed+2s).
+    * lifecycleTally: recorded.
+  The regression reads, in `run`, stoppingOnTerminate 1, driverEvents `-`, jobIds `-` and headless true; in
+  `stop-on-terminate-false`, headlessEvents.fetch 1, driverEvents `-` and headless true.
+
+  Scope: this guards the "acts on every destroy" regression only.  A plugin with no destroy hook at all passes too
+  (the probe's unfixed row): a plain finish is stop-on-terminate's `finish` and headless-activity-destroyed's.
+
+  React Native keeps its JS context: the re-mounted root runs main() again as boot 2, which configures nothing new.
+  Capacitor's page reloads and configures again on boot 2 (the reschedule recreate-foreground-android pins), so
+  jobsCancelled reads 999 there (platform_expect).
+platforms: [react-native, capacitor]
+not_applicable:
+  ios: "2026-11-13 — iOS has no headless mode and the Simulator host no finish trigger; `job:` actions are Android's."
+measure_from: launch
+# Both steps (description): each platform's own fetch taskId, and Capacitor's reschedule on its page's boot 2.
+platform_expect:
+  react-native: {driverTally: "fetch:react-native-background-fetch=1"}
+  capacitor: {driverTally: "fetch:capacitor-background-fetch=1", jobsCancelled: "999"}
+steps:
+  - name: run
+    settle: 10
+    after: 30
+    trigger: finish
+    extras: {restartOnFinish: true}
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 1
+        max: 1
+        # Any bridge's fetch taskId: driverTally pins each platform's own (platform_expect).
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
+                                         cordova-background-fetch, flutter_background_fetch]}}
+    actions:
+      - {after: {point: onDestroy}, delay_s: 4, job: 999}
+    expect:
+      crashes: 0
+      restartOrder: resumed-first
+      appProcesses: 1
+      driverEvents: "fetch=1"
+      fetchReceived: 1
+      fetchFinished: 1
+      jobFinished: 1
+      stoppingOnTerminate: 0
+      jobsCancelled: "-"
+      headless: false
+      jobIds: "999"
+      lifecycleTally: any
+      bootBroadcasts: any
+  # The stopOnTerminate false branch: the regression hands the fetch to the headless path instead of the page.
+  - name: stop-on-terminate-false
+    settle: 10
+    after: 30
+    trigger: finish
+    extras: {restartOnFinish: true}
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: false, enableHeadless: true, startOnBoot: false}
+        min: 1
+        max: 1
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
+                                         cordova-background-fetch, flutter_background_fetch]}}
+    actions:
+      - {after: {point: onDestroy}, delay_s: 4, job: 999}
+    expect:
+      crashes: 0
+      restartOrder: resumed-first
+      appProcesses: 1
+      driverEvents: "fetch=1"
+      fetchReceived: 1
+      fetchFinished: 1
+      jobFinished: 1
+      headlessEvents.fetch: 0
+      rnHeadlessStarts: 0
+      rnHeadlessErrors: 0
+      stoppingOnTerminate: 0
+      fetchTimeouts: 0
+      jobsCancelled: "-"
+      headless: false
+      jobIds: "999"
+      lifecycleTally: any
+      bootBroadcasts: any

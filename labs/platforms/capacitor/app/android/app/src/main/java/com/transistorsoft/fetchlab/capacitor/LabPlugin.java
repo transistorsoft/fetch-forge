@@ -24,6 +24,7 @@ public class LabPlugin extends Plugin {
         result.put("finishDelayMs", MainActivity.integer(intent, "finishDelayMs", MainActivity.DEFAULT_FINISH_DELAY_MS));
         result.put("withholdFinish", MainActivity.bool(intent, "withholdFinish", false));
         result.put("finishOnTimeout", MainActivity.bool(intent, "finishOnTimeout", true));
+        result.put("restartOnFinish", MainActivity.bool(intent, "restartOnFinish", false));   // (WO-007) MainActivity
         result.put("scenario", MainActivity.string(intent, "scenario"));
         result.put("nativeLabel", MainActivity.string(intent, "nativeLabel"));
         result.put("config", MainActivity.decode(intent, "configB64", "{}"));

@@ -84,6 +84,7 @@ HEADLESS_NAMES = ("fetch", "timeout")
 SUITE = ["termination-calibration", "api-smoke", "events-fetch-android",
          "api-constants", "events-initial-ignored", "events-duplicate", "events-task-android", "events-timeout-sdk",
          "stop-on-terminate", "headless-kill", "headless-activity-destroyed", "recreate-foreground-android",
+         "restart-foreground-android",                       # (WO-007's lab guard, 2026-11-13)
          "ios-fetch-sim", "ios-timeout-sim", "ios-task-sim",
          "ios-registration", "api-smoke-ios", "ios-stop-start"]   # (WO-002 phase 2a) iOS's, n/a on Android
 LISTS = {}
@@ -709,7 +710,7 @@ seam("labkit.HEADLESS_NAMES", "hook", "labkit.py:3613-3618",
 seam("labkit.METRICS", "extend", "labkit.py:3445-3451 (the registry: no override)",
      "fetch's metrics: SDK-line counts, fetchTally, jobIds, jobsRegistered, configureOutcome; (Tier 1) jobStops, "
      "jobsCancelled, React Native HeadlessTask counts, driverEvents/driverTally/driverFinishes, appProcesses, timing "
-     "metrics; (phase 2a) the iOS legacy-fetch, custom-task, registration and request metrics")
+     "metrics; (phase 2a) the iOS legacy-fetch, custom-task, registration and request metrics; (WO-007) restartOrder")
 seam("labkit.IMPLICIT / EARLY_METRICS", "hook", "labkit.py:4548, :4571",
      "adds `configureOutcome: ok` and `foreignLines: 0` to every step that expects anything, both early (whole-log) "
      "metrics, in place")
@@ -1174,9 +1175,33 @@ def _fetch_metrics(m):
                 keys.append("headless:%s" % hit.group(2) if hit.group(2) else hit.group(3))
         return tally(keys)
 
+    def restartOrder(c):
+        """(WO-007) Whether another Activity resumed before the step's finishing Activity was destroyed: the order an
+        app that restarts itself (finish(), then startActivity()) produces, in which a bridge's destroy hook runs with
+        a live page on screen.  Read from the host's
+        `LAB point=onDestroy activity=X … isFinishing=true … current=Y`, logged before super.onDestroy() and so
+        before the plugin's hook; Y is the host's sCurrent, set in onResume.
+        `resumed-first` when Y is another Activity, `destroyed-first` when Y is X or null (a plain finish, or a
+        relaunch that came too late), `no-probe` when the line carries no current= (a probeError), `-` when the app's
+        own processes log no finishing onDestroy in the window.  The Activity is the one `point=finishNow` named, when
+        one did."""
+        rows = [n for _, n in own_window(c)]
+        named = [c.field(n, "activity") for n in rows if (m.TAG + " point=finishNow ") in n]
+        for n in rows:
+            if (m.TAG + " point=onDestroy ") not in n or c.field(n, "isFinishing") != "true":
+                continue
+            x = c.field(n, "activity")
+            if named and x != named[0]:
+                continue
+            y = c.field(n, "current", None)
+            if y is None:
+                return "no-probe"
+            return "resumed-first" if y not in ("null", x) else "destroyed-first"
+        return "-"
+
     for fn in (fetchTally, jobIds, jobsRegistered, configureOutcome, jobsAtForceStop, bootBroadcasts, foreignLines,
                jobStops, jobsCancelled, rnHeadlessErrors, headlessNoTask, driverEvents, driverTally, driverFinishes,
-               appProcesses, fetchTimeoutSkewMs, headlessLatencyMs, lifecycleTally):
+               appProcesses, fetchTimeoutSkewMs, headlessLatencyMs, lifecycleTally, restartOrder):
         _extend(m.METRICS, fn.__name__, fn)
 
 

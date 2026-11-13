@@ -697,6 +697,65 @@ def test_tier1(tmp):
           ([], ["rnHeadlessEnds", "rnHeadlessInit", "rnHeadlessStarts"]))
 
 
+def test_restart(tmp):
+    """(WO-007) restartOrder on synthetic captures: the host's `point=onDestroy` probe line of the finishing Activity,
+    its `current=` against its `activity=`, the app's own processes only, inside the window."""
+    pkg = "com.transistorsoft.fetchlab.capacitor"
+    A, B, C = "MainActivity@aaa1", "MainActivity@bbb2", "MainActivity@ccc3"
+    I = lambda t, pid, msg: LT(t, "I", "LAB     ", pid, msg)
+    destroy = lambda t, act, current, finishing="true", pid=200: I(
+        t, pid, "point=onDestroy activity=%s isChangingConfigurations=%s isFinishing=%s headless=false "
+                "background=false adapter=true tasks=x current=%s"
+        % (act, "false" if finishing == "true" else "true", finishing, current))
+
+    def order(name, body, before=()):
+        out = os.path.join(tmp, "captures", "capacitor", "restart-" + name, "FIX", "run")
+        os.makedirs(out)
+        lines = list(before) + [
+            I(1.0, 100, "point=launch label=x"),
+            I(1.05, 200, "point=appCreate pid=200 process=%s headless=- tasks=-" % pkg),
+            I(1.1, 300, "point=appCreate pid=300 process=com.other.lab headless=-"),
+            I(2.0, 100, "point=trigger finish"),
+        ] + list(body) + [I(40.0, 100, "point=capture")]
+        with open(os.path.join(out, "logcat.txt"), "w") as f:
+            f.write("\n".join(lines) + "\n")
+        with open(os.path.join(out, "run.json"), "w") as f:
+            json.dump({"os": "android", "year": 2026, "measure_from": "launch"}, f)
+        with open(os.path.join(out, fetch_pack.JOBSCHEDULER), "w") as f:
+            f.write("# adb -s emulator-5580 shell dumpsys jobscheduler %s  (exit 0, read 2026-11-05 12:00:41)\n" % pkg)
+        return labkit.METRICS["restartOrder"](labkit.Capture(out))
+
+    restart = [I(2.1, 200, "point=finishNow activity=%s restart=true" % A),
+               I(2.3, 200, "point=onCreate activity=%s pid=200 creates=2 recreated=false headless=false current=%s"
+                 % (B, A))]
+    check("restartOrder: the new Activity resumed before the old one's destroy",
+          order("resumed", restart + [destroy(2.4, A, B), I(2.41, 200, "point=onDestroy:afterSuper activity=%s "
+                                                                            "headless=false current=%s" % (A, B))]),
+          "resumed-first")
+    check("restartOrder: a plain finish (current= is the Activity itself), and a null current=",
+          (order("plain", [I(2.1, 200, "point=finishNow activity=%s" % A), destroy(3.0, A, A)]),
+           order("null", [I(2.1, 200, "point=finishNow activity=%s restart=true" % A), destroy(3.0, A, "null")])),
+          ("destroyed-first", "destroyed-first"))
+    check("restartOrder: a finishing Activity other than the one finishNow named is passed over",
+          order("named", restart + [destroy(2.35, C, B), destroy(2.4, A, A)]), "destroyed-first")
+    check("restartOrder: `-` for an afterSuper line alone, a recreation, another app's process, an early line",
+          (order("after", [I(2.4, 200, "point=onDestroy:afterSuper activity=%s isFinishing=true headless=false "
+                                       "current=%s" % (A, B))]),                   # only the needle tells it apart
+           order("recreate", [destroy(2.4, A, B, finishing="false")]),
+           order("foreign", [destroy(2.4, A, B, pid=300)]),
+           order("early", [], before=[destroy(0.5, A, B)])),
+          ("-", "-", "-", "-"))
+    check("restartOrder: with no finishNow line (an old host log), the first finishing destroy is read",
+          order("unnamed", [destroy(2.4, A, B)]), "resumed-first")
+    check("restartOrder: `no-probe` when the probe failed (no current=)",
+          order("probe", [I(2.4, 200, "point=onDestroy activity=%s isChangingConfigurations=false isFinishing=true "
+                                      "probeError=NullPointerException" % A)]), "no-probe")
+    check("restartOrder: registered, neither implicit nor early; the scenario is in the suite",
+          ("restartOrder" in labkit.METRICS, "restartOrder" in labkit.IMPLICIT, "restartOrder" in labkit.EARLY_METRICS,
+           "restart-foreground-android" in fetch_pack.SUITE),
+          (True, False, False, True))
+
+
 def test_ios_adapter():
     ev = lambda msg, proc="/x/Runner.app/Runner", sub="": json.dumps({
         "eventType": "logEvent", "timestamp": "2026-11-05 12:00:01.000000-0500", "processID": 77,
@@ -1312,7 +1371,8 @@ def main():
     tmp = tempfile.mkdtemp(prefix="fetch-selftest-")
     try:
         for test in (test_seams, test_vocabulary, lambda: test_scenarios(tmp), lambda: test_capture(tmp),
-                     lambda: test_tier1(tmp), test_ios_adapter, lambda: test_ios_phase2a(tmp),
+                     lambda: test_tier1(tmp), lambda: test_restart(tmp),
+                     test_ios_adapter, lambda: test_ios_phase2a(tmp),
                      lambda: test_ios_registration(tmp), lambda: test_ios_smoke(tmp), test_relaunch, test_primitives, test_runner, lambda: test_hooks(tmp), lambda: test_shim(tmp),
                      test_live, test_shipped,
                      lambda: test_activation(tmp)):

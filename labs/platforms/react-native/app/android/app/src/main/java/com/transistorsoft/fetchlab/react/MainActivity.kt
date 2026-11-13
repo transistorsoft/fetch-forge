@@ -22,8 +22,9 @@ import java.lang.reflect.Modifier
  * modelled on bg-forge's labs/platforms/react-native MainActivity at 49d38d47f.
  *
  * Scenario args (intent extras, all optional): configB64, hooksB64, eventsB64, scenario, nativeLabel, view,
- * stopOnTerminate, finishNow (a second `am start`), and the fetch knobs noConfigure, finishDelayMs,
- * withholdFinish, finishOnTimeout (lab.yaml notes).  Extras of any other name are tolerated.
+ * stopOnTerminate, finishNow (a second `am start`), restartOnFinish (WO-007: finishNow restarts the app instead),
+ * and the fetch knobs noConfigure, finishDelayMs, withholdFinish, finishOnTimeout (lab.yaml notes).  Extras of any
+ * other name are tolerated.
  *
  * React Native keeps its JavaScript context across a recreation (ReactHost lives on the Application) while the
  * React root re-mounts, so the driver's main() runs again; it configures once per JS context.
@@ -146,8 +147,17 @@ class MainActivity : ReactActivity() {
 
   override fun onNewIntent(intent: Intent) {
     if (bool(intent, "finishNow", false)) {
-      Log.i(TAG, "point=finishNow activity=${id(this)}")
+      // (WO-007) restartOnFinish rides on this Activity's OWN launch (`this.intent`: the parameter shadows it), as
+      // the trigger's `am start` carries finishNow alone.  The app restarts itself the way apps do: finish() FIRST
+      // (singleTask would otherwise hand the relaunch to this live instance's onNewIntent), then startActivity() of a
+      // copy of the launch.  Synchronous: onDestroy clears this Activity's handler.  The new Activity resumes before
+      // this one is destroyed (restartOrder reads it); React Native ignores the old one's destroy (ReactHostImpl).
+      val restart = bool(this.intent, "restartOnFinish", false)
+      Log.i(TAG, "point=finishNow activity=${id(this)} restart=$restart")
       finish()
+      if (restart) {
+        startActivity(Intent(this, MainActivity::class.java).putExtras(this.intent).apply { removeExtra("finishNow") })
+      }
       return
     }
     super.onNewIntent(intent)
