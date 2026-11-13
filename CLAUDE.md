@@ -88,11 +88,15 @@ imports types from `@transistorsoft/background-fetch-types` and calls `cordova/e
 ./forge publish native android --skip-tests          # skip unit tests
 ./forge publish native android --local               # publish to mavenLocal
 
-# Publish — Platform SDKs
-./forge publish types          # npm publish (@transistorsoft/background-fetch-types)
-./forge publish react-native   # npm publish
-./forge publish cordova        # npm publish
-./forge publish capacitor      # npm publish
+# Release — npm packages (types, react-native, capacitor, cordova). GitHub Actions
+# publishes them on a pushed tag: read "npm package releases" below. forge publish refuses them.
+./forge release <pkg> preflight              # release checks; publishes nothing
+./forge release <pkg> prepare X.Y.Z          # on master: branch chore/release-X.Y.Z, commit
+#   merge chore/release-X.Y.Z into master, inside the submodule
+./forge release <pkg> tag X.Y.Z              # on master: preflight, tag the merge
+git -C <pkg-dir> push origin master X.Y.Z    # the tag starts the release workflow
+
+# Publish — Flutter
 ./forge publish flutter        # dart pub publish
 
 # Docs
@@ -164,6 +168,35 @@ Scripts live at `native/background-fetch/scripts/`:
 - Gradle version bump tasks: `./gradlew :tsbackgroundfetch:bumpVersionPatch` (also `Minor`, `Major`)
 
 - Sonatype endpoints: Central Portal API (`ossrh-staging-api.central.sonatype.com`)
+
+## npm package releases
+
+`types/`, `react-native/`, `capacitor/` and `cordova/` are published to npm by GitHub Actions
+(`.github/workflows/release.yml` in each submodule) when a version tag is pushed, never by a
+local `npm publish`. npm trusts the workflow through Trusted Publishing (OIDC), so no npm token
+exists, and every release carries provenance. Each submodule's `RELEASING.md` is the reference.
+
+- `./forge release <pkg> prepare|tag X.Y.Z` runs the submodule's `npm run release --
+  prepare|tag X.Y.Z` (`scripts/release.sh`), after the same local iOS links check as
+  `forge publish`. `release.sh` does every check (an up-to-date master, a clean tree, a version
+  greater than `package.json`'s and not on npm, entries under the CHANGELOG's `## Unreleased`,
+  `scripts/preflight.sh --release`) and **never pushes**.
+- The push is a separate step, run in the submodule: `git -C <pkg-dir> push origin master
+  X.Y.Z`. `release.sh` prints a bare `git push origin master X.Y.Z`, which from the fetch-forge
+  root targets fetch-forge, not the package.
+- The workflow checks that the tag equals `package.json`'s version, runs preflight again, and
+  publishes with provenance. A prerelease (`X.Y.Z-beta.N`) goes to the `beta` dist-tag.
+- A failed release: fix the cause, then re-run the workflow on the tag (Actions → release →
+  Run workflow → Tags → the version). A version can be published once, ever: never re-use a
+  number; release the next patch instead.
+- `./forge publish types|react-native|capacitor|cordova` stops with these steps. forge has no
+  local publish path: it would skip preflight and the tag check, carry no provenance, and use up
+  the version (the workflow then skips it as already on npm).
+- Never add a `version`, `preversion` or `postversion` script to these packages: `prepare` runs
+  `npm version`, which would run them.
+- A plugin release needs its native SDK (`TSBackgroundFetch` / `tsbackgroundfetch`) released
+  first. After a types release, run `npm update @transistorsoft/background-fetch-types` in
+  Capacitor and Cordova (they commit a `package-lock.json`) and commit the lockfile.
 
 ## Local iOS development workflow
 
