@@ -119,7 +119,7 @@ The anchor `// (WO-004)` goes at both changes, and the native CHANGELOG entry ca
 - (Added 2026-11-11, from the two reviews; each its own work order if wanted.)
   - **`configure()` then an immediate `stop()`:** configure's delayed schedule runs after the cancel and arms the interval with no listener (`:208-217`: its `status:` block, `:211-216`, runs later on the main queue, `:201-206`). Pre-existing.
   - **A finish that arrives after `stop()` is dropped** (`:352-356`), so change 2 completes that fetch as `Failed` at the expiry. The optional change 4 was not approved.
-  - **The BGTaskScheduler expiry's finished-subscriber gap:** `handleBGAppRefreshTask`'s `![onTimeout]` (`:168`) leaves a task uncompleted when every remaining subscriber has finished. That is change 2's case, on the other path.
+  - **The BGTaskScheduler expiry's finished-subscriber gap:** `handleBGAppRefreshTask`'s `![onTimeout]` (`:168`) leaves a task uncompleted when every remaining subscriber has finished. That is change 2's case, on the other path. (2026-11-12: WO-005, `draft`.)
   - **The native `stop:` and the Swift `stop()` do not remove the listener,** and the docforge Swift examples discard `onFetch`'s `EventSubscription`. Releasing it removes the listener and cancels the request `configure()` just submitted (the second review; NOT CHECKED here).
   - **Flutter's teardown selector** (`detachFromEngineForRegistration:` instead of `detachFromEngineForRegistrar:`, and no `publish:`). A fix must account for every engine sharing one listener id.
   - **A second legacy fetch while one is held** overwrites the first's handler, which is then never completed. Pre-existing; change 3 answers the second at once only when no subscriber is left.
