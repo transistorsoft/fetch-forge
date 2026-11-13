@@ -1,0 +1,358 @@
+{
+ "label": "capacitor.api-smoke.FIX.run",
+ "platform": "capacitor",
+ "os": "android",
+ "package": "com.transistorsoft.fetchlab.capacitor",
+ "scenario": "api-smoke",
+ "variant": "FIX",
+ "step": "run",
+ "serial": "emulator-5580",
+ "evicted": [
+  "com.transistorsoft.backgroundgeolocation.react"
+ ],
+ "foreignTransistorApps": [
+  "com.transistorsoft.backgroundgeolocation.react"
+ ],
+ "native": "4.1.1-master-399765c",
+ "native_source": {
+  "branch": "",
+  "commit": "399765cc89f03ccaec19464ea87f47c3f3d66f4d",
+  "dirty": "no"
+ },
+ "channel": null,
+ "native_resolved": null,
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "capacitor/background-fetch",
+  "commit": "9dd204a157a3da89b7ba983e7849ac25ea1e4f4a",
+  "dirty": "no"
+ },
+ "device": {
+  "avd": "Lab1",
+  "model": "sdk_gphone64_arm64",
+  "os": "Android 16",
+  "sdk": "36",
+  "data_free_mb": 2526,
+  "display": "awake",
+  "fgs_timeout_ms": null,
+  "play_services": 263635035
+ },
+ "activity": ".MainActivity",
+ "process": null,
+ "settle": 10,
+ "after": 30,
+ "end": {
+  "policy": "window",
+  "ended": "window"
+ },
+ "timings": {
+  "install_s": 0.2,
+  "step_s": 41.8,
+  "t0": 1794501856.59,
+  "phases": {
+   "terminated": 0.027,
+   "others_stopped": 0.086,
+   "reset": 0.12,
+   "swept": 0.155,
+   "neutral_pre": 0.223,
+   "accuracy": 0.269,
+   "permissions": 0.269,
+   "sleep_end": 0.269,
+   "log_begun": 0.389,
+   "launch_mark": 0.407,
+   "verdict_cleared": 0.43,
+   "launch": 0.912,
+   "settle_end": 10.915,
+   "trigger": 10.95,
+   "end": 41.685,
+   "capture_mark": 41.713,
+   "pusher_joined": 41.713,
+   "log_ended": 41.746,
+   "log_written": 41.746,
+   "capture_extras": 41.773,
+   "db_pulled": 41.775,
+   "run_json": 41.832,
+   "judged": 41.861,
+   "verdict_pushed": 41.907,
+   "settled": 42.412,
+   "neutral_post": 42.489,
+   "terminated_post": 42.519
+  },
+  "calls": {
+   "_adb": {
+    "n": 19,
+    "s": 0.738,
+    "bg_n": 1,
+    "bg_s": 0.049
+   },
+   "_stop_stream": {
+    "n": 2,
+    "s": 0.001,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.119,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.035,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.033,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "evict": {
+    "n": 1,
+    "s": 0.031,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "installed": {
+    "n": 1,
+    "s": 0.028,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.482,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "location_accuracy": {
+    "n": 2,
+    "s": 0.046,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 3,
+    "s": 0.081,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "native_resolved": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "network_default": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.145,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 40,
+    "s": 0.02,
+    "bg_n": 40,
+    "bg_s": 0.02
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 3,
+    "s": 0.117,
+    "bg_n": 1,
+    "bg_s": 0.049
+   },
+   "reset_app": {
+    "n": 1,
+    "s": 0.034,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.727,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 3,
+    "s": 0.087,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": -1.575,
+  "clock_offset_rtt_s": 0.018,
+  "log_phases": {
+   "boot": 0.964
+  }
+ },
+ "measure_from": "launch",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": true,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": null,
+ "host": null,
+ "network": {
+  "read": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "default": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "differs": [],
+  "put": false
+ },
+ "privacy": null,
+ "location_accuracy": {
+  "want": true,
+  "was": true,
+  "now": true
+ },
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [],
+ "hooks": [
+  {
+   "api": "configure",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "function"
+    }
+   }
+  },
+  {
+   "api": "registerHeadlessTask",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "function"
+    }
+   },
+   "absent_on": {
+    "capacitor": "2026-11-12 \u2014 headless is Java only on Capacitor (the app's BackgroundFetchHeadlessTask), and src/index.ts's BackgroundFetch declares no registerHeadlessTask (WO-002)."
+   }
+  },
+  {
+   "api": "status",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "api": "start",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "api": "scheduleTask",
+   "args": {
+    "taskId": "com.transistorsoft.fetchlab.smoke",
+    "delay": 600000,
+    "periodic": false
+   },
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  },
+  {
+   "api": "stop",
+   "args": "com.transistorsoft.fetchlab.smoke",
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  },
+  {
+   "api": "finish",
+   "args": "react-native-background-fetch",
+   "returns": {
+    "$": {
+     "type": "undefined"
+    }
+   }
+  },
+  {
+   "api": "stop",
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-12 11:44:58"
+}

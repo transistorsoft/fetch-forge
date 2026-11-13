@@ -21,7 +21,17 @@ description: >
   NOT CHECKED: whether React Native 0.88's JS timers run after its Activity is destroyed (bg-forge left it unchecked
   too).  The headless task finishes after finishDelayMs (1000 ms, a setTimeout): if timers are paused, headlessCalls
   reads `-` and the BGTask waits for the SDK's 60 s timeout — which this step measures.
-platforms: [react-native]
+
+  (WO-002, 2026-11-12) Capacitor is listed, and there this step measures suspected defect 4: PREDICTED RED.
+  BackgroundFetchPlugin.java has no handleOnDestroy, so LifecycleManager stays foreground (ProcessLifecycleOwner never
+  sends ON_DESTROY, LifecycleManager.java:161-166) and doFetch hands the run to the destroyed Bridge's listener
+  (BackgroundFetch.java:272-275), whose page is gone (Bridge.onDetachedFromWindow destroys the WebView): fetchReceived
+  1, then nothing — headlessEvents.fetch 0, headlessCalls `-`, fetchFinished 0, jobFinished 0 (the SDK's 60 s timeout
+  falls after the window), headless false.  The values above are a sound bridge's there too: its Java headless task
+  (the lab's BackgroundFetchHeadlessTask.java) logs the same `point=headless` and `point=task-api` lines.  So they
+  stand, and the red gets its own work order; only React Native's own HeadlessTask lines read 0 on Capacitor
+  (platform_expect).
+platforms: [react-native, capacitor]
 not_applicable:
   ios: "2026-11-09 — iOS has no headless mode (TSBackgroundFetch.m:388-393); `actions:` are Android's."
 stopOnTerminate: false
@@ -59,3 +69,7 @@ steps:
       jobIds: "999"
       headlessTally: any
       bootBroadcasts: any
+    # (WO-002, 2026-11-12) React Native's HeadlessTask lines, which a Java headless task never logs (description).
+    # rnHeadlessInit and rnHeadlessErrors already read 0 on both.
+    platform_expect:
+      capacitor: {rnHeadlessStarts: 0, rnHeadlessEnds: 0}

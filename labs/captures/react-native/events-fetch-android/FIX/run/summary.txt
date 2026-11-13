@@ -8,6 +8,7 @@
    jobIds                           999                    expected 999          ok
    headlessEvents.fetch             0                      expected 0            ok
    bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   driverTally                      fetch:react-native-background-fetch=2 expected fetch:react-native-background-fetch=2 ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok

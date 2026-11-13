@@ -1,0 +1,26 @@
+   crashes                          0                      expected 0            ok
+   jobsRegistered                   999                    expected 999          ok
+   fetchReceived                    1                      expected 1            ok
+   headlessEvents.fetch             0                      expected 1            MISMATCH
+   headlessEvents.timeout           0                      expected 0            ok
+   headlessCalls                    -                      expected finish:ok=1  MISMATCH
+   fetchFinished                    0                      expected 1            MISMATCH
+   jobFinished                      0                      expected 1            MISMATCH
+   rnHeadlessInit                   0                      expected 0            ok
+   rnHeadlessStarts                 0                      expected 0            ok
+   rnHeadlessEnds                   0                      expected 0            ok
+   rnHeadlessErrors                 0                      expected 0            ok
+   driverEvents                     -                      expected -            ok
+   appProcesses                     1                      expected 1            ok
+   headless                         false                  expected True         MISMATCH
+   stoppingOnTerminate              0                      expected 0            ok
+   fetchTimeouts                    0                      expected 0            ok
+   jobIds                           999                    expected 999          ok
+   headlessTally                    -                      expected any          ok
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   eventAssertions                  ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => FAIL

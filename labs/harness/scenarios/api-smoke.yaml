@@ -2,23 +2,36 @@ name: api-smoke
 description: >
   (WO-002, Tier 1) Every member of the default export, called through the surface a customer calls, settles with the
   shape the types declare.  One step, one first batch, after the driver's own boot configure() has resolved (the RN
-  driver awaits it before queueing the batch: labs/platforms/react-native/app/index.js main()).
+  driver awaits it before queueing the batch: labs/platforms/react-native/app/index.js main(); the Capacitor page
+  likewise, labs/platforms/capacitor/app/www/index.html main(), on its first boot).
 
   WHAT EACH HOOK ASSERTS (types/background-fetch 5c9685d2 src/BackgroundFetch.ts; labs/harness/vocabulary.yaml):
     * configure — a probe: the member is there and is a function.  configure(config, onEvent, onTimeout?) needs a
       callback, which an api hook cannot carry (labkit._validate_hooks refuses a hook short of a required parameter),
       so it is never CALLED as a hook; its calls and deliveries are `events:` declarations (events-fetch-android).
       Here the driver's boot configure() is what start/stop/status act on; its echo is configDropped's.
-    * registerHeadlessTask — a probe, never a call: calling it would replace the lab's headless task.
+    * registerHeadlessTask — a probe, never a call: calling it would replace the lab's headless task.  (WO-002,
+      2026-11-12) Capacitor has none: its headless task is Java only (the app's BackgroundFetchHeadlessTask), and
+      src/index.ts's BackgroundFetch declares no such member.  `absent_on` reads `absent` there and anything else
+      red; every other bridge is held to the types' function.
     * status() and start() — resolve a BackgroundFetchStatus: a number, one of 0/1/2 (STATUS_RESTRICTED, _DENIED,
       _AVAILABLE).  Android's SDK answers STATUS_AVAILABLE always (BackgroundFetch.java status()); the shape is what is
       asserted, the value is recorded on the line.
     * scheduleTask(TaskConfig) — resolves a boolean, true.  A one-shot task 10 minutes out, stopped by the next hook so
       nothing fires after the step (or in the next scenario).
     * stop(taskId) and stop() — resolve a boolean, true.  stop(taskId) stops the custom task; stop() with no argument
-      stops the fetch task (the bridge passes null, the native module reads it as its own fetch taskId).
+      stops the fetch task (the bridge passes null, the native module reads it as its own fetch taskId; Capacitor's
+      passes {taskId: undefined}, which its plugin reads the same way, BackgroundFetchPlugin.java stop()).
+    * (WO-002, 2026-11-12) Capacitor's scheduleTask and stop resolve nothing: src/index.ts declares both
+      `Promise<void>` and resolves no value, over BackgroundFetchPlugin.java's bare `call.resolve()`.  PREDICTED from
+      source, not yet measured: scheduleTask#4, stop#5 and stop#7 read `want-boolean-got-undefined` there.  That red
+      is a finding for its own work order, never relaxed here: this scenario holds every bridge to the types.
     * finish(taskId) — void: the bridge returns nothing (undefined).  Called with the fetch taskId while no fetch is
       running: the SDK logs `- finish: react-native-background-fetch` and finds no BGTask, which is not an error.
+      (WO-002, 2026-11-12) On Capacitor that id is not its fetch's (`capacitor-background-fetch`), so the SDK finds
+      no config either: a no-op there too.  A hook carries one argument for every bridge, and the id does not change
+      what is asserted, the return.  Capacitor's finish() hands back the native call's promise, which resolves with
+      no data, so the value labapi.js awaits is undefined there as well.
 
   WHAT ELSE IT READS (WO-002 review: the hooks alone pass with a broken SDK — status/start answer 2 on Android
   whatever happens, and stop() answers true):
@@ -26,18 +39,16 @@ description: >
     * jobsRegistered `-592898938,999`: the SDK asked JobScheduler for the fetch job (999) and the smoke task's job
       (the String hashCode of com.transistorsoft.fetchlab.smoke) — `- registerTask: … (jobId: N)`, measured from the
       launch; logged before schedule(), whose result the SDK discards, so it shows the SDK asked, not that
-      JobScheduler took them.
+      JobScheduler took them.  Bridge-neutral (WO-002, 2026-11-12): the fetch task is job 999 whatever its taskId
+      (BackgroundFetchConfig.java:306; Capacitor's `capacitor-background-fetch` read `999` in
+      termination-calibration, sweep 20261112-110552), and the smoke task's id is the lab's own.
     * jobIds `-`: after stop(<smoke>) and stop() the app holds no job (the host's `dumpsys jobscheduler <pkg>` at
       the step's end, read before run.py's own end-of-step force-stop).  MEASURED 2026-11-05, sweep
       20261105-134121 (Lab1 emulator-5580, Android 16; native 4.1.1-master-5de5242, plugin 2acdc21).
     * bootBroadcasts: recorded (a launch after run.py's pre-step force-stop delivers BOOT_COMPLETED on Android 16).
   jobIds is read at the step's end, so the step keeps its full window rather than ending on its evidence.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
-    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
-    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
-    bridge-neutral first."
   ios: "2026-11-11 — iOS has its own scenario, api-smoke-ios: there scheduleTask rejects on the Simulator, and what
     else is read is BGTaskScheduler's requests, not JobScheduler's jobs (one scenario per OS, as bg-forge's
     api-*-ios / -android pairs)."
@@ -51,6 +62,9 @@ hooks:
   - api: registerHeadlessTask
     probe: true
     returns: {$: {type: function}}
+    absent_on:
+      capacitor: "2026-11-12 — headless is Java only on Capacitor (the app's BackgroundFetchHeadlessTask), and
+        src/index.ts's BackgroundFetch declares no registerHeadlessTask (WO-002)."
   - api: status
     returns: {$: {type: number, in: [0, 1, 2]}}
   - api: start

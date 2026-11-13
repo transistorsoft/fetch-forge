@@ -1,0 +1,17 @@
+   crashes                          0                      expected 0            ok
+   duplicateJobs                    1                      expected 1            ok
+   fetchReceived                    3                      expected 3            ok
+   fetchFinished                    3                      expected 3            ok
+   jobFinished                      3                      expected 3            ok
+   fetchTally                       capacitor-background-fetch=2,com.transistorsoft.fetchlab.task=1 expected capacitor-background-fetch=2,com.transistorsoft.fetchlab.task=1 ok
+   jobsRegistered                   -1681675378,999        expected -1681675378,999 ok
+   jobIds                           999                    expected 999          ok
+   jobStops                         -1681675378:app_called_jobFinished=1,999:app_called_jobFinished=2,999:onStartJob_returned_false=2 expected -1681675378:app_called_jobFinished=1,999:app_called_jobFinished=2,999:onStartJob_returned_false=2 ok
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   eventAssertions                  ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => PASS

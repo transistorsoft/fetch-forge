@@ -3,7 +3,8 @@ description: >
   (WO-002, Tier 1) The SDK's own task timeout, in the foreground: a fetch the app never finishes is timed out after
   BGTask.MAX_TIME, 60 000 ms (BGTask.java:28, posted in the BGTask constructor :80-85; fbae69c / RN 9279640, RN 4.0.0):
   `[BGTask] timeout: <taskId>` (:203), then configure()'s onTimeout with the taskId (:207-211; the bridge emits
-  {taskId, timeout: true}, index.js routes it to the third argument).  onTimeout only notifies: the task ends when
+  {taskId, timeout: true}, which its JavaScript routes to the third argument: React Native's index.js, Capacitor's
+  src/index.ts:190-196).  onTimeout only notifies: the task ends when
   the app calls finish(taskId) — the driver does at once (finishOnTimeout, its default) — `- finish:`, `- jobFinished`.
 
   The driver withholds the fetch's own finish (extras withholdFinish), so only the timeout ends it.  The declaration
@@ -13,7 +14,8 @@ description: >
 
   WHAT THE STEP READS (from the launch; the job at status() + 3 s, the timeout ~60 s later — a full window of 90 s, about
   95 s a cell):
-    * configure@0: exactly one onEvent delivery, `react-native-background-fetch`.
+    * configure@0: exactly one onEvent delivery, the bridge's own fetch taskId: driverTally
+      `fetch:<taskId>=1,timeout:<taskId>=1` (platform_expect; WO-002, 2026-11-12).
     * fetchReceived 1, fetchTimeouts 1, fetchTimeoutSkewMs < 1000 (the timeout lands within 1 s of 60 s after the
       receipt: a changed MAX_TIME or a lost timer is red).
     * driverEvents `fetch=1,timeout=1`; driverFinishes `fetch:withheld=1,timeout:ok=1`.
@@ -21,12 +23,8 @@ description: >
     * jobStops `999:app_called_jobFinished=1,999:onStartJob_returned_false=1` (configure()'s ignored first run, then
       the timed-out run, finished).
   NOT CHECKED before this scenario: no capture yet holds a `[BGTask] timeout` line.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
-    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
-    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
-    bridge-neutral first."
   ios: "2026-11-09 — `job:` is JobScheduler's; an iOS timeout is driven by the lab hook (WO-002 D3), which is
     ios-timeout-sim's."
 measure_from: launch
@@ -35,16 +33,19 @@ steps:
     settle: 10
     after: 80
     extras: {withholdFinish: true}
+    # (WO-002, 2026-11-12) An anchor, asserted bridge-neutrally: it resolves (what it returns is api-smoke's to assert).
     hooks:
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     events:
       - subscribe: configure
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
         min: 1
         max: 1
         errors: true
-        returns: {$: {type: string, equals: react-native-background-fetch}}
+        # (WO-002, 2026-11-12) Any bridge's fetch taskId: each bridge's own is driverTally's (platform_expect).
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
+                                         cordova-background-fetch, flutter_background_fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 3, job: 999}
     expect:
@@ -61,3 +62,7 @@ steps:
       jobIds: "999"
       jobStops: "999:app_called_jobFinished=1,999:onStartJob_returned_false=1"
       bootBroadcasts: any
+    # (WO-002, 2026-11-12) The taskIds the driver's callbacks were handed (`app=event=… taskId=`): the bridge's own.
+    platform_expect:
+      react-native: {driverTally: "fetch:react-native-background-fetch=1,timeout:react-native-background-fetch=1"}
+      capacitor: {driverTally: "fetch:capacitor-background-fetch=1,timeout:capacitor-background-fetch=1"}
