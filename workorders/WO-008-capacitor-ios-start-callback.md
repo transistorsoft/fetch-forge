@@ -1,7 +1,7 @@
 ---
 id: WO-008
 title: Capacitor iOS start() resolves undefined, never the BackgroundFetchStatus, and cannot reject — the 7.1.0 Swift rewrite declared it CAPPluginReturnCallback
-status: verify
+status: done
 created: 2026-11-13
 platforms: [ios]
 submodules: [capacitor/background-fetch]
@@ -197,3 +197,4 @@ every other method is.
   - The order is now native's: `[TSBackgroundFetch start] (null)`, then `app=api id=start#… outcome=ok`, then the `ret`.
   - The reject path stays unmeasured: the Simulator's status is always available.
 - 2026-11-13 — **Committed** `af7deec` on `fix/WO-008-capacitor-ios-start-promise` (Capacitor plugin, from `4d431c1`; not merged or pushed). Every Verification box is ticked. Status `verify` until the branch merges into the plugin's `master`, then `done`.
+- 2026-11-13 — **Merged and pushed.** The plugin's `master` is `3fa169a`: WO-008's merge, `--no-ff`, pushed to GitHub (`4d431c1..3fa169a`). fetch-forge's capacitor pointer moves `4d431c1` → `3fa169a`. Every Verification box is ticked, so the status is `done`. It ships in the plugin's next release, beside WO-001, WO-006 and WO-007 (D3). The device check of the reject path stays optional.
