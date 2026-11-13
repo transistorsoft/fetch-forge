@@ -23,7 +23,7 @@
  "plugin_source": {
   "checkout": "capacitor/background-fetch",
   "commit": "4d431c1e21ba40e2329b5cc344eb4051401430a8",
-  "dirty": "no"
+  "dirty": "yes"
  },
  "device": {
   "model": "Lab1",
@@ -39,45 +39,45 @@
  },
  "timings": {
   "step_s": 15.7,
-  "t0": 1794591033.198,
+  "t0": 1794591972.105,
   "phases": {
-   "terminated": 0.098,
-   "others_stopped": 0.208,
-   "reset": 0.724,
-   "swept": 0.986,
-   "neutral_pre": 0.986,
-   "permissions": 0.986,
-   "sleep_end": 0.986,
-   "log_begun": 1.4,
-   "launch_mark": 1.527,
-   "verdict_cleared": 1.627,
-   "launch": 1.744,
-   "settle_end": 9.748,
-   "trigger": 9.915,
-   "end": 15.333,
-   "capture_mark": 15.438,
-   "pusher_joined": 15.439,
-   "log_ended": 15.666,
-   "log_written": 15.666,
-   "capture_extras": 15.666,
-   "db_pulled": 15.667,
-   "run_json": 15.725,
-   "judged": 15.745,
-   "verdict_pushed": 15.745,
-   "settled": 16.249,
-   "neutral_post": 16.249,
-   "terminated_post": 16.395
+   "terminated": 0.089,
+   "others_stopped": 0.19,
+   "reset": 0.666,
+   "swept": 0.87,
+   "neutral_pre": 0.87,
+   "permissions": 0.87,
+   "sleep_end": 0.87,
+   "log_begun": 1.291,
+   "launch_mark": 1.43,
+   "verdict_cleared": 1.541,
+   "launch": 1.659,
+   "settle_end": 9.67,
+   "trigger": 9.814,
+   "end": 15.245,
+   "capture_mark": 15.368,
+   "pusher_joined": 15.368,
+   "log_ended": 15.602,
+   "log_written": 15.602,
+   "capture_extras": 15.602,
+   "db_pulled": 15.602,
+   "run_json": 15.663,
+   "judged": 15.681,
+   "verdict_pushed": 15.682,
+   "settled": 16.188,
+   "neutral_post": 16.188,
+   "terminated_post": 16.334
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.221,
+    "s": 0.227,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.206,
+    "s": 2.173,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -89,7 +89,7 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.414,
+    "s": 0.421,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -101,19 +101,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.213,
+    "s": 0.217,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.262,
+    "s": 0.204,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.228,
+    "s": 0.234,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -125,25 +125,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.111,
+    "s": 0.101,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.117,
+    "s": 0.118,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.399,
+    "s": 0.406,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.123,
+    "s": 0.117,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,9 +155,9 @@
    },
    "peek": {
     "n": 13,
-    "s": 0.016,
+    "s": 0.013,
     "bg_n": 13,
-    "bg_s": 0.016
+    "bg_s": 0.013
    },
    "permissions": {
     "n": 1,
@@ -167,13 +167,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.102,
+    "s": 0.112,
     "bg_n": 2,
     "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.398,
+    "s": 0.365,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -185,13 +185,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.415,
+    "s": 0.421,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.243,
+    "s": 0.234,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -200,7 +200,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 4.585
+   "boot": 4.483
   }
  },
  "measure_from": "launch",
@@ -251,5 +251,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-13 12:30:48"
+ "when": "2026-11-13 12:46:27"
 }

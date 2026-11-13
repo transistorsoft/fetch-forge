@@ -7,5 +7,5 @@
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok
-   apiAssertions                    start#3.$=want-number-got-undefined expected ok           MISMATCH
-   => FAIL
+   apiAssertions                    ok                     expected ok           ok
+   => PASS

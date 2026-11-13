@@ -58,7 +58,7 @@ Every one of these shipped and was fixed in a bridge or native release. A unit t
 
 Each one that a scenario confirms becomes its own work order.
 
-1. **Capacitor iOS `start()`** is declared `CAPPluginReturnCallback` (`capacitor/background-fetch/ios/Sources/BackgroundFetchPlugin/BackgroundFetchPlugin.swift:13`), so it probably resolves a callbackId, not a status.
+1. **Capacitor iOS `start()`** is declared `CAPPluginReturnCallback` (`capacitor/background-fetch/ios/Sources/BackgroundFetchPlugin/BackgroundFetchPlugin.swift:13`), so it probably resolves a callbackId, not a status.  **MEASURED 2026-11-13** on the Capacitor iOS host (FIX and FIX-SPM: `start` resolves undefined), a regression from 7.1.0: **WO-008** (`draft`).
 2. **Android `start()` after `stop()` does nothing.** `stop` destroys the config (`BackgroundFetch.java:166-173`), so `registerTask` logs "failed to find BackgroundFetchConfig" (`:249-251`). Every bridge still resolves `start()`.
 3. **A headless class that can't be loaded strands the BGTask.** This happens with a missing Cordova class, a Capacitor `applicationIdSuffix`, or an R8 strip. The BGTask is never finished (`BackgroundFetch.java:280-284`, `BGTask.java:215-219`). (Corrected 2026-11-09: the error does not repeat every 60 s. The timer is one-shot (`BGTask.java:85`), so it logs at delivery, once at +60 s, and again only on onStopJob; the stranded BGTask then shadows later tasks with the same taskId, `BGTask.java:32-39`.)
 4. **Capacitor Android has no `onDestroy`/`setHeadless` hook.** With the Activity finished but the process alive, events go to a dead bridge and are never finished. `ProcessLifecycleOwner` never dispatches `ON_DESTROY` (`LifecycleManager.java:161-166`). **MEASURED on Capacitor Android 2026-11-12** (sweep `20261112-113743`: `stop-on-terminate`'s `finish` step and `headless-activity-destroyed` red; React Native green on both): **WO-007**. Green on its fix from sweep `20261113-094121`; the fix also needed React Native's current-Activity rule, after a self-restart regression MEASURED by an `adb` probe (WO-007's Log, 2026-11-13).
@@ -1174,8 +1174,8 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
       - the 64 ms timeout reply is a different path: the app keeps running ~5 s after an expiry;
       - "~1 s" to suspension is 1-2.5 s;
       - api-smoke-ios documents Capacitor's finish id and its start red.
-  - **Open, for work orders (none written yet):**
-    - the `start()` red above;
+  - **Open, for work orders:**
+    - the `start()` red above: **WO-008**, fixed (one word: `CAPPluginReturnPromise`). Capacitor iOS is **7/7** on FIX and FIX-SPM with it (sweeps `20261113-124007`, `20261113-124436`); the committed Capacitor iOS captures are those sweeps';
     - a docs note: on iOS, code after `await BackgroundFetch.finish()` may not run until the next wake;
     - INFERRED, not measured: the plugin's `deinit` calls `removeListener`, which deletes the persisted subscriber if a background scene disconnect frees the bridge while the process lives;
     - the device-only 15 s WebKit cutoff.
