@@ -229,6 +229,7 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
 | `stop-on-terminate` | |
 | `headless-kill` | |
 | `headless-activity-destroyed` | suspected defect 4 |
+| `restart-foreground-android` | (added 2026-11-13) WO-007's regression: an app that restarts itself |
 | `ios-fetch-sim` | |
 | `ios-timeout-sim` | |
 | `ios-task-sim` | |
@@ -1102,3 +1103,15 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - **Follow-up for this order (Chris, 2026-11-13):** a `restart` trigger and scenario. `finishNow`, then an `am start` within about 300 ms, then the new page's `configure()`, then job 999.
     - **Expected:** `headless false`, the fetch delivered to the page, the job still held.
     - **Run on React Native and Capacitor.** React Native's immunity is PROVEN in source, not MEASURED.
+- 2026-11-13 — **`restart-foreground-android`: WO-007's lab guard.** No vendored file changed.
+  - **Why not a `restart` trigger:** the trigger code is vendored (`backends.py:619-625`). Instead, both hosts honour a `restartOnFinish` launch extra. They answer the `finish` trigger's `finishNow` with `finish()`, then `startActivity()` of a copy of their own launch intent, without `finishNow`. That is how real apps restart themselves.
+  - **New metric `restartOrder`** (`fetch_pack.py`; `fetch_selftest.py` `test_restart`, 7 checks after review; the new scenario's load is one more). It reads the finishing Activity's `point=onDestroy … current=` probe line, from the app's own processes, inside the window. `resumed-first` means another Activity had resumed first, so the step is not vacuous.
+    - Re-scored offline on today's real captures: the plain finishes (`stop-on-terminate/finish`, `headless-activity-destroyed`) read `destroyed-first` on both bridges, and the recreations read `-`.
+  - **The scenario:** two steps mirroring `recreate-foreground-android` (`stopOnTerminate` true; false with `enableHeadless`). The job runs 4 s after the old Activity's `point=onDestroy`. It is in `SUITE` after `recreate-foreground-android`.
+  - **Red, MEASURED** (Capacitor, Lab1). The regression patch put back WO-007's first approved condition (`activity == null || !isChangingConfigurations()`) over plugin `4d431c1`. Both steps FAIL with `restartOrder resumed-first`:
+    - `run`: `stoppingOnTerminate 1`, `driverEvents -`, `jobIds -`, `headless true`, `configure@0=never-fired`.
+    - `stop-on-terminate-false`: `headlessEvents.fetch 1`, `driverEvents -`, `headless true`.
+    - The patch was reversed and the checkout is clean.
+    - **Provenance:** both red steps' `run.json` read plugin `4d431c1` `dirty: yes`, AVD Lab1. The only dirt was that one-line patch. The green sweep then overwrote `labs/captures/capacitor/restart-foreground-android/FIX`, so the red survives only in this Log and in an ephemeral scratchpad copy (a review lens flagged this). To reproduce, put the condition back over `4d431c1` and run `./labkit run --platform capacitor --os android --scenario restart-foreground-android --variant FIX --serial <emulator> --build`.
+  - **Green, MEASURED:** sweep `20261113-104449`. React Native (`8d9ab19`, Lab1) and Capacitor (`4d431c1`, Lab2) PASS both steps, `restartOrder resumed-first` in each. So React Native's immunity, PROVEN in source until now (`ReactHostImpl` acts only on its current Activity), is MEASURED.
+  - selftest passes (196 checks); vendor_check passes.

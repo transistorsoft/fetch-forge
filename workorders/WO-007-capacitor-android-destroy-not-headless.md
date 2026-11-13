@@ -248,7 +248,7 @@ Only a destroy inside a live process fails.
   - It would need a native release, with React Native's full Tier 1 green and unchanged on it (`recreate-foreground-android`, `stop-on-terminate`, `headless-activity-destroyed`). It would also need Cordova and Flutter checks, which the lab cannot run yet.
   - WO-003's D1 kept this in the bridges for the same reason.
 - **A `handleOnDestroy` without the `isChangingConfigurations()` guard.** It moves WO-003 to Capacitor. With change 2 the steps would still pass (above), so `lifecycleTally` must be read.
-- **A `handleOnDestroy` that acts on every destroy.** When an app restarts itself, the old Activity is destroyed after the new one has resumed (MEASURED: Log, 2026-11-13). The first approved version did this, and sent a live page's fetch to the headless task. It must act only on the Activity resumed most recently, as React Native does. No lab scenario catches this yet: re-run the restart probe.
+- **A `handleOnDestroy` that acts on every destroy.** When an app restarts itself, the old Activity is destroyed after the new one has resumed (MEASURED: Log, 2026-11-13). The first approved version did this, and sent a live page's fetch to the headless task. It must act only on the Activity resumed most recently, as React Native does. `restart-foreground-android` catches it (MEASURED red on that version, 2026-11-13).
 - **Going headless in `handleOnPause` or `handleOnStop`.** A backgrounded app still has its page. With the default `stopOnTerminate: true`, the job would be cancelled whenever the user switches apps (INFERRED).
 - **Waiting for `ProcessLifecycleOwner`.** It never sends ON_DESTROY (`ProcessLifecycleOwner.kt:32-33`), so `LifecycleManager.onDestroy` (`:161-166`) can never fire.
 - **Retaining or queueing the event for the next page** (`notifyListeners(…, true)`).
@@ -324,3 +324,7 @@ Only a destroy inside a live process fails.
     - React Native 12/12 on `8d9ab19`, in sweep `20261113-091839`. No React Native code changes.
 - 2026-11-13 — **Committed** `d3dac61` on `fix/WO-007-capacitor-android-destroy-not-headless` (Capacitor plugin, from `5cf84f0`; not merged or pushed). Every Verification box is ticked. Status `verify` until the branch merges into the plugin's `master`, then `done`.
 - 2026-11-13 — **Merged and pushed.** The plugin's `master` is `4d431c1`: WO-007's merge `08b5ac0`, then WO-006's `4d431c1`, both `--no-ff`, with the CHANGELOG conflict resolved by keeping both lines. Pushed to GitHub (`5cf84f0..4d431c1`). fetch-forge's capacitor pointer moves `5cf84f0` → `4d431c1`. Every Verification box is ticked, so the status is `done`. It ships in the plugin's next release, beside WO-001 (D3). The lab's `restart` scenario stays open in WO-002.
+- 2026-11-13 — **The lab guard landed** (WO-002): `restart-foreground-android`, with the `restartOnFinish` host extra and the `restartOrder` metric.
+  - On a Capacitor plugin with this order's current-Activity check removed, both steps read red, with `restartOrder resumed-first`.
+  - On `4d431c1`, both steps read green on Capacitor and on React Native (sweep `20261113-104449`).
+  - The "No scenario catches this yet" line in Not an acceptable shortcut is now answered by that scenario.

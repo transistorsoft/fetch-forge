@@ -26,6 +26,7 @@ class LabModule(private val reactContext: ReactApplicationContext) :
     map.putInt("finishDelayMs", MainActivity.int(intent, "finishDelayMs", MainActivity.DEFAULT_FINISH_DELAY_MS))
     map.putBoolean("withholdFinish", MainActivity.bool(intent, "withholdFinish", false))
     map.putBoolean("finishOnTimeout", MainActivity.bool(intent, "finishOnTimeout", true))
+    map.putBoolean("restartOnFinish", MainActivity.bool(intent, "restartOnFinish", false))   // (WO-007) MainActivity
     map.putString("scenario", intent?.getStringExtra("scenario") ?: "")
     map.putString("nativeLabel", intent?.getStringExtra("nativeLabel") ?: "")
     // The header's top inset: the platform's status_bar_height resource, never the window (a getWindow()

@@ -25,8 +25,9 @@ import java.util.Set;
  * MainActivity (addc50501) with the fetch React Native host's semantics (labs/platforms/react-native MainActivity.kt).
  *
  * Scenario args (intent extras, all optional): configB64, hooksB64, eventsB64, scenario, nativeLabel, view,
- * stopOnTerminate, finishNow (a second `am start`), and the fetch knobs noConfigure, finishDelayMs, withholdFinish,
- * finishOnTimeout (lab.yaml notes).  Extras of any other name are tolerated.
+ * stopOnTerminate, finishNow (a second `am start`), restartOnFinish (WO-007: finishNow restarts the app instead), and
+ * the fetch knobs noConfigure, finishDelayMs, withholdFinish, finishOnTimeout (lab.yaml notes).  Extras of any other
+ * name are tolerated.
  *
  * A recreation builds a new Bridge, new plugin instances and a new WebView: the page reloads and the driver boots
  * again.  BridgeActivity.onDestroy runs super.onDestroy() and THEN bridge.onDestroy() (every plugin's
@@ -179,8 +180,19 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         if (bool(intent, "finishNow", false)) {
-            Log.i(TAG, "point=finishNow activity=" + id(this));
+            // (WO-007) restartOnFinish rides on this Activity's OWN launch: the trigger's `am start` carries finishNow
+            // alone.  The app restarts itself the way apps do: finish() FIRST (singleTask would otherwise hand the
+            // relaunch to this live instance's onNewIntent), then startActivity() of a copy of the launch, so the new
+            // Activity boots with the same args.  Synchronous: onDestroy clears this Activity's handler.  The new one
+            // resumes before this one is destroyed (restartOrder reads it).
+            boolean restart = bool(getIntent(), "restartOnFinish", false);
+            Log.i(TAG, "point=finishNow activity=" + id(this) + " restart=" + restart);
             finish();
+            if (restart) {
+                Intent relaunch = new Intent(this, MainActivity.class).putExtras(getIntent());
+                relaunch.removeExtra("finishNow");   // BridgeActivity.load() replays getIntent() into onNewIntent
+                startActivity(relaunch);
+            }
             return;
         }
         super.onNewIntent(intent);
