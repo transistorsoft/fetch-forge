@@ -6,6 +6,7 @@
    jobIds                           999                    expected 999          ok
    jobStops                         999:app_called_jobFinished=1,999:onStartJob_returned_false=1 expected 999:app_called_jobFinished=1,999:onStartJob_returned_false=1 ok
    bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   driverTally                      fetch:react-native-background-fetch=1 expected fetch:react-native-background-fetch=1 ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok

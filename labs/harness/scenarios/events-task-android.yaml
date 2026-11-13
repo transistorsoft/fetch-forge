@@ -20,12 +20,8 @@ description: >
       JobScheduler answers `Could not find job` (a jobId formula that drifted reads `missed(no-job)` on the first one
       instead).  PREDICTED: the one-shot job is gone after its jobFinished(false); the first board settles it.
     * jobIds 999 at the end: the fetch job stays, the task's is gone.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
-    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
-    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
-    bridge-neutral first."
   ios: "2026-11-09 — `job:` is JobScheduler's; an iOS custom task is fired by the lab hook (WO-002 D3), which is
     ios-task-sim's."
 measure_from: launch
@@ -33,12 +29,15 @@ steps:
   - name: run
     settle: 10
     after: 30
+    # (WO-002, 2026-11-12) Setup and anchors, asserted bridge-neutrally: each call resolves.  What it returns is
+    # api-smoke's to assert (scheduleTask resolves true on React Native, nothing on Capacitor).  The task's taskId
+    # is the scenario's own, so what the step reads is the same on every bridge.
     hooks:
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
       - api: scheduleTask
         args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
-        returns: {$: {type: boolean, equals: true}}
+        outcome: resolved
     events:
       - subscribe: configure
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}

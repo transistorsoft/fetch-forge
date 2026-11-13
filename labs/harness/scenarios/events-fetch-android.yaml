@@ -14,11 +14,14 @@ description: >
   THE DECLARATION IS THE CONFIGURE.  configure(config, onEvent, onTimeout?) is an `events:` declaration: its `args`
   are the config, and the RN driver makes the real configure() with them, as given, subscribing the declaration to
   configure()'s onEvent (labs/platforms/react-native/lab.yaml notes).  What a delivery hands the callback is the bare
-  taskId string (types: `onEvent: (taskId: string) => void`; vocabulary `emits: string`).  The RN bridge's fetch
-  taskId is `react-native-background-fetch` (RNBackgroundFetchModule.java FETCH_TASK_ID).
+  taskId string (types: `onEvent: (taskId: string) => void`; vocabulary `emits: string`).  Each bridge's fetch
+  taskId is its own FETCH_TASK_ID: `react-native-background-fetch` (RNBackgroundFetchModule.java),
+  `capacitor-background-fetch` (BackgroundFetchPlugin.java), whose driver arms the declaration as React Native's does
+  (labs/platforms/capacitor/lab.yaml notes; WO-002, 2026-11-12).
 
   WHAT THE STEP READS (measured from the launch, the whole run):
-    * configure@0: exactly two deliveries, the first `react-native-background-fetch`; configureOutcome ok (implicit:
+    * configure@0: exactly two deliveries, the first a bridge's fetch taskId; driverTally both the bridge's own
+      (`fetch:react-native-background-fetch=2`, `fetch:capacitor-background-fetch=2`); configureOutcome ok (implicit:
       the event-arm configure() resolved) and jobsRegistered 999 (the SDK's `- registerTask:` line: it asked).
     * bootBroadcasts: recorded (a launch after run.py's pre-step force-stop delivers BOOT_COMPLETED on Android 16).
     * fetchReceived 2 (`- Background Fetch event received: <taskId>`), fetchFinished 2 (`- finish: <taskId>`, the
@@ -26,12 +29,8 @@ description: >
     * jobIds 999: after two runs and two finishes the periodic fetch job is still the one job the app holds
       (the host's `dumpsys jobscheduler <pkg>` at the step's end).
     * headlessEvents.fetch 0: the app is in the foreground throughout.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
-    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
-    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
-    bridge-neutral first."
   ios: "2026-11-05 — `job:` is JobScheduler's (`actions:` are Android's); an iOS fetch is fired by the lab hook (WO-002
     D3), which is ios-fetch-sim's."
 measure_from: launch
@@ -39,15 +38,18 @@ steps:
   - name: run
     settle: 10
     after: 32
+    # (WO-002, 2026-11-12) An anchor, asserted bridge-neutrally: it resolves (what it returns is api-smoke's to assert).
     hooks:
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     events:
       - subscribe: configure
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
         min: 2
         max: 2
-        returns: {$: {type: string, equals: react-native-background-fetch}}
+        # (WO-002, 2026-11-12) Any bridge's fetch taskId: each bridge's own is driverTally's (platform_expect).
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
+                                         cordova-background-fetch, flutter_background_fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 3, job: 999}
       - {after: {event: configure@0}, delay_s: 6, job: 999}
@@ -62,3 +64,7 @@ steps:
       jobIds: "999"
       headlessEvents.fetch: 0
       bootBroadcasts: any
+    # (WO-002, 2026-11-12) The taskIds the driver's callbacks were handed (`app=event=… taskId=`): the bridge's own.
+    platform_expect:
+      react-native: {driverTally: "fetch:react-native-background-fetch=2"}
+      capacitor: {driverTally: "fetch:capacitor-background-fetch=2"}

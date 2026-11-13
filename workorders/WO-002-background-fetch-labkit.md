@@ -61,7 +61,7 @@ Each one that a scenario confirms becomes its own work order.
 1. **Capacitor iOS `start()`** is declared `CAPPluginReturnCallback` (`capacitor/background-fetch/ios/Sources/BackgroundFetchPlugin/BackgroundFetchPlugin.swift:13`), so it probably resolves a callbackId, not a status.
 2. **Android `start()` after `stop()` does nothing.** `stop` destroys the config (`BackgroundFetch.java:166-173`), so `registerTask` logs "failed to find BackgroundFetchConfig" (`:249-251`). Every bridge still resolves `start()`.
 3. **A headless class that can't be loaded strands the BGTask.** This happens with a missing Cordova class, a Capacitor `applicationIdSuffix`, or an R8 strip. The BGTask is never finished (`BackgroundFetch.java:280-284`, `BGTask.java:215-219`). (Corrected 2026-11-09: the error does not repeat every 60 s. The timer is one-shot (`BGTask.java:85`), so it logs at delivery, once at +60 s, and again only on onStopJob; the stranded BGTask then shadows later tasks with the same taskId, `BGTask.java:32-39`.)
-4. **Capacitor Android has no `onDestroy`/`setHeadless` hook.** With the Activity finished but the process alive, events go to a dead bridge and are never finished. `ProcessLifecycleOwner` never dispatches `ON_DESTROY` (`LifecycleManager.java:161-166`).
+4. **Capacitor Android has no `onDestroy`/`setHeadless` hook.** With the Activity finished but the process alive, events go to a dead bridge and are never finished. `ProcessLifecycleOwner` never dispatches `ON_DESTROY` (`LifecycleManager.java:161-166`). **MEASURED on Capacitor Android 2026-11-12** (sweep `20261112-113743`: `stop-on-terminate`'s `finish` step and `headless-activity-destroyed` red; React Native green on both): **WO-007** (`draft`).
 5. **Flutter headless burst:** a second event during isolate start-up is stranded until it times out (`flutter/background_fetch/android/.../HeadlessTask.java:114-123`).
 6. **iOS stale subscriber:** a subscriber persisted from a previous run, now without a callback, blocks completion until the task expires (`TSBGAppRefreshSubscriber.m:27-43,133-134`, `TSBackgroundFetch.m:358-368`).
 7. **iOS reconfigure is ignored:** a new `minimumFetchInterval` is dropped by the `fetchScheduled` guard (`TSBackgroundFetch.m:104`). Flutter's Dart `configure` also binds its callbacks only once (`lib/background_fetch.dart:442`).
@@ -1075,3 +1075,20 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     1. Make the shared scenarios bridge-neutral and run Capacitor Android Tier 1. `stop-on-terminate`'s `finish` and `headless-activity-destroyed` are predicted red there (suspected defect 4).
     2. Capacitor iOS: a WKWebView background spike first, then CocoaPods and SwiftPM.
     3. Flutter, then Cordova.
+- 2026-11-12 — **Capacitor Android Tier 1: the shared Android scenarios made bridge-neutral (MEASURED).** React Native is unchanged. Capacitor passes 9 of 12, and its 3 reds are two findings. Chris chose "Capacitor Tier 1", on the policy recommended for it:
+  - **Conformance stays in `api-smoke`:**
+    - it holds every bridge to the types;
+    - `registerHeadlessTask` carries `absent_on: capacitor`, since Capacitor's headless task is Java only.
+  - **Elsewhere, setup and anchor hooks are bridge-neutral:**
+    - they assert only `outcome: resolved`;
+    - event taskIds accept the four bridges' ids, with each platform's own id pinned through `driverTally` in `platform_expect`;
+    - the `rn*` metrics read their no-React-Native value on Capacitor.
+  - **42 edits across 10 scenarios:** `api-smoke`, the five `events-*`, `headless-kill`, `stop-on-terminate`, `headless-activity-destroyed` and `recreate-foreground-android`. Three agents designed them, and each was applied only if it matched exactly once. `capacitor` is now listed in all ten, and its excusals are removed.
+  - **React Native, unchanged:** sweep `20261112-113743`, all 12 Android scenarios PASS, as committed.
+    - Its summary rows differ only by the new `driverTally` rows, which pin its own taskId, and by run-to-run noise in rows that accept any value (`bootBroadcasts`, `headlessLatencyMs` under 500).
+    - Offline, its old captures re-read `spec-changed-since-capture` wherever a hook changed, so this live re-run replaced them.
+  - **Capacitor Android, same sweep:** 9 PASS and 3 FAIL. All three reds were predicted from source before the run:
+    - `api-smoke`: `scheduleTask#4`, `stop#5` and `stop#7` resolve undefined where the types declare `true`. That is **WO-006** (`draft`).
+    - `stop-on-terminate`'s `finish` step and `headless-activity-destroyed`: suspected defect 4, confirmed. After a real destroy the SDK stays non-headless (`headless false`), so the next fetch goes to the destroyed page. It is never finished, and stopOnTerminate never cancels the job. That is **WO-007** (`draft`).
+  - **The two drafts** were written by agents and checked by two skeptics each. The skeptics' corrections were applied, or the draft's Log says why one was declined.
+  - **Next:** Capacitor iOS, on CocoaPods and SwiftPM, starting with a spike on whether a Capacitor WebView runs JavaScript while iOS wakes the app for a fetch. Then Flutter, then Cordova.

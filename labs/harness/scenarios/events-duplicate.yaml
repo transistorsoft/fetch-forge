@@ -20,18 +20,16 @@ description: >
       run does not restart the window (the queue holds accepted runs only, :46-50).
 
   WHAT THE STEP READS (from the launch):
-    * configure@0: exactly three deliveries; fetchTally `com.transistorsoft.fetchlab.task=1,react-native-background-fetch=2`.
+    * configure@0: exactly three deliveries; fetchTally the task once and the bridge's own fetch taskId twice
+      (platform_expect; WO-002, 2026-11-12): `com.transistorsoft.fetchlab.task=1,react-native-background-fetch=2` on
+      React Native, `capacitor-background-fetch=2,com.transistorsoft.fetchlab.task=1` on Capacitor (the tally sorts).
     * duplicateJobs 1; fetchReceived 3, fetchFinished 3, jobFinished 3 (a dropped run logs no `- jobFinished`).
     * jobsRegistered `-1681675378,999`; jobIds 999 at the end (the task's one-shot job is gone once finished).
     * jobStops: the initial run configure() caused and the dropped repeat both `onStartJob returned false`, the three
       delivered runs `app called jobFinished`.  PREDICTED for the dropped repeat (it calls jobFinished, then returns
       false, as the ignored initial run does, whose reason is MEASURED); the first board settles it.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
-    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
-    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
-    bridge-neutral first."
   ios: "2026-11-09 — the guard is FetchJobService's (Android's JobService); `job:` is an Android action."
 measure_from: launch
 steps:
@@ -39,12 +37,14 @@ steps:
     settle: 10
     after: 30
     extras: {finishDelayMs: 0}
+    # (WO-002, 2026-11-12) Setup and anchors, asserted bridge-neutrally: each call resolves.  What it returns is
+    # api-smoke's to assert (scheduleTask resolves true on React Native, nothing on Capacitor).
     hooks:
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
       - api: scheduleTask
         args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
-        returns: {$: {type: boolean, equals: true}}
+        outcome: resolved
     events:
       - subscribe: configure
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
@@ -64,8 +64,13 @@ steps:
       fetchReceived: 3
       fetchFinished: 3
       jobFinished: 3
-      fetchTally: "com.transistorsoft.fetchlab.task=1,react-native-background-fetch=2"
+      fetchTally: any
       jobsRegistered: "-1681675378,999"
       jobIds: "999"
       jobStops: "-1681675378:app_called_jobFinished=1,999:app_called_jobFinished=2,999:onStartJob_returned_false=2"
       bootBroadcasts: any
+    # (WO-002, 2026-11-12) The fetch job's two deliveries carry each bridge's own fetch taskId (its FETCH_TASK_ID); the
+    # tally sorts its keys.
+    platform_expect:
+      react-native: {fetchTally: "com.transistorsoft.fetchlab.task=1,react-native-background-fetch=2"}
+      capacitor: {fetchTally: "capacitor-background-fetch=2,com.transistorsoft.fetchlab.task=1"}

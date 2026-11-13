@@ -8,7 +8,8 @@
    headless                         false                  expected False        ok
    jobIds                           999                    expected 999          ok
    lifecycleTally                   onCreate=1,onResume=1,onStart=1 expected any          ok
-   bootBroadcasts                   -                      expected any          ok
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   driverTally                      fetch:react-native-background-fetch=1 expected fetch:react-native-background-fetch=1 ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok

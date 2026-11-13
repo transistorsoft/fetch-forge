@@ -27,12 +27,18 @@ description: >
     * headlessEvents.fetch 0 and driverEvents `-`: no task, headless or foreground, ever saw the event.
     * jobStopped and jobStops: recorded (the cancel lands while JobScheduler still runs the job: its stop reason is
       not measured yet).
-platforms: [react-native]
+
+  (WO-002, 2026-11-12) Capacitor is listed.  `kill` is the SDK's alone (the job's new process runs no bridge code
+  before doFetch's stopOnTerminate branch): PREDICTED GREEN there.  `finish` is PREDICTED RED there, suspected defect
+  4: BackgroundFetchPlugin.java has no handleOnDestroy, so nothing calls setHeadless(true), and ProcessLifecycleOwner
+  never sends ON_DESTROY (LifecycleManager.java:161-166).  The run goes to the destroyed Bridge's listener
+  (BackgroundFetch.java:272-275) and nothing stops, cancels or finishes it: stoppingOnTerminate 0, jobsCancelled `-`,
+  jobFinished 0 (the SDK's 60 s timeout falls after the window), headless false, jobIds 999, and the second job finds
+  job 999 still held (actionsDone `missed(present)`).  That red is the defect's, for its own work order: nothing here
+  is relaxed for it.  status#0 is only the kill's anchor, so it asserts `outcome: resolved`: what status() returns is
+  api-smoke's to score.
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
-    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
-    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
-    bridge-neutral first."
   ios: "2026-11-09 — iOS has no headless mode and stopOnTerminate is a no-op there (TSBackgroundFetch.m:388-393);
     `actions:` are Android's."
 stopOnTerminate: true
@@ -43,8 +49,9 @@ steps:
     settle: 10
     after: 35
     hooks:
+      # (WO-002, 2026-11-12) The kill's anchor only, so bridge-neutral: `outcome: resolved` (description).
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     actions:
       - {after: {api: "status#0"}, delay_s: 3, kill: true}
       # `point: host` matches ANY host mark: here the kill's, the only one before the first job.  The second job is

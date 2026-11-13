@@ -30,10 +30,26 @@ description: >
   the branch where doFetch hands the fetch to the headless path (BackgroundFetch.java:272-285) and React Native's
   HeadlessTask returns at once because the app is RESUMED (HeadlessTask.java:67-70).  A sound plugin delivers it to the
   driver as in `run`; the defect strands it (PREDICTED before the fix: no driver event, no finish, no headless JS task).
-platforms: [react-native]
+
+  (WO-002, 2026-11-12) Capacitor is listed, PREDICTED GREEN on both steps: its plugin has no onDestroy hook
+  (BackgroundFetchPlugin.java), so the flag stays false through the recreation.  Two readings differ there, each
+  pinned per platform (platform_expect, both steps):
+    * The taskId is the bridge's own: configure@0 takes any bridge's fetch taskId, and driverTally pins each
+      platform's.
+    * A recreation reloads Capacitor's page, whose driver re-arms configure@0 and so configures again: the SDK's
+      `Re-configured existing task` branch reschedules job 999 (BackgroundFetch.java:88-95; BGTask.reschedule
+      cancels, then schedules, BGTask.java:123-131), so jobsCancelled reads 999 there.  stoppingOnTerminate 0,
+      jobIds 999 and the driver's delivery still tell the defect apart.  The job at +4 s must come over 1 s after
+      that reschedule (FetchJobService.java:24-31): a cold page boot reached configure() 0.3 s after its process
+      started (termination-calibration's kill, MEASURED); a recreation's reload is NOT CHECKED.
+platforms: [react-native, capacitor]
 not_applicable:
   ios: "2026-11-09 — iOS has no headless mode; `job:` and the bold trigger's recreation are Android's."
 measure_from: launch
+# (WO-002, 2026-11-12) Both steps (description): each platform's own fetch taskId, and Capacitor's reschedule.
+platform_expect:
+  react-native: {driverTally: "fetch:react-native-background-fetch=1"}
+  capacitor: {driverTally: "fetch:capacitor-background-fetch=1", jobsCancelled: "999"}
 steps:
   - name: run
     settle: 10
@@ -44,7 +60,9 @@ steps:
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
         min: 1
         max: 1
-        returns: {$: {type: string, equals: react-native-background-fetch}}
+        # (WO-002, 2026-11-12) Any bridge's fetch taskId: driverTally pins each platform's own (platform_expect).
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
+                                         cordova-background-fetch, flutter_background_fetch]}}
     actions:
       - {after: {point: trigger}, delay_s: 4, job: 999}
     expect:
@@ -69,7 +87,9 @@ steps:
         args: {minimumFetchInterval: 15, stopOnTerminate: false, enableHeadless: true, startOnBoot: false}
         min: 1
         max: 1
-        returns: {$: {type: string, equals: react-native-background-fetch}}
+        # (WO-002, 2026-11-12) Any bridge's fetch taskId: driverTally pins each platform's own (platform_expect).
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
+                                         cordova-background-fetch, flutter_background_fetch]}}
     actions:
       - {after: {point: trigger}, delay_s: 4, job: 999}
     expect:

@@ -28,12 +28,15 @@ description: >
     * appProcesses 2, headless true (the task's probe); duplicateJobs 0, stoppingOnTerminate 0, headlessTaskErrors 0,
       fetchTimeouts 0; jobIds 999 at the end (a headless finish keeps the periodic job).
     * jobStops `999:app_called_jobFinished=2,999:onStartJob_returned_false=1`.
-platforms: [react-native]
+
+  (WO-002, 2026-11-12) Capacitor is listed, PREDICTED GREEN.  Its headless task is Java (the lab's
+  BackgroundFetchHeadlessTask.java, which the SDK reflects and calls in the job's process, BGTask.java:237-253): no
+  ReactContext and no JS task, so rnHeadlessInit, rnHeadlessStarts and rnHeadlessEnds read 0 there (platform_expect).
+  Every other value above is the SDK's own and the same: the task logs the same `point=headless` and `point=task-api`
+  lines (termination-calibration's kill, MEASURED on Capacitor: a 3 ms hand-over).  status#0 is only the kill's
+  anchor, so it asserts `outcome: resolved`: what status() returns is api-smoke's to score.
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — Capacitor's first slice (WO-002) scores api-constants and termination-calibration
-    only: this scenario carries React Native's values (the taskId react-native-background-fetch, boolean
-    returns, registerHeadlessTask, the rn* metrics), which the shared-scenario generalisation must make
-    bridge-neutral first."
   ios: "2026-11-09 — iOS has no headless mode (TSBackgroundFetch.m:388-393); `actions:` are Android's."
 stopOnTerminate: false
 config: {stopOnTerminate: false, enableHeadless: true, minimumFetchInterval: 15, startOnBoot: false}
@@ -43,8 +46,9 @@ steps:
     settle: 10
     after: 40
     hooks:
+      # (WO-002, 2026-11-12) The kill's anchor only, so bridge-neutral: `outcome: resolved` (description).
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     actions:
       - {after: {api: "status#0"}, delay_s: 3, kill: true}
       # `point: host` matches ANY host mark: here the kill's, the only one before it.
@@ -75,3 +79,7 @@ steps:
       jobStops: "999:app_called_jobFinished=2,999:onStartJob_returned_false=1"
       headlessTally: any
       bootBroadcasts: any
+    # (WO-002, 2026-11-12) React Native's HeadlessTask lines, which a Java headless task never logs (description).
+    # rnHeadlessErrors and headlessNoTask already read 0 on both.
+    platform_expect:
+      capacitor: {rnHeadlessInit: 0, rnHeadlessStarts: 0, rnHeadlessEnds: 0}
