@@ -1,7 +1,7 @@
 ---
 id: WO-007
 title: On Capacitor Android, an Activity destroyed while its process lives never makes TSBackgroundFetch headless, so the next fetch goes to the destroyed Bridge. Nothing is delivered headless, nothing finishes, and stopOnTerminate never applies
-status: draft
+status: verify
 created: 2026-11-12
 platforms: [android]
 submodules: [capacitor/background-fetch]
@@ -196,6 +196,7 @@ Only a destroy inside a live process fails.
   - `CDVBackgroundFetch.java:160-170` sets the flag on any `onDestroy` that is not a recreation. `:152-158` clears it on `onResume`.
   - That cordova-android calls a loaded plugin's `onDestroy` when its Activity finishes is INFERRED (`CordovaActivity.onDestroy` → `appView.handleDestroy()` → `pluginManager.onDestroy()`, per WO-003).
   - The finish case is NOT MEASURED. There is no Cordova lab host yet, and WO-003's manual check covered only the recreation.
+  - (2026-11-13) A self-restart is a different matter. Its old Activity is destroyed after the new one resumes, and Cordova's `onDestroy` does not check which Activity is current, so it would set the flag with a live page on screen. INFERRED from the shape Capacitor's first version shared, which was MEASURED (Log). NOT MEASURED on Cordova. It belongs in Cordova's own work order once a Cordova host exists.
 - **Android, Flutter: not affected in the plugin (PROVEN in source).**
   - `onDetachedFromActivity` (`BackgroundFetchPlugin.java:47-50`) calls `setActivity(null, null)`, which calls `setHeadless(true)` (`BackgroundFetchModule.java:108-109`).
   - The config-change detach is empty (`BackgroundFetchPlugin.java:34-39`), and attaching an Activity clears the flag (`BackgroundFetchModule.java:102-103`).
@@ -247,6 +248,7 @@ Only a destroy inside a live process fails.
   - It would need a native release, with React Native's full Tier 1 green and unchanged on it (`recreate-foreground-android`, `stop-on-terminate`, `headless-activity-destroyed`). It would also need Cordova and Flutter checks, which the lab cannot run yet.
   - WO-003's D1 kept this in the bridges for the same reason.
 - **A `handleOnDestroy` without the `isChangingConfigurations()` guard.** It moves WO-003 to Capacitor. With change 2 the steps would still pass (above), so `lifecycleTally` must be read.
+- **A `handleOnDestroy` that acts on every destroy.** When an app restarts itself, the old Activity is destroyed after the new one has resumed (MEASURED: Log, 2026-11-13). The first approved version did this, and sent a live page's fetch to the headless task. It must act only on the Activity resumed most recently, as React Native does. No lab scenario catches this yet: re-run the restart probe.
 - **Going headless in `handleOnPause` or `handleOnStop`.** A backgrounded app still has its page. With the default `stopOnTerminate: true`, the job would be cancelled whenever the user switches apps (INFERRED).
 - **Waiting for `ProcessLifecycleOwner`.** It never sends ON_DESTROY (`ProcessLifecycleOwner.kt:32-33`), so `LifecycleManager.onDestroy` (`:161-166`) can never fire.
 - **Retaining or queueing the event for the next page** (`notifyListeners(…, true)`).
@@ -258,12 +260,13 @@ Only a destroy inside a live process fails.
 
 ## Verification
 
-- [ ] D1–D4 decided
-- [ ] `stop-on-terminate` (both steps) and `headless-activity-destroyed` green on the fix, Capacitor Android, Lab1 and Lab2
-- [ ] `recreate-foreground-android` (both steps) green on the fix, Lab1 and Lab2, with no `headless:true` in `lifecycleTally`
-- [ ] Android Tier 1 sweep on the fix: React Native 12/12; Capacitor 11/12, with `api-smoke` red only for its own finding
-- [ ] `// (WO-007)` at the changed lines; the Capacitor CHANGELOG's `## Unreleased` `[Android]` entry carries `(WO-007)`; the scenario descriptions name WO-007 (prose only)
-- [ ] Platform parity: Cordova and Flutter not affected, as cited; iOS N/A
+- [x] D1–D4 decided (2026-11-13: D1 plugin, D2 take change 2, D3 the next release with WO-001, D4 (a))
+- [x] `stop-on-terminate` (both steps) and `headless-activity-destroyed` green on the fix, Capacitor Android, Lab1 and Lab2 (2026-11-13)
+- [x] `recreate-foreground-android` (both steps) green on the fix, Lab1 and Lab2, with no `headless:true` in `lifecycleTally` (2026-11-13)
+- [x] Restart probe (Log, 2026-11-13) green on the fix: at 0.1 and 0.3 s the fetch reaches the new page, with no `HeadlessMode? true` after it resumes; at 1.5 s, too
+- [x] Android Tier 1 sweep on the fix: React Native 12/12; Capacitor 11/12, with `api-smoke` red only for its own finding (sweeps `20261113-091839`, `20261113-094121`)
+- [x] `// (WO-007)` at the changed lines; the Capacitor CHANGELOG's `## Unreleased` `[Android]` entry carries `(WO-007)`; the scenario descriptions name WO-007 (prose only)
+- [x] Platform parity: Cordova and Flutter not affected by a plain finish, as cited; iOS N/A. Cordova's exposure to a self-restart is recorded as INFERRED (Platform parity, 2026-11-13)
 
 ## Log
 
@@ -276,3 +279,47 @@ Only a destroy inside a live process fails.
     - the stranded job ended only when the harness force-stopped the app.
   - **Not done yet:** no branch, no code, nothing re-run.
   - **Corrected after two skeptics' review** (16 corrections; none declined).
+- 2026-11-13 — **Approved by Chris:** D1 the plugin, D2 take change 2, D3 the plugin's next release beside WO-001's iOS entries, D4 (a) `lifecycleTally`. Status `in-progress`.
+  - **Re-verified before code.** The Capacitor pointer on fetch-forge `master` moved `9dd204a` → `5cf84f0`; the only change is `scripts/preflight.sh` (`68b4773`). `BackgroundFetchPlugin.java` is identical: still no `handleOnDestroy`, `handleOnResume` or `setHeadless`.
+  - **Branch** `fix/WO-007-capacitor-android-destroy-not-headless` from `5cf84f0`, in the submodule checkout `lab.yaml`'s `default_checkout` names. React Native's checkout moved `85a6bf4` → `8d9ab19` with fetch-forge `master` (its preflight only); the regression sweep runs on that.
+  - **Code:** `handleOnResume()` (`setHeadless(false)`) and `handleOnDestroy()` (`setHeadless(true)` unless `getActivity().isChangingConfigurations()`), each `// (WO-007)`, and an `[Android]` entry under `## Unreleased`.
+  - **First sweep `20261113-091839`: the plugin did not compile** (the lab's build, not a scenario, caught it). React Native 12/12 PASS on `8d9ab19`; every Capacitor cell ERROR `build failed`.
+    - javac: `cannot access DefaultLifecycleObserver` at `LifecycleManager.getInstance()`, and `cannot access AppCompatActivity` at `getActivity()`. Overload resolution needs a type's supertypes and a method's return type on the compile classpath.
+    - Neither is there. Native declares lifecycle `implementation` (`android/tsbackgroundfetch/build.gradle:228` at `399765c`), so its POM puts it in runtime scope. capacitor-android 8.5.3 declares appcompat `implementation`. The plugin dropped its own appcompat in 6.0.1 (`a689bd0`, "no longer required") and its own lifecycle deps in 8.0.0 (`38257be`). Until now its source named neither type.
+    - The Proposed fix had not foreseen a Gradle change. **Chris chose `compileOnly`** for both: appcompat at the app's `androidxAppCompatVersion` (fallback 1.7.1), lifecycle-common 2.8.5 (native 4.2.1's lifecycle version).
+    - Tested on a scratch copy of the plugin before the choice: plugin and app compile, and the lab app's `debugRuntimeClasspath` is byte-identical with and without the two lines (307 lines; appcompat 1.7.1 and lifecycle-common 2.6.2 → 2.8.5 in both). Customers' runtime graph is unchanged.
+    - Rejected: `implementation` for both (it re-declares what 6.0.1 and 8.0.0 removed), and reading the Activity through `getContext()` to avoid appcompat (a less obvious lookup than `getActivity()`, for one dependency fewer).
+  - **Second sweep `20261113-092854` (Capacitor only, plugin `5cf84f0+dirty`): 11 PASS, 1 FAIL.** The FAIL is `api-smoke`, red only for WO-006's finding.
+    - **`stop-on-terminate`** (Lab2), both steps PASS. In `finish`: `point=onDestroy … isFinishing=true`, `☯️  HeadlessMode? true`, then `onDestroy:afterSuper … headless=true` (`logcat.txt:717-722`). Then `- Stopping on terminate`, `- stop: capacitor-background-fetch`, `- jobFinished`, `- cancel …jobId=999` (`:734-737`). The second run answers `said=Could_not_find_job_999…` (`:754`).
+    - **`headless-activity-destroyed`** (Lab2) PASS. `HeadlessMode? true` (`:731`), then `point=headless event=fetch` (`:750`), `- finish:`, `- jobFinished`, `point=task-api api=finish … outcome=ok after_ms=1000` (`:757-759`).
+    - **`recreate-foreground-android`** (Lab1), both steps PASS with `headless false` and `lifecycleTally onCreate=1,onResume=1,onStart=1`. Neither capture has a `HeadlessMode? true` line (D4 (a)). The probe reads `isChangingConfigurations=true` before `super.onDestroy()` (`run/logcat.txt:841`), and the guard, read after it, held. So the Proposed fix's INFERRED, that the flag still holds after `Activity.onDestroy` returns, is MEASURED. A review lens also found it PROVEN in the API 23-36.1 sources: `ActivityThread.handleRelaunchActivity` sets `mChangingConfigurations` before the destroy, and nothing resets it.
+    - Still owed for the Verification: the other device for each (Lab1 for the first two, Lab2 for the recreate).
+  - **REVERSAL: the fix as first approved regressed a self-restart. MEASURED, then fixed with React Native's current-Activity rule (Chris approved, 2026-11-13).**
+    - **Found by** two of four review lenses, independently: a lifecycle-ordering lens and a callers lens. Both reached it by reading source; it was INFERRED until the probe below.
+    - **The ordering.** An app relaunches itself: `finish()` then `startActivity()`, a `NEW_TASK|CLEAR_TASK` restart, or a user relaunch within about a second of a finish. The new BridgeActivity resumes BEFORE the old one is destroyed. The old plugin instance's `handleOnDestroy` then runs last. Its Activity is finishing, not changing configurations, so it set `headless=true` with the new page on screen.
+    - **Nothing clears the flag afterwards.** ProcessLifecycleOwner sends nothing: the new Activity's start raised its started counter to 2, and the old one's stop only lowered it to 1. So the flag stays true until the app spends 700 ms or more in the background.
+    - **React Native is immune.** It acts on a destroy only for its current Activity (`ReactHostImpl.kt:309-318`; `ReactInstanceManager.java:721-727`, per the review). So the Proposed fix's line "It is React Native's `onHostDestroy` … in Capacitor's hook" held only for the guard, not for this rule.
+    - **Probe** (`adb`, Lab1, outside labkit; scratchpad `wo007/probe5b/probe.sh`). Launch with `stopOnTerminate: false`, then `am start --ez finishNow true`, then a relaunch after 0.1, 0.3 or 1.5 s. Wait 8 s for the new page's `configure()`, then `cmd jobscheduler run -f … 999`. Where the fetch lands tells headless from not: `point=headless` (the Java task) or `LAB app=event=fetch` (the page).
+
+      | Build | 0.1 s | 0.3 s | 1.5 s |
+      |---|---|---|---|
+      | unfixed plugin (`5cf84f0` Java) | new resumed 53.627, old destroyed 53.671; no `HeadlessMode? true`; fetch → **page** | resumed 16.627, destroyed 16.655; fetch → **page** | destroyed 40.326, then resumed 40.848; fetch → page |
+      | fix as first approved | resumed 15.807, destroyed 15.840, `HeadlessMode? true`; fetch → **headless task** | resumed 38.837, destroyed 38.892, `HeadlessMode? true`; fetch → **headless task** | destroyed 02.609 (`HeadlessMode? true`), then resumed 03.063; fetch → page |
+
+      At 0.1 and 0.3 s the ordering is the review's, on both builds. Only the fix sent the fetch away from a live page. With `stopOnTerminate: true` it would have cancelled the job instead (INFERRED, from `BackgroundFetch.java:276-278`).
+    - **The rule.** A static `WeakReference<Activity>` holds the BridgeActivity resumed most recently, set in `handleOnResume`. It is static because each BridgeActivity has its own Bridge and its own plugin instance. `handleOnDestroy` goes headless only when `getActivity()` is that Activity AND it is not changing configurations.
+      - **A plain finish:** the destroyed Activity is the current one, so it goes headless. Unchanged.
+      - **A recreation:** the guard still applies.
+      - **A self-restart:** the destroyed Activity is no longer current, so it is ignored.
+      - **A destroy before the relaunch resumes** (the 1.5 s row): the SDK goes headless, then the new `handleOnResume` clears it.
+    - **The lab guard (Chris's choice):** the probe's red and green here, and a WO-002 follow-up for a `restart` trigger and scenario, run on React Native and Capacitor. Until that lands, no scenario relaunches after a finish.
+    - **Cordova:** its `onDestroy` (`CDVBackgroundFetch.java:160-170`) has the same unfiltered shape, so it is probably exposed the same way. That is INFERRED, NOT MEASURED (there is no Cordova host), and out of this order's scope.
+  - **Green on the rule.** Sweep `20261113-094121` (Capacitor, plugin `5cf84f0+dirty`): 11 PASS, plus `api-smoke` FAIL, red only for WO-006's finding.
+    - `stop-on-terminate` and `headless-activity-destroyed` PASS on Lab2 in the sweep, and on Lab1 by `labkit run`. `headless=true` and one `HeadlessMode? true` each.
+    - `recreate-foreground-android` PASS on Lab1 in the sweep, and on Lab2 by `labkit run`, both steps. `headless=false` and no `HeadlessMode? true` line.
+    - **The restart probe, green.**
+      - 0.1 s: the new page resumed at 46.252, and the old Activity was destroyed at 46.292 with no `HeadlessMode? true`; the fetch went to the page.
+      - 0.3 s: resumed at 09.325, destroyed at 09.404; the fetch went to the page.
+      - 1.5 s: destroyed at 33.080 with `HeadlessMode? true`, then the relaunch resumed at 33.584 and cleared it; the fetch went to the page.
+    - React Native 12/12 on `8d9ab19`, in sweep `20261113-091839`. No React Native code changes.
+- 2026-11-13 — **Committed** `d3dac61` on `fix/WO-007-capacitor-android-destroy-not-headless` (Capacitor plugin, from `5cf84f0`; not merged or pushed). Every Verification box is ticked. Status `verify` until the branch merges into the plugin's `master`, then `done`.

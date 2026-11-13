@@ -29,8 +29,9 @@ description: >
   1, then nothing — headlessEvents.fetch 0, headlessCalls `-`, fetchFinished 0, jobFinished 0 (the SDK's 60 s timeout
   falls after the window), headless false.  The values above are a sound bridge's there too: its Java headless task
   (the lab's BackgroundFetchHeadlessTask.java) logs the same `point=headless` and `point=task-api` lines.  So they
-  stand, and the red gets its own work order; only React Native's own HeadlessTask lines read 0 on Capacitor
-  (platform_expect).
+  stand, and the red got its own work order, WO-007: MEASURED red in sweep 20261112-113743, green from sweep
+  20261113-094121 (handleOnDestroy/handleOnResume in the plugin).  Only React Native's own HeadlessTask lines read 0
+  on Capacitor (platform_expect).
 platforms: [react-native, capacitor]
 not_applicable:
   ios: "2026-11-09 — iOS has no headless mode (TSBackgroundFetch.m:388-393); `actions:` are Android's."

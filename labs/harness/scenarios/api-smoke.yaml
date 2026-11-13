@@ -24,8 +24,9 @@ description: >
       passes {taskId: undefined}, which its plugin reads the same way, BackgroundFetchPlugin.java stop()).
     * (WO-002, 2026-11-12) Capacitor's scheduleTask and stop resolve nothing: src/index.ts declares both
       `Promise<void>` and resolves no value, over BackgroundFetchPlugin.java's bare `call.resolve()`.  PREDICTED from
-      source, not yet measured: scheduleTask#4, stop#5 and stop#7 read `want-boolean-got-undefined` there.  That red
-      is a finding for its own work order, never relaxed here: this scenario holds every bridge to the types.
+      source, then MEASURED: scheduleTask#4, stop#5 and stop#7 read `want-boolean-got-undefined` there (sweep
+      20261112-113743).  WO-006 fixed it in src/index.ts (both resolve `true`): green in sweep 20261113-095342.  That
+      red was a finding for its own work order, never relaxed here: this scenario holds every bridge to the types.
     * finish(taskId) — void: the bridge returns nothing (undefined).  Called with the fetch taskId while no fetch is
       running: the SDK logs `- finish: react-native-background-fetch` and finds no BGTask, which is not an error.
       (WO-002, 2026-11-12) On Capacitor that id is not its fetch's (`capacitor-background-fetch`), so the SDK finds
