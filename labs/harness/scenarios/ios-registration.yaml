@@ -29,17 +29,24 @@ description: >
       it where that start-up comes with the scene.  +load has registered both (`finished`), and the late call adds
       no second registration: no crash.  The flag again, for a call after +load's.
     * none: no call at all, so only +load can register (nothing else in this host calls didFinishLaunching): both
-      `finished`, once each.  This is the step that catches +load's loss: nothing would register ('-').  `finished`
+      `finished`, once each.  On React Native this is the step that catches +load's loss: nothing would register
+      ('-').  `finished`
       alone does not say +load: `Handling app launch` came after the scene connected (42–85 ms after the launch,
       the scene at 14–35 ms, MEASURED 2026-11-11), so a call from willConnect also lands before it.
     * cold: the app terminated, then a background fetch (`fire: fetch`) launches it in the background.  An OS launch
       has no launch arguments, so the host makes the delegate call there too: each identifier registers inside the
       delegate in both processes, before the framework handles the background launch, and the fetch is delivered.
       +load alone in a background launch is not measured: no argument reaches that process.
-platforms: [react-native]
+
+  (WO-002, 2026-11-13) On Capacitor the plugin makes the call too: BackgroundFetchPlugin.load() calls
+  didFinishLaunching() on every launch, from the scene (the template's SceneDelegate builds the bridge in willConnect),
+  and the SDK's `launched` flag makes it a no-op after any earlier call.  So there `none` still reads `finished` but no
+  longer isolates +load: the plugin's late call would register too if +load did not.  And `scene` is the THIRD call:
+  UIKit posts the scene notification the host logs `sceneWillConnect` and makes the call on AFTER the template's
+  SceneDelegate has built the bridge (`pluginLoad` 15-21 ms before it, MEASURED 2026-11-13).  sdkLaunchCalls counts the
+  host's calls only; `point=pluginLoad` dates the plugin's roughly (Capacitor loads its plugin list from a Set).
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — no Capacitor iOS host yet (WO-002: Capacitor Android first, then iOS on CocoaPods
-    and SwiftPM)."
   android: "2026-11-11 — BGTaskScheduler's launch-handler registration is iOS's; Android schedules JobScheduler jobs at
     configure() and scheduleTask() (api-smoke, events-task-android)."
 measure_from: launch

@@ -4,9 +4,10 @@
    driverFinishes                   fetch:withheld=1,timeout:ok=1 expected fetch:withheld=1,timeout:ok=1 ok
    fetchFinished                    1                      expected 1            ok
    legacyFetchStates                background=1           expected background=1 ok
-   legacyTimeoutAfterMs             25997                  expected <28000       ok
+   legacyTimeoutAfterMs             25999                  expected <28000       ok
    legacyResults                    newData=1              expected newData=1    ok
    springboardResults               RetrievedNewData=1     expected RetrievedNewData=1 ok
+   driverTally                      fetch:react-native-background-fetch=1,timeout:react-native-background-fetch=1 expected fetch:react-native-background-fetch=1,timeout:react-native-background-fetch=1 ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok

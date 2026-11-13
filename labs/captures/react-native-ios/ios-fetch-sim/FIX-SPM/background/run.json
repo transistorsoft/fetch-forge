@@ -22,7 +22,7 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "react-native/background-fetch",
-  "commit": "85a6bf4ecd515409aa1fabde8db4e27c16f40541",
+  "commit": "8d9ab19cc6b1f4925a87fba30bf34ea60d9cac81",
   "dirty": "no"
  },
  "device": {
@@ -38,57 +38,57 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 27.0,
-  "t0": 1794492212.497,
+  "step_s": 26.9,
+  "t0": 1794589175.809,
   "phases": {
-   "terminated": 0.097,
-   "swept": 0.323,
-   "neutral_pre": 0.323,
-   "permissions": 0.323,
-   "sleep_end": 0.323,
-   "log_begun": 0.732,
-   "launch_mark": 0.867,
-   "verdict_cleared": 0.868,
-   "launch": 0.995,
-   "settle_end": 10.998,
-   "trigger": 11.133,
-   "end": 26.555,
-   "runner_joined": 26.555,
-   "capture_mark": 26.695,
-   "pusher_joined": 26.695,
-   "log_ended": 26.94,
-   "log_written": 26.94,
-   "capture_extras": 26.94,
-   "db_pulled": 26.941,
-   "run_json": 27.006,
-   "judged": 27.035,
-   "verdict_pushed": 27.036,
-   "settled": 27.537,
-   "neutral_post": 27.537,
-   "terminated_post": 27.661
+   "terminated": 0.098,
+   "swept": 0.302,
+   "neutral_pre": 0.302,
+   "permissions": 0.302,
+   "sleep_end": 0.302,
+   "log_begun": 0.708,
+   "launch_mark": 0.82,
+   "verdict_cleared": 0.82,
+   "launch": 0.943,
+   "settle_end": 10.944,
+   "trigger": 11.081,
+   "end": 26.509,
+   "runner_joined": 26.509,
+   "capture_mark": 26.65,
+   "pusher_joined": 26.65,
+   "log_ended": 26.876,
+   "log_written": 26.876,
+   "capture_extras": 26.876,
+   "db_pulled": 26.877,
+   "run_json": 26.936,
+   "judged": 26.983,
+   "verdict_pushed": 26.983,
+   "settled": 27.485,
+   "neutral_post": 27.485,
+   "terminated_post": 27.62
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.239,
+    "s": 0.22,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 11,
-    "s": 1.733,
+    "s": 1.713,
     "bg_n": 2,
-    "bg_s": 0.231
+    "bg_s": 0.238
    },
    "_tap_text": {
     "n": 61,
-    "s": 0.022,
+    "s": 0.018,
     "bg_n": 59,
-    "bg_s": 0.022
+    "bg_s": 0.018
    },
    "begin_log": {
     "n": 1,
-    "s": 0.41,
+    "s": 0.406,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.225,
+    "s": 0.204,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.245,
+    "s": 0.226,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,19 +124,19 @@
    },
    "launch": {
     "n": 1,
-    "s": 0.127,
+    "s": 0.122,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.64,
+    "s": 0.627,
     "bg_n": 2,
-    "bg_s": 0.231
+    "bg_s": 0.238
    },
    "native_resolved": {
     "n": 1,
-    "s": 0.01,
+    "s": 0.009,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -148,9 +148,9 @@
    },
    "peek": {
     "n": 59,
-    "s": 0.076,
+    "s": 0.067,
     "bg_n": 59,
-    "bg_s": 0.076
+    "bg_s": 0.067
    },
    "permissions": {
     "n": 1,
@@ -160,9 +160,9 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.146,
+    "s": 0.149,
     "bg_n": 1,
-    "bg_s": 0.146
+    "bg_s": 0.149
    },
    "push_verdict": {
     "n": 5,
@@ -178,28 +178,28 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.416,
+    "s": 0.422,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.221,
+    "s": 0.232,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "to_background": {
     "n": 1,
-    "s": 0.169,
+    "s": 0.164,
     "bg_n": 1,
-    "bg_s": 0.169
+    "bg_s": 0.164
    }
   },
   "dialogs": [],
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 2.323
+   "boot": 2.28
   }
  },
  "measure_from": "launch",
@@ -240,12 +240,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.526,
-   "action1": 1.526
+   "action0": 1.531,
+   "action1": 1.531
   },
   "sent_s": {
-   "action0": 3.557,
-   "action1": 8.693
+   "action0": 3.57,
+   "action1": 8.709
   }
  },
  "network": null,
@@ -276,7 +276,10 @@
    "returns": {
     "$": {
      "type": "string",
-     "equals": "react-native-background-fetch"
+     "in": [
+      "react-native-background-fetch",
+      "capacitor-background-fetch"
+     ]
     }
    }
   }
@@ -297,5 +300,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-12 09:03:59"
+ "when": "2026-11-13 12:00:02"
 }

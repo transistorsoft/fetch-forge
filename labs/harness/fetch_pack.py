@@ -853,6 +853,32 @@ def _fetch_metrics(m):
         return timed - fetched if fetched is not None and timed is not None else "-"
     _extend(m.METRICS, "legacyTimeoutAfterMs", legacyTimeoutAfterMs)
 
+    def bgSilenceMs(c):
+        """(WO-002, Capacitor iOS) iOS: did the app really sleep before the wake?  The longest silence in the driver's
+        beat (`app=beat`, every 0.5 s while it runs, throttled to ~1 s hidden) from its last beat before the host's
+        `background` action to the `point=legacyFetch` that woke it, in ms; '-' without the action, the fetch or a beat
+        before the action.  An app the Simulator suspended reads seconds; one kept awake (the Capacitor driver's native
+        polling did that until it paused while hidden, MEASURED 2026-11-13) reads ~1000.  The beats are the woken
+        process's own, by pid."""
+        stamp = re.compile(r"^\d\d-\d\d (\d\d):(\d\d):(\d\d\.\d{3}) ")
+        def ms(line):
+            h = stamp.match(line)
+            return int(round((int(h.group(1)) * 3600 + int(h.group(2)) * 60 + float(h.group(3))) * 1000)) if h else None
+        bg = next((ms(l) for l in c.window if " point=host " in l and " action=background " in l), None)
+        if bg is None:
+            return "-"
+        woke = next((l for l in c.window if "point=legacyFetch state=" in l and (ms(l) or 0) >= bg), None)
+        if woke is None:
+            return "-"
+        pid, t_woke = m.line_pid(woke), ms(woke)
+        beats = [ms(l) for l in c.window if " app=beat n=" in l and m.line_pid(l) == pid]
+        before = [b for b in beats if b is not None and b <= bg]
+        if not before:
+            return "-"
+        seq = [b for b in beats if b is not None and before[-1] <= b <= t_woke] + [t_woke]
+        return max(b - a for a, b in zip(seq, seq[1:])) if len(seq) > 1 else "-"
+    _extend(m.METRICS, "bgSilenceMs", bgSilenceMs)
+
     def taskFires(c):
         """(ios-task-sim) iOS: what the lab app's custom-task hook did with each `fire: task|task-timeout` (LabModule's
         `LAB point=fire kind=<k> taskId=<id> found=<b> ran=<b>`), `<kind>:<ran|noCallback|missing>=n`: ran (the task's

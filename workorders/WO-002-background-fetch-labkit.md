@@ -1115,3 +1115,67 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - **Provenance:** both red steps' `run.json` read plugin `4d431c1` `dirty: yes`, AVD Lab1. The only dirt was that one-line patch. The green sweep then overwrote `labs/captures/capacitor/restart-foreground-android/FIX`, so the red survives only in this Log and in an ephemeral scratchpad copy (a review lens flagged this). To reproduce, put the condition back over `4d431c1` and run `./labkit run --platform capacitor --os android --scenario restart-foreground-android --variant FIX --serial <emulator> --build`.
   - **Green, MEASURED:** sweep `20261113-104449`. React Native (`8d9ab19`, Lab1) and Capacitor (`4d431c1`, Lab2) PASS both steps, `restartOrder resumed-first` in each. So React Native's immunity, PROVEN in source until now (`ReactHostImpl` acts only on its current Activity), is MEASURED.
   - selftest passes (196 checks); vendor_check passes.
+- 2026-11-13 — **Capacitor iOS host, on CocoaPods and Swift Package Manager (Simulator).** Branch `feat/WO-002-capacitor-ios`.
+  - **The host.** Ported from bg-forge's Capacitor iOS host (`addc50501`, CocoaPods only), with the fetch React Native host's proofs and SwiftPM recipe.
+    - build.sh generates the host from @capacitor/cli 8.5.3's own templates: `app/ios/` (pods) or `app/build/ios-spm/` (spm), both gitignored and under directories run.py's source stamp skips. It writes by hand what `cap sync` would.
+    - The one tracked native file is `app/native-ios/AppDelegate.swift`: the template's AppDelegate, plus LabPlugin (args, knobs, probe, verdict, the Darwin custom-task hook) and LabConsolePlugin (JS console → NSLog, without which the harness sees no driver line).
+    - **The pins.**
+      - pods: Podfile `:path` to the stage and the labelled snapshot.
+      - spm: CapApp-SPM as `cap sync` writes it, with capacitor-swift-pm exact 8.5.3. The plugin's `transistor-background-fetch from: 4.2.0` resolves through a per-label SwiftPM mirror tagged 4.2.1.
+    - **The SDK's version string** is linked with `-Wl,-u,_TSBackgroundFetchVersionString` on the App target. A Swift file cannot name the C array the React Native host references.
+  - **The spike: does a WKWebView run JavaScript when iOS wakes the app?** It ran ios-fetch-sim and ios-timeout-sim on the pods host.
+    - **Arm B, the driver as on Android: all PASS, but vacuously.** The driver's periodic native calls kept the app from EVER being suspended in the background: Lab.verdict every 250 ms, and the probe tick every 4 s. Its beat logged every second from the background action to the push (sweep `20261113-113204`).
+    - **Arm A, those calls off: the app is suspended ~1.1 s after backgrounding, as the React Native host's is.**
+      - The push woke it, and the delivery reached the page 2 ms after `legacyFetch`.
+      - The 1 s finish timer fired on time, and the SDK logged `finish … (1 of 1)` and `newData`. SpringBoard logged `RetrievedNewData`.
+      - Only the driver's `app=finish … outcome=ok` was missing: iOS suspends the app the moment the SDK completes the fetch, before the reply to `await finish()` reaches the page.
+      - ios-timeout-sim: timers ran (~1 s, throttled) through the 26 s the SDK held background time, the timeout reached the page at +26.003 s, and its finish reply arrived 64 ms later. So the missing reply is a race (sweep `20261113-113435`).
+    - **Cold background launch, both arms.** A scene connects (`state=background`) and the bridge loads (`pluginLoad n=1 state=background`). The page boots hidden in ~1.2 s while the SDK holds the fetch, then configure() delivers it.
+    - The Simulator does not show WebKit's device-only rule: it suspends web processes with ≤15 s of run time left. Device check NOT DONE.
+  - **Chris's decisions (2026-11-13):**
+    - (1) The Capacitor driver pauses its native polling while the page is hidden, on iOS only (`www/index.html` PAUSE_HIDDEN). Android keeps its timers as measured.
+    - (2) ios-fetch-sim `background` does not pin driverFinishes for Capacitor (`any`). fetchFinished, legacyResults and RetrievedNewData inside the window stay the proof.
+    - Re-run on the final driver (sweep `20261113-114442`): the page logs `visibility hidden=true` and its two polls pause, the beat stops, and the push wakes it. All PASS. The cold page boots `hidden=true`, so it never polls.
+  - **The six iOS scenarios list Capacitor.**
+    - `returns` takes either bridge's fetch taskId, and driverTally / sdkSubscribers are pinned per platform.
+    - api-smoke-ios marks registerHeadlessTask `absent_on: capacitor`.
+    - ios-registration notes that the plugin's load() makes the SDK's launch call from the scene too, so `none` no longer isolates +load there.
+  - **Sweeps, native 4.1.1-master-399765c (4.2.1):**
+
+    | Sweep | Variant | React Native (`8d9ab19`) | Capacitor (`4d431c1`) |
+    |---|---|---|---|
+    | `20261113-114636` | FIX (pods) | 7/7 PASS | 5/7 PASS |
+    | `20261113-115848` | FIX-SPM | 7/7 PASS | 5/7 PASS |
+
+    Both Capacitor reds are WO-002 suspected defect 1, MEASURED: `start()` resolves undefined on iOS (`api-smoke-ios start#3`, `ios-stop-start restarted start#2`: `want-number-got-undefined`). BackgroundFetchPlugin.swift declares `start` as `CAPPluginReturnCallback`, so @capacitor/core makes it a callback call, and the wrapper's promise gets no status. The native start still runs: the restarted step's delivery and finish pass. This is a finding for its own work order, not relaxed. Android declares a promise and passes.
+  - **Re-scored on the final scenarios:** 52 iOS step captures PASS, the 4 Capacitor `start` steps FAIL, none `spec-changed`. selftest passes (198 checks); vendor_check passes.
+  - **Final Capacitor sweeps after the review's fixes** (the committed Capacitor iOS captures): `20261113-122423` (FIX) and `20261113-122851` (FIX-SPM).
+    - Each 5/7, with the same two `start` reds.
+    - `pluginLoad n=1` in all 32 launches.
+    - bgSilenceMs 3382-4560 ms across both bridges and channels.
+    - The React Native iOS captures are those of the earlier two sweeps.
+  - **Review (three lenses: build, host, scenarios), and what it changed.** No finding changed a verdict.
+    - **A guard against the vacuous pass:** new metric `bgSilenceMs` (fetch_pack.py, with a selftest case). It is the longest silence in the woken process's `app=beat` from its last beat before the `background` action to `point=legacyFetch`. It is expected `>=2000` in ios-fetch-sim `background` and ios-timeout-sim, on both bridges.
+      - Measured: arm B 1246 / 1001 ms; every committed capture 2644-4560 ms (Capacitor 2644-3815, React Native 4240-4560).
+    - **The overlay restores the template's `configurationForConnecting`.** It was dropped in the port, so UIKit read the Info.plist scene manifest, whose storyboard names a second CAPBridgeViewController. `pluginLoad n=1` held in all 32 launches anyway.
+    - **The scene notification:** its comment and ios-registration now say what was MEASURED. UIKit posts it AFTER the template's SceneDelegate has built the bridge, so on Capacitor `--sdkLaunchCall=scene` is the third call.
+    - **build.sh:**
+      - the carrier grep needs the SDK's digits, since the overlay holds the literal prefix;
+      - the SDK's class must be defined in that one carrier alone (bg-forge's TSConfig check, lost in the port);
+      - the artifact's `.lab-stamp` goes with a replaced app;
+      - pods refuses a `TSBackgroundFetch.framework` at the snapshot root, which is on -F before the proven slice.
+    - **The SwiftPM host moved from `app/ios-spm/` to `app/build/ios-spm/`.** run.py's source stamp skips `build`, so an SPM build no longer makes the Android and pods stamps stale.
+    - **Not changed:**
+      - The Android build's generated assets are still hashed into the iOS stamps (fail-safe: an extra rebuild). That predates this order and is bg-forge's shape.
+      - ios-fetch-sim `cold` still pins driverFinishes for Capacitor (the reply came 81-82 ms after the SDK's finish in every capture); its comment names the race.
+      - The six WO-004 / WO-004-SPM React Native captures of ios-fetch-sim and ios-timeout-sim predate the `returns: in` change and re-score as `spec-changed-since-capture` (WO-004 is done).
+    - **Wording:**
+      - the `background` comment says "can", not "usually";
+      - the 64 ms timeout reply is a different path: the app keeps running ~5 s after an expiry;
+      - "~1 s" to suspension is 1-2.5 s;
+      - api-smoke-ios documents Capacitor's finish id and its start red.
+  - **Open, for work orders (none written yet):**
+    - the `start()` red above;
+    - a docs note: on iOS, code after `await BackgroundFetch.finish()` may not run until the next wake;
+    - INFERRED, not measured: the plugin's `deinit` calls `removeListener`, which deletes the persisted subscriber if a background scene disconnect frees the bridge while the process lives;
+    - the device-only 15 s WebKit cutoff.

@@ -18,13 +18,15 @@ description: >
       (MEASURED 2026-11-10).
     * Each: the SDK's own `performFetchWithCompletionHandler` and `finish … (1 of 1)` lines, the driver's delivery,
       UIKit's result `newData`, and SpringBoard's `RetrievedNewData`.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — no Capacitor iOS host yet (WO-002: Capacitor Android first, then iOS on CocoaPods
-    and SwiftPM)."
   android: "2026-11-10 — `fire:`, `background:` and `terminate:` are the Simulator's (a SpringBoard background fetch);
     Android's fetches are JobScheduler's, events-fetch-android's."
 measure_from: launch
+# (WO-002, Capacitor iOS) Each bridge delivers its own fetch taskId: `returns` takes either, driverTally pins each.
+platform_expect:
+  react-native: {driverTally: "fetch:react-native-background-fetch=1"}
+  capacitor: {driverTally: "fetch:capacitor-background-fetch=1"}
 steps:
   - name: foreground
     settle: 10
@@ -37,7 +39,7 @@ steps:
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
         min: 1
         max: 1
-        returns: {$: {type: string, equals: react-native-background-fetch}}
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 3, fire: fetch}
     expect:
@@ -60,10 +62,20 @@ steps:
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
         min: 1
         max: 1
-        returns: {$: {type: string, equals: react-native-background-fetch}}
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 2, background: true}
       - {after: {api: "status#0"}, delay_s: 7, fire: fetch}
+    # (WO-002, Capacitor iOS, MEASURED 2026-11-13) A woken Capacitor app is suspended again as soon as the SDK
+    # completes the fetch, so the reply to the driver's `await BackgroundFetch.finish()` — and the
+    # `app=finish … outcome=ok` it logs — can reach the page only at its next wake: in sweep 20261113-113435
+    # driverFinishes read `-` while the SDK's own `finish … (1 of 1)` came 1.0 s after the delivery; the committed
+    # captures got the reply 66 ms after it.  A race, so it is not pinned either way.  fetchFinished 1, legacyResults newData and RetrievedNewData stay the
+    # proof that the page finished: the SDK's own expiry, ~26 s after the push, falls after this window.  A step-level
+    # platform_expect replaces the scenario's, so driverTally is restated.
+    platform_expect:
+      react-native: {driverTally: "fetch:react-native-background-fetch=1"}
+      capacitor: {driverTally: "fetch:capacitor-background-fetch=1", driverFinishes: any}
     expect:
       crashes: 0
       fetchReceived: 1
@@ -73,6 +85,13 @@ steps:
       legacyFetchStates: "background=1"
       legacyResults: "newData=1"
       springboardResults: "RetrievedNewData=1"
+      # (WO-002, Capacitor iOS) The app really slept before the push: the driver's beat fell silent for seconds.  A
+      # driver kept awake reads ~1000 (the Capacitor driver's native polling did, until it paused while hidden).
+      bgSilenceMs: ">=2000"
+  # (WO-002, Capacitor iOS) The cold page is a background app too, suspended again once the SDK completes: its reply
+  # to `await finish()` has the same race as `background`, but came 81-82 ms after the SDK's finish in every capture
+  # (FIX, FIX-SPM), so driverFinishes stays pinned.  A cold `-` with fetchFinished, legacyResults and
+  # RetrievedNewData green is that race, not the bridge.
   - name: cold
     settle: 10
     after: 20

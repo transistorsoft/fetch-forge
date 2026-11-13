@@ -22,7 +22,7 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "react-native/background-fetch",
-  "commit": "85a6bf4ecd515409aa1fabde8db4e27c16f40541",
+  "commit": "8d9ab19cc6b1f4925a87fba30bf34ea60d9cac81",
   "dirty": "no"
  },
  "device": {
@@ -38,47 +38,47 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 27.1,
-  "t0": 1794491936.318,
+  "step_s": 27.0,
+  "t0": 1794588435.153,
   "phases": {
-   "terminated": 0.117,
-   "swept": 0.346,
-   "neutral_pre": 0.346,
-   "permissions": 0.346,
-   "sleep_end": 0.346,
-   "log_begun": 0.762,
-   "launch_mark": 0.89,
-   "verdict_cleared": 0.89,
-   "launch": 1.017,
-   "settle_end": 11.027,
-   "trigger": 11.158,
-   "end": 26.604,
-   "runner_joined": 26.604,
-   "capture_mark": 26.751,
-   "pusher_joined": 26.751,
-   "log_ended": 26.998,
-   "log_written": 26.998,
-   "capture_extras": 26.998,
-   "db_pulled": 26.999,
-   "run_json": 27.064,
-   "judged": 27.094,
-   "verdict_pushed": 27.094,
-   "settled": 27.595,
-   "neutral_post": 27.595,
-   "terminated_post": 27.734
+   "terminated": 0.104,
+   "swept": 0.335,
+   "neutral_pre": 0.335,
+   "permissions": 0.335,
+   "sleep_end": 0.335,
+   "log_begun": 0.747,
+   "launch_mark": 0.888,
+   "verdict_cleared": 0.888,
+   "launch": 1.018,
+   "settle_end": 11.02,
+   "trigger": 11.159,
+   "end": 26.579,
+   "runner_joined": 26.58,
+   "capture_mark": 26.718,
+   "pusher_joined": 26.718,
+   "log_ended": 26.964,
+   "log_written": 26.965,
+   "capture_extras": 26.965,
+   "db_pulled": 26.965,
+   "run_json": 27.02,
+   "judged": 27.061,
+   "verdict_pushed": 27.061,
+   "settled": 27.566,
+   "neutral_post": 27.566,
+   "terminated_post": 27.703
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.242,
+    "s": 0.239,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 11,
-    "s": 1.777,
+    "s": 1.755,
     "bg_n": 2,
-    "bg_s": 0.23
+    "bg_s": 0.225
    },
    "_tap_text": {
     "n": 61,
@@ -88,7 +88,7 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.416,
+    "s": 0.412,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.23,
+    "s": 0.232,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.247,
+    "s": 0.246,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,19 +124,19 @@
    },
    "launch": {
     "n": 1,
-    "s": 0.127,
+    "s": 0.13,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.635,
+    "s": 0.644,
     "bg_n": 2,
-    "bg_s": 0.23
+    "bg_s": 0.225
    },
    "native_resolved": {
     "n": 1,
-    "s": 0.009,
+    "s": 0.005,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -148,9 +148,9 @@
    },
    "peek": {
     "n": 59,
-    "s": 0.069,
+    "s": 0.075,
     "bg_n": 59,
-    "bg_s": 0.069
+    "bg_s": 0.075
    },
    "permissions": {
     "n": 1,
@@ -160,9 +160,9 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.148,
+    "s": 0.149,
     "bg_n": 1,
-    "bg_s": 0.148
+    "bg_s": 0.149
    },
    "push_verdict": {
     "n": 5,
@@ -178,28 +178,28 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.429,
+    "s": 0.411,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.253,
+    "s": 0.238,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "to_background": {
     "n": 1,
-    "s": 0.169,
+    "s": 0.166,
     "bg_n": 1,
-    "bg_s": 0.169
+    "bg_s": 0.166
    }
   },
   "dialogs": [],
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 2.424
+   "boot": 2.41
   }
  },
  "measure_from": "launch",
@@ -240,12 +240,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.547,
-   "action1": 1.547
+   "action0": 1.527,
+   "action1": 1.527
   },
   "sent_s": {
-   "action0": 3.591,
-   "action1": 8.779
+   "action0": 3.56,
+   "action1": 8.684
   }
  },
  "network": null,
@@ -276,7 +276,10 @@
    "returns": {
     "$": {
      "type": "string",
-     "equals": "react-native-background-fetch"
+     "in": [
+      "react-native-background-fetch",
+      "capacitor-background-fetch"
+     ]
     }
    }
   }
@@ -297,5 +300,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-12 08:59:23"
+ "when": "2026-11-13 11:47:42"
 }
