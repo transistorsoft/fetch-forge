@@ -143,6 +143,12 @@ run_publish() {
   local target="${1:-}"
   shift || true
 
+  # The npm packages are published by GitHub Actions, never from here (see the release
+  # domain below). Refuse before the iOS links check, so the refusal is what shows.
+  if npm_pkg_label "$target" >/dev/null; then
+    refuse_npm_publish "$target"
+  fi
+
   check_no_ios_links
 
   case "$target" in
@@ -172,26 +178,6 @@ run_publish() {
           ;;
       esac
       ;;
-    types)
-      require_dir "$DIR_TYPES" "types/background-fetch"
-      echo -e "${CYAN}Publishing types to npm...${RESET}"
-      cd "$DIR_TYPES" && npm publish "$@"
-      ;;
-    react-native|rn)
-      require_dir "$DIR_RN" "react-native/background-fetch"
-      echo -e "${CYAN}Publishing react-native to npm...${RESET}"
-      cd "$DIR_RN" && npm publish "$@"
-      ;;
-    capacitor|cap)
-      require_dir "$DIR_CAPACITOR" "capacitor/background-fetch"
-      echo -e "${CYAN}Publishing capacitor to npm...${RESET}"
-      cd "$DIR_CAPACITOR" && npm publish "$@"
-      ;;
-    cordova)
-      require_dir "$DIR_CORDOVA" "cordova/background-fetch"
-      echo -e "${CYAN}Publishing cordova to npm...${RESET}"
-      cd "$DIR_CORDOVA" && npm publish "$@"
-      ;;
     flutter)
       require_dir "$DIR_FLUTTER" "flutter/background_fetch"
       echo -e "${CYAN}Publishing flutter to pub.dev...${RESET}"
@@ -202,6 +188,114 @@ run_publish() {
       ;;
     *)
       die "Unknown publish target: $target\nRun 'forge publish --help' for available targets."
+      ;;
+  esac
+}
+
+# ── release domain (npm packages) ────────────────────────────────────
+# types, react-native, capacitor and cordova are published to npm by GitHub Actions
+# (each submodule's .github/workflows/release.yml: npm Trusted Publishing, with
+# provenance) when a version tag is pushed. `forge release` runs the submodule's own
+# scripts/release.sh, which does every check and never pushes. See its RELEASING.md.
+
+# npm package name or alias → canonical label; fails for anything else.
+npm_pkg_label() {
+  case "$1" in
+    types)           echo "types" ;;
+    react-native|rn) echo "react-native" ;;
+    capacitor|cap)   echo "capacitor" ;;
+    cordova)         echo "cordova" ;;
+    *) return 1 ;;
+  esac
+}
+
+# Canonical label → submodule directory.
+npm_pkg_dir() {
+  case "$1" in
+    types)        echo "$DIR_TYPES" ;;
+    react-native) echo "$DIR_RN" ;;
+    capacitor)    echo "$DIR_CAPACITOR" ;;
+    cordova)      echo "$DIR_CORDOVA" ;;
+  esac
+}
+
+# The steps of a release, run from the fetch-forge root.
+print_npm_release_steps() {
+  local label="$1" rel="$2"
+  cat <<EOF
+  forge release $label prepare X.Y.Z   # on master: branch chore/release-X.Y.Z, commit
+  # merge chore/release-X.Y.Z into master, in $rel
+  forge release $label tag X.Y.Z       # on master: preflight, tag the merge
+  git -C $rel push origin master X.Y.Z   # the tag starts the workflow
+EOF
+}
+
+refuse_npm_publish() {
+  local label dir rel
+  label="$(npm_pkg_label "$1")"
+  dir="$(npm_pkg_dir "$label")"
+  rel="${dir#$ROOT/}"
+  {
+    echo -e "${RED}error:${RESET} $label is published to npm by GitHub Actions when a version tag is pushed,"
+    echo "not by forge publish. A local npm publish would skip preflight and the tag check,"
+    echo "carry no provenance, and use up the version number. A release:"
+    echo
+    print_npm_release_steps "$label" "$rel"
+    echo
+    echo "See $rel/RELEASING.md, or: forge help release"
+  } >&2
+  exit 1
+}
+
+run_release() {
+  local target="${1:-}"
+  shift || true
+
+  case "$target" in
+    ""|--help|-h)
+      show_help release
+      return
+      ;;
+  esac
+
+  local label dir rel
+  label="$(npm_pkg_label "$target")" \
+    || die "Unknown release target: $target\nRun 'forge release --help' for available targets."
+  dir="$(npm_pkg_dir "$label")"
+  rel="${dir#$ROOT/}"
+  [[ -x "$dir/scripts/release.sh" ]] \
+    || die "$rel has no scripts/release.sh. Initialise or update the submodule:\n  git submodule update --init $rel"
+
+  local step="${1:-}"
+  shift || true
+
+  case "$step" in
+    prepare|tag)
+      [[ $# -eq 1 ]] || die "Usage: forge release $label $step X.Y.Z"
+      local version="$1"
+      check_no_ios_links
+      echo -e "${CYAN}Release $label $version: $step${RESET}"
+      (cd "$dir" && npm run release -- "$step" "$version")
+      echo
+      if [[ "$step" == prepare ]]; then
+        echo -e "In ${BOLD}$rel${RESET}, merge chore/release-$version into master, then:"
+        echo
+        echo "    forge release $label tag $version"
+      else
+        echo "Push the submodule, from the fetch-forge root (here a bare git push targets fetch-forge):"
+        echo
+        echo "    git -C $rel push origin master $version"
+      fi
+      ;;
+    preflight)
+      [[ $# -eq 0 ]] || die "Usage: forge release $label preflight"
+      (cd "$dir" && npm run preflight)
+      ;;
+    ""|--help|-h)
+      show_help release
+      ;;
+    *)
+      die "Unknown release command: $step\nUsage: forge release $label prepare|tag X.Y.Z | preflight"
       ;;
   esac
 }
@@ -716,15 +810,45 @@ Targets:
     --skip-tests              Skip unit tests
     --local                   Publish to mavenLocal (testing)
 
-  types              npm publish (@transistorsoft/background-fetch-types)
-  react-native       npm publish
-  capacitor          npm publish
-  cordova            npm publish
   flutter            dart pub publish
 
-Aliases: rn → react-native, cap → capacitor
+types, react-native, capacitor and cordova are not published from here:
+GitHub Actions publishes them to npm when a version tag is pushed, and
+forge publish <package> stops with the steps. See 'forge help release'.
 
-Extra args are forwarded (e.g. forge publish react-native --dry-run)
+Extra args are forwarded (e.g. forge publish native android --dry-run)
+EOF
+      ;;
+    release)
+      cat <<EOF
+forge release <package> <command> [X.Y.Z]
+
+The npm packages are published by GitHub Actions (.github/workflows/release.yml,
+npm Trusted Publishing, with provenance) when a version tag is pushed. These
+commands run the package's own scripts/release.sh, which never pushes.
+
+Packages:
+  types              @transistorsoft/background-fetch-types
+  react-native       react-native-background-fetch
+  capacitor          @transistorsoft/capacitor-background-fetch
+  cordova            cordova-plugin-background-fetch
+
+Commands:
+  prepare X.Y.Z      On an up-to-date master: branch chore/release-X.Y.Z,
+                     set the version, date the CHANGELOG's Unreleased
+                     section, run preflight, commit
+  tag X.Y.Z          On master, after merging chore/release-X.Y.Z: run
+                     preflight, tag the merge
+  preflight          The release checks (npm run preflight). Publishes
+                     nothing
+
+A release, from the fetch-forge root:
+$(print_npm_release_steps cordova cordova/background-fetch)
+
+prepare and tag stop while local iOS links are active (forge unlink-ios all).
+Failed releases and the one-time npm setup: <package dir>/RELEASING.md
+
+Aliases: rn → react-native, cap → capacitor
 EOF
       ;;
     link-ios)
@@ -810,7 +934,12 @@ ${BOLD}Publish${RESET}
   forge publish native ios           Publish iOS (CocoaPods + SPM)
   forge publish native android      Publish Android to Maven Central
   forge publish native android --snapshot  Publish SNAPSHOT
-  forge publish <platform>          Publish platform SDK
+  forge publish flutter             Publish Flutter to pub.dev
+
+${BOLD}Release${RESET} (npm packages: GitHub Actions publishes on a pushed tag)
+  forge release <package> prepare X.Y.Z  Release branch: version, CHANGELOG, preflight
+  forge release <package> tag X.Y.Z      Tag the merged release on master
+  forge release <package> preflight      Release checks; publishes nothing
 
 ${BOLD}Verify${RESET}
   forge verify android       Run Android unit tests
@@ -825,7 +954,7 @@ ${BOLD}Setup${RESET}
 ${BOLD}Status${RESET}
   forge status               Version + submodule overview
 
-Targets: ios, android, native, react-native (rn), capacitor (cap), cordova, flutter
+Targets: ios, android, native, types, react-native (rn), capacitor (cap), cordova, flutter
 
 Run ${BOLD}forge help <domain>${RESET} for details.
 EOF
@@ -848,6 +977,7 @@ case "$cmd" in
     if [[ "${1:-}" == "docs" ]]; then shift; publish_docs "$@"
     else run_publish "$@"; fi
     ;;
+  release)    run_release "$@" ;;
   verify)     run_verify "$@" ;;
   link-ios)   run_link_ios "$@" ;;
   unlink-ios) run_unlink_ios "$@" ;;

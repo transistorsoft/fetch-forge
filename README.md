@@ -73,13 +73,25 @@ git submodule update --init native/background-fetch react-native/background-fetc
 ./forge publish native ios --version X.Y.Z # CocoaPods + SPM release
 ./forge publish native android             # Maven Central (Sonatype)
 ./forge publish native android --snapshot  # Sonatype SNAPSHOT
-./forge publish react-native               # npm publish
-./forge publish capacitor                  # npm publish
-./forge publish cordova                    # npm publish
 ./forge publish flutter                    # dart pub publish
 ```
 
-> **Note:** `forge publish` will fail if any local iOS links are active. Run `forge unlink-ios all` first.
+### Release (npm packages)
+
+`types`, `react-native`, `capacitor` and `cordova` are published to npm by GitHub Actions when a version tag is pushed (npm Trusted Publishing, with provenance). `forge release` runs the package's own `scripts/release.sh`, which never publishes or pushes:
+
+```bash
+./forge release cordova prepare 7.3.2      # on master: branch chore/release-7.3.2, version, CHANGELOG, preflight
+# merge chore/release-7.3.2 into master, in cordova/background-fetch
+./forge release cordova tag 7.3.2          # on master: preflight, tag the merge
+git -C cordova/background-fetch push origin master 7.3.2   # the tag starts the release workflow
+
+./forge release <package> preflight        # release checks; publishes nothing
+```
+
+`forge publish types|react-native|capacitor|cordova` stops with these steps. Each package's `RELEASING.md` covers failed releases and the one-time npm setup.
+
+> **Note:** `forge publish` and `forge release … prepare|tag` will fail if any local iOS links are active. Run `forge unlink-ios all` first.
 
 ### Local iOS development
 
@@ -198,28 +210,25 @@ The version is controlled in `native/background-fetch/android/versioning/tsbackg
 ### React Native
 
 ```bash
-cd react-native/background-fetch
-yarn install
+(cd react-native/background-fetch && yarn install)
 ./forge build react-native     # compiles Expo plugin TypeScript
-./forge publish react-native   # npm publish
+./forge release react-native prepare X.Y.Z   # then merge, tag, push: see "Release (npm packages)"
 ```
 
 ### Cordova
 
 ```bash
-cd cordova/background-fetch
-npm install
+(cd cordova/background-fetch && npm install)
 ./forge build cordova          # tsc
-./forge publish cordova        # npm publish
+./forge release cordova prepare X.Y.Z        # then merge, tag, push: see "Release (npm packages)"
 ```
 
 ### Capacitor
 
 ```bash
-cd capacitor/background-fetch
-npm install
+(cd capacitor/background-fetch && npm install)
 ./forge build capacitor        # tsc + rollup → dist/
-./forge publish capacitor      # npm publish
+./forge release capacitor prepare X.Y.Z      # then merge, tag, push: see "Release (npm packages)"
 ```
 
 ### Flutter
