@@ -1,7 +1,7 @@
 ---
 id: WO-007
 title: On Capacitor Android, an Activity destroyed while its process lives never makes TSBackgroundFetch headless, so the next fetch goes to the destroyed Bridge. Nothing is delivered headless, nothing finishes, and stopOnTerminate never applies
-status: verify
+status: done
 created: 2026-11-12
 platforms: [android]
 submodules: [capacitor/background-fetch]
@@ -323,3 +323,4 @@ Only a destroy inside a live process fails.
       - 1.5 s: destroyed at 33.080 with `HeadlessMode? true`, then the relaunch resumed at 33.584 and cleared it; the fetch went to the page.
     - React Native 12/12 on `8d9ab19`, in sweep `20261113-091839`. No React Native code changes.
 - 2026-11-13 — **Committed** `d3dac61` on `fix/WO-007-capacitor-android-destroy-not-headless` (Capacitor plugin, from `5cf84f0`; not merged or pushed). Every Verification box is ticked. Status `verify` until the branch merges into the plugin's `master`, then `done`.
+- 2026-11-13 — **Merged and pushed.** The plugin's `master` is `4d431c1`: WO-007's merge `08b5ac0`, then WO-006's `4d431c1`, both `--no-ff`, with the CHANGELOG conflict resolved by keeping both lines. Pushed to GitHub (`5cf84f0..4d431c1`). fetch-forge's capacitor pointer moves `5cf84f0` → `4d431c1`. Every Verification box is ticked, so the status is `done`. It ships in the plugin's next release, beside WO-001 (D3). The lab's `restart` scenario stays open in WO-002.
