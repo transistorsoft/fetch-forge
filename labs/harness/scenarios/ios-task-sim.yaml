@@ -19,10 +19,8 @@ description: >
       no task: the finish destroyed it, and the probe lists none at the end.  No legacy fetch (fetchReceived 0).
     * timeout: the finish withheld, then `fire: task-timeout` 5 s after the delivery: onTimeout's delivery goes to the
       declaration's onTimeout (`errors: true`), the driver finishes it there (finishOnTimeout), and the task is gone.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — no Capacitor iOS host yet (WO-002: Capacitor Android first, then iOS on CocoaPods
-    and SwiftPM)."
   android: "2026-11-10 — `fire: task` is the Simulator's lab hook (a Darwin notification into LabModule); Android's custom
     task is fired through JobScheduler, events-task-android's."
 measure_from: launch

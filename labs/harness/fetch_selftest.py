@@ -892,6 +892,28 @@ def test_ios_phase2a(tmp):
           "iOS lines count nothing",
           ([labkit.METRICS[n](ios) for n in names], [labkit.METRICS[n](android) for n in names[:3]]),
           ([1, 1, "-", "background=1", "newData=1", "RetrievedNewData=1", 26000], [0, 0, 0]))
+    def silence(name, beat_times, action=True, fetch=True):
+        out = os.path.join(tmp, "captures", "capacitor", "ios-silence-" + name, "FIX", "run")
+        os.makedirs(out)
+        lines = [L(1.0, "I", "LAB     ", 100, "point=launch label=x"), L(1.1, "I", "LAB     ", 500, "app=boot n=1 args={}")]
+        lines += [L(t, "I", "LAB     ", 500, "app=beat n=%d" % i) for i, t in enumerate(beat_times, 1)]
+        lines += [L(3.6, "I", "LAB     ", 501, "app=beat n=99")]                   # another process's beat: not read
+        if action:
+            lines.append(L(3.0, "I", "LAB     ", 600, "point=host i=0 action=background via=com.apple.Preferences"))
+        if fetch:
+            lines.append(L(8.0, "I", "LAB     ", 500, "point=legacyFetch state=background remaining=30.0"))
+        lines.append(L(20.0, "I", "LAB     ", 100, "point=capture"))
+        lines.sort()
+        with open(os.path.join(out, "logcat.txt"), "w") as f:
+            f.write("\n".join(lines) + "\n")
+        with open(os.path.join(out, "run.json"), "w") as f:
+            json.dump({"os": "ios", "actions": [], "year": 2026, "measure_from": "launch"}, f)
+        return labkit.METRICS["bgSilenceMs"](labkit.Capture(out))
+    check("bgSilenceMs: the longest beat silence from the last beat before the background action to the wake — "
+          "seconds when the app slept, ~1000 when it was kept awake; '-' without the action, the fetch or an earlier beat",
+          (silence("slept", [2.0, 2.5, 3.5, 4.0, 8.0, 8.0]), silence("awake", [2.5, 3.5, 4.5, 5.5, 6.5, 7.5]),
+           silence("noaction", [2.5], action=False), silence("nofetch", [2.5], fetch=False), silence("nobeat", [])),
+          (4000, 1000, "-", "-", "-"))
     tasks = ("taskFires", "taskSubmitErrors", "driverTally", "sdkTasks")
     check("(ios-task-sim) the custom-task metrics: the hook's fires by outcome (ran, missing, noCallback), why the "
           "SDK could not submit, the driver's deliveries by taskId, and the last tick's task list",
@@ -1359,7 +1381,7 @@ def test_shipped():
     # (WO-002) Every platform this lab ships registers with its board column, board name and hosts; a new host's
     # lab.yaml that loses one shows up here, not as a board with a missing or misplaced column.
     for name, column, short, hosts in (("react-native", 2, "rn", ["android", "ios"]),
-                                       ("capacitor", 3, "cap", ["android"])):
+                                       ("capacitor", 3, "cap", ["android", "ios"])):
         check("platform %s column" % name, labkit.platform(name).get("column"), column)
         check("platform %s board name" % name, labkit.board_name(name), short)
         check("platform %s hosts" % name, labkit.hosts(name), hosts)

@@ -18,6 +18,9 @@ description: >
       (RNBackgroundFetch.mm:86-97), so what they did is read below.
     * finish(taskId) — void (undefined).  With the fetch taskId and no fetch running, the SDK logs `[TSBackgroundFetch
       finish] react-native-background-fetch Called without a task to finish.  Ignoring.` (TSBackgroundFetch.m:348).
+      (WO-002, 2026-11-13) On Capacitor that id is not its fetch's (`capacitor-background-fetch`): the same no-op, and
+      the same line (as api-smoke.yaml says for Android).  Capacitor's start() is declared CAPPluginReturnCallback
+      (BackgroundFetchPlugin.swift), so its promise resolves undefined: start#3 reads red there (suspected defect 1).
 
   WHAT ELSE IT READS (the hooks alone pass with a broken SDK, as on Android):
     * bgSubmits `com.transistorsoft.fetch:appRefresh=1,com.transistorsoft.fetchlab.task:processing=1`:
@@ -30,10 +33,8 @@ description: >
     * sdkTasks `-` and sdkSubscribers `-`: at the step's end the SDK lists no task (stop(taskId) destroyed it) and no
       fetch listener (stop() removed the plugin's).  Android's jobIds `-` is the counterpart.
     * MEASURED 2026-11-11 on Lab1 (iPhone 17 Pro Simulator, iOS 27.2; native 4.1.1-master-5de5242, plugin 85a6bf4).
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — no Capacitor iOS host yet (WO-002: Capacitor Android first, then iOS on CocoaPods
-    and SwiftPM)."
   android: "2026-11-11 — api-smoke is Android's: its scheduleTask resolves, and it reads JobScheduler's jobs."
 measure_from: launch
 settle: 10
@@ -45,6 +46,9 @@ hooks:
   - api: registerHeadlessTask
     probe: true
     returns: {$: {type: function}}
+    absent_on:
+      capacitor: "2026-11-13 — iOS has no headless mode, and src/index.ts's BackgroundFetch declares no
+        registerHeadlessTask (as api-smoke.yaml, WO-002)."
   - api: status
     returns: {$: {type: number, in: [0, 1, 2]}}
   - api: start

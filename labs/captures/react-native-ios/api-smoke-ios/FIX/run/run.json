@@ -22,7 +22,7 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "react-native/background-fetch",
-  "commit": "85a6bf4ecd515409aa1fabde8db4e27c16f40541",
+  "commit": "8d9ab19cc6b1f4925a87fba30bf34ea60d9cac81",
   "dirty": "no"
  },
  "device": {
@@ -39,57 +39,57 @@
  },
  "timings": {
   "step_s": 42.6,
-  "t0": 1794492066.221,
+  "t0": 1794588565.053,
   "phases": {
    "terminated": 0.084,
-   "others_stopped": 0.185,
-   "reset": 0.683,
-   "swept": 0.856,
-   "neutral_pre": 0.856,
-   "permissions": 0.856,
-   "sleep_end": 0.856,
-   "log_begun": 1.257,
-   "launch_mark": 1.39,
-   "verdict_cleared": 1.502,
-   "launch": 1.616,
-   "settle_end": 11.621,
-   "trigger": 11.73,
-   "end": 42.15,
-   "capture_mark": 42.296,
-   "pusher_joined": 42.296,
-   "log_ended": 42.542,
-   "log_written": 42.542,
-   "capture_extras": 42.542,
-   "db_pulled": 42.543,
-   "run_json": 42.604,
-   "judged": 42.617,
-   "verdict_pushed": 42.617,
-   "settled": 43.118,
-   "neutral_post": 43.118,
-   "terminated_post": 43.245
+   "others_stopped": 0.181,
+   "reset": 0.681,
+   "swept": 0.878,
+   "neutral_pre": 0.878,
+   "permissions": 0.878,
+   "sleep_end": 0.878,
+   "log_begun": 1.286,
+   "launch_mark": 1.402,
+   "verdict_cleared": 1.51,
+   "launch": 1.62,
+   "settle_end": 11.624,
+   "trigger": 11.74,
+   "end": 42.164,
+   "capture_mark": 42.312,
+   "pusher_joined": 42.312,
+   "log_ended": 42.559,
+   "log_written": 42.559,
+   "capture_extras": 42.559,
+   "db_pulled": 42.56,
+   "run_json": 42.619,
+   "judged": 42.636,
+   "verdict_pushed": 42.637,
+   "settled": 43.14,
+   "neutral_post": 43.14,
+   "terminated_post": 43.279
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.238,
+    "s": 0.239,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.155,
+    "s": 2.154,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_tap_text": {
     "n": 42,
-    "s": 0.015,
+    "s": 0.018,
     "bg_n": 40,
-    "bg_s": 0.015
+    "bg_s": 0.018
    },
    "begin_log": {
     "n": 1,
-    "s": 0.401,
+    "s": 0.408,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -101,19 +101,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.22,
+    "s": 0.216,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.172,
+    "s": 0.197,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.245,
+    "s": 0.247,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -125,25 +125,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.101,
+    "s": 0.097,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.114,
+    "s": 0.11,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.387,
+    "s": 0.379,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.121,
+    "s": 0.118,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,9 +155,9 @@
    },
    "peek": {
     "n": 40,
-    "s": 0.07,
+    "s": 0.093,
     "bg_n": 40,
-    "bg_s": 0.07
+    "bg_s": 0.093
    },
    "permissions": {
     "n": 1,
@@ -167,13 +167,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.114,
+    "s": 0.11,
     "bg_n": 2,
-    "bg_s": 0.002
+    "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.386,
+    "s": 0.387,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -185,13 +185,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.415,
+    "s": 0.421,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.211,
+    "s": 0.223,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -200,7 +200,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.06
+   "boot": 3.028
   }
  },
  "measure_from": "launch",
@@ -252,6 +252,9 @@
     "$": {
      "type": "function"
     }
+   },
+   "absent_on": {
+    "capacitor": "2026-11-13 \u2014 iOS has no headless mode, and src/index.ts's BackgroundFetch declares no registerHeadlessTask (as api-smoke.yaml, WO-002)."
    }
   },
   {
@@ -319,5 +322,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-12 09:01:48"
+ "when": "2026-11-13 11:50:07"
 }

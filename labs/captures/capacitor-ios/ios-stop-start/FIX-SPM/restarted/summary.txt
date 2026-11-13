@@ -1,0 +1,14 @@
+   crashes                          0                      expected 0            ok
+   bgCancels                        com.transistorsoft.fetch=1 expected com.transistorsoft.fetch=1 ok
+   bgSubmits                        com.transistorsoft.fetch:appRefresh=3 expected com.transistorsoft.fetch:appRefresh=3 ok
+   driverEvents                     fetch=1                expected fetch=1      ok
+   driverFinishes                   fetch:ok=1             expected fetch:ok=1   ok
+   legacyResults                    newData=1              expected newData=1    ok
+   springboardResults               RetrievedNewData=1     expected RetrievedNewData=1 ok
+   sdkSubscribers                   capacitor-background-fetch expected capacitor-background-fetch ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    start#2.$=want-number-got-undefined expected ok           MISMATCH
+   actionsDone                      ok                     expected ok           ok
+   => FAIL

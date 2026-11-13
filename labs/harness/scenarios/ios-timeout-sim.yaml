@@ -11,12 +11,14 @@ description: >
   NewData here, setTaskCompletedWithSuccess:YES on a device's BGTask), so a timed-out fetch is reported as one with
   new data (the spike's `.failed` gave SpringBoard `Error`).  Pinned here as what the SDK does today, not as right:
   WO-002 suspected defect 11.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — no Capacitor iOS host yet (WO-002: Capacitor Android first, then iOS on CocoaPods
-    and SwiftPM)."
   android: "2026-11-10 — `fire:` and `background:` are the Simulator's; Android's SDK timeout is events-timeout-sdk's."
 measure_from: launch
+# (WO-002, Capacitor iOS) Each bridge delivers its own fetch taskId: `returns` takes either, driverTally pins each.
+platform_expect:
+  react-native: {driverTally: "fetch:react-native-background-fetch=1,timeout:react-native-background-fetch=1"}
+  capacitor: {driverTally: "fetch:capacitor-background-fetch=1,timeout:capacitor-background-fetch=1"}
 steps:
   - name: run
     settle: 10
@@ -31,7 +33,7 @@ steps:
         min: 1
         max: 1
         errors: true
-        returns: {$: {type: string, equals: react-native-background-fetch}}
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 2, background: true}
       - {after: {api: "status#0"}, delay_s: 7, fire: fetch}
@@ -43,5 +45,8 @@ steps:
       fetchFinished: 1
       legacyFetchStates: "background=1"
       legacyTimeoutAfterMs: "<28000"
+      # (WO-002, Capacitor iOS) The app really slept before the push: the driver's beat fell silent for seconds.  A
+      # driver kept awake reads ~1000 (the Capacitor driver's native polling did, until it paused while hidden).
+      bgSilenceMs: ">=2000"
       legacyResults: "newData=1"
       springboardResults: "RetrievedNewData=1"

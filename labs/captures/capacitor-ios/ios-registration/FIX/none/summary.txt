@@ -1,0 +1,8 @@
+   crashes                          0                      expected 0            ok
+   sdkLaunchCalls                   -                      expected -            ok
+   bgRegistrations                  com.transistorsoft.fetch:finished=1,com.transistorsoft.fetchlab.task:finished=1 expected com.transistorsoft.fetch:finished=1,com.transistorsoft.fetchlab.task:finished=1 ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   => PASS

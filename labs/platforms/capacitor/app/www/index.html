@@ -137,6 +137,29 @@ function showTab(name) {
   window.scrollTo(0, name === 'log' ? document.documentElement.scrollHeight : 0);
 }
 
+// (WO-002, iOS, MEASURED 2026-11-13) The driver's periodic NATIVE calls — the verdict poll and the probe tick — pause
+// while the page is hidden on iOS.  Each call's reply reaches the page through WebKit's evaluateJavaScript, which keeps
+// the WebView's process, and with it the app, running: with them on, a Capacitor iOS app was never suspended in the
+// background (the beat ran every second until the fetch), so a `background` step tested no suspended wake; with them
+// paused it is suspended 1-2.5 s after backgrounding, as the React Native host's is (bgSilenceMs guards it), and a
+// woken fetch still reaches the page within ms.  The beat (console only) stays.  Android keeps its timers as measured.
+const PAUSE_HIDDEN = window.Capacitor && Capacitor.getPlatform() === 'ios';
+const polls = [];
+function poll(fn, ms) {
+  const p = {fn: fn, ms: ms, timer: null};
+  polls.push(p);
+  if (!(PAUSE_HIDDEN && document.hidden)) p.timer = setInterval(fn, ms);
+}
+if (PAUSE_HIDDEN) {
+  document.addEventListener('visibilitychange', () => {
+    for (const p of polls) {
+      if (document.hidden && p.timer !== null) { clearInterval(p.timer); p.timer = null; }
+      else if (!document.hidden && p.timer === null) p.timer = setInterval(p.fn, p.ms);
+    }
+    log('visibility hidden=' + document.hidden + ' polls=' + polls.length);
+  });
+}
+
 // The host's verdict, as run.py last pushed it: display only, never logged.
 async function pollVerdict() {
   try {
@@ -260,7 +283,8 @@ async function main() {
   log('boot n=' + boot + ' args=' + JSON.stringify(args));
   // The beat: every 0.5 s from the boot line, touching neither the SDK nor the Lab plugin.  Once per page.
   setInterval(() => log('beat n=' + (++beats)), 500);
-  setInterval(pollVerdict, 250);
+  log('visibility hidden=' + document.hidden + ' pauseHidden=' + !!PAUSE_HIDDEN);
+  poll(pollVerdict, 250);
   labTitle = args.scenario || 'lab';
   document.getElementById('head-title').textContent = 'Fetch Cap Lab: ' + labTitle;
   document.getElementById('logo').src = LabLogo;
@@ -313,7 +337,7 @@ async function main() {
       LabApi.startSlots(times, onSlot);
     });
   }
-  setInterval(tick, 4000);
+  poll(tick, 4000);
 }
 
 main().catch((e) => log('error ' + field(e)));

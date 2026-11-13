@@ -31,10 +31,8 @@ description: >
       1 s later, and SpringBoard records `RetrievedNewData`.  bgSubmits counts configure's request, start()'s, and the
       one the SDK makes on each fetch (:182-183): 3.  Unlike Android's stop-start (suspected defect 2), start() after
       stop() works here: MEASURED 2026-11-11.
-platforms: [react-native]
+platforms: [react-native, capacitor]
 not_applicable:
-  capacitor: "2026-11-12 — no Capacitor iOS host yet (WO-002: Capacitor Android first, then iOS on CocoaPods
-    and SwiftPM)."
   android: "2026-11-11 — `fire:` is the Simulator's (a SpringBoard background fetch); Android's stop()/start() is
     stop-start's (suspected defect 2)."
 measure_from: launch
@@ -69,6 +67,9 @@ steps:
         returns: {$: {type: number, in: [0, 1, 2]}}
     actions:
       - {after: {api: "start#2"}, delay_s: 3, fire: fetch}
+    # (WO-002, Capacitor iOS) The listener the SDK keeps is each bridge's own fetch taskId.
+    platform_expect:
+      capacitor: {sdkSubscribers: "capacitor-background-fetch"}
     expect:
       crashes: 0
       bgCancels: "com.transistorsoft.fetch=1"
