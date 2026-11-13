@@ -38,7 +38,7 @@ steps:
     after: 30
     extras: {finishDelayMs: 0}
     # (WO-002, 2026-11-12) Setup and anchors, asserted bridge-neutrally: each call resolves.  What it returns is
-    # api-smoke's to assert (scheduleTask resolves true on React Native, nothing on Capacitor).
+    # api-smoke's to assert (scheduleTask resolves true on both bridges since WO-006; Capacitor's resolved nothing).
     hooks:
       - api: status
         outcome: resolved

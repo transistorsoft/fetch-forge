@@ -1,22 +1,22 @@
    crashes                          0                      expected 0            ok
    jobsRegistered                   999                    expected 999          ok
    fetchReceived                    1                      expected 1            ok
-   stoppingOnTerminate              0                      expected 1            MISMATCH
-   jobsCancelled                    -                      expected 999          MISMATCH
-   jobFinished                      0                      expected 1            MISMATCH
+   stoppingOnTerminate              1                      expected 1            ok
+   jobsCancelled                    999                    expected 999          ok
+   jobFinished                      1                      expected 1            ok
    fetchFinished                    0                      expected 0            ok
    fetchTimeouts                    0                      expected 0            ok
    headlessEvents.fetch             0                      expected 0            ok
    driverEvents                     -                      expected -            ok
    appProcesses                     1                      expected 1            ok
-   headless                         false                  expected True         MISMATCH
+   headless                         true                   expected True         ok
    headlessTaskErrors               0                      expected 0            ok
-   jobIds                           999                    expected -            MISMATCH
-   jobStopped                       0                      expected any          ok
-   jobStops                         999:onStartJob_returned_false=1 expected any          ok
+   jobIds                           -                      expected -            ok
+   jobStopped                       1                      expected any          ok
+   jobStops                         999:app_called_jobFinished=1,999:onStartJob_returned_false=1 expected any          ok
    bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok
-   actionsDone                      action1=missed(present) expected ok           MISMATCH
-   => FAIL
+   actionsDone                      ok                     expected ok           ok
+   => PASS

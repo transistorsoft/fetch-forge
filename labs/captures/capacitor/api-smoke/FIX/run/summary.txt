@@ -1,9 +1,9 @@
    crashes                          0                      expected 0            ok
    jobsRegistered                   -592898938,999         expected -592898938,999 ok
    jobIds                           -                      expected -            ok
-   bootBroadcasts                   -                      expected any          ok
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok
-   apiAssertions                    scheduleTask#4.$=want-boolean-got-undefined, stop#5.$=want-boolean-got-undefined, stop#7.$=want-boolean-got-undefined expected ok           MISMATCH
-   => FAIL
+   apiAssertions                    ok                     expected ok           ok
+   => PASS

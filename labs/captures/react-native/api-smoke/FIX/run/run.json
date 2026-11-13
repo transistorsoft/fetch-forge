@@ -24,7 +24,7 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "react-native/background-fetch",
-  "commit": "85a6bf4ecd515409aa1fabde8db4e27c16f40541",
+  "commit": "8d9ab19cc6b1f4925a87fba30bf34ea60d9cac81",
   "dirty": "no"
  },
  "device": {
@@ -32,7 +32,7 @@
   "model": "sdk_gphone64_arm64",
   "os": "Android 16",
   "sdk": "36",
-  "data_free_mb": 2561,
+  "data_free_mb": 2621,
   "display": "awake",
   "fgs_timeout_ms": null,
   "play_services": 263635035
@@ -46,44 +46,44 @@
   "ended": "window"
  },
  "timings": {
-  "install_s": 0.4,
+  "install_s": 0.3,
   "step_s": 41.9,
-  "t0": 1794501479.128,
+  "t0": 1794579538.199,
   "phases": {
-   "terminated": 0.027,
-   "others_stopped": 0.078,
-   "reset": 0.113,
-   "swept": 0.147,
-   "neutral_pre": 0.233,
-   "accuracy": 0.288,
-   "permissions": 0.288,
-   "sleep_end": 0.288,
-   "log_begun": 0.413,
-   "launch_mark": 0.433,
-   "verdict_cleared": 0.464,
-   "launch": 0.936,
-   "settle_end": 10.937,
-   "trigger": 10.981,
-   "end": 41.688,
-   "capture_mark": 41.73,
-   "pusher_joined": 41.73,
-   "log_ended": 41.775,
-   "log_written": 41.776,
-   "capture_extras": 41.813,
-   "db_pulled": 41.814,
-   "run_json": 41.865,
-   "judged": 41.885,
-   "verdict_pushed": 41.932,
-   "settled": 42.437,
-   "neutral_post": 42.543,
-   "terminated_post": 42.572
+   "terminated": 0.043,
+   "others_stopped": 0.106,
+   "reset": 0.147,
+   "swept": 0.189,
+   "neutral_pre": 0.275,
+   "accuracy": 0.322,
+   "permissions": 0.322,
+   "sleep_end": 0.322,
+   "log_begun": 0.452,
+   "launch_mark": 0.471,
+   "verdict_cleared": 0.495,
+   "launch": 0.893,
+   "settle_end": 10.894,
+   "trigger": 10.93,
+   "end": 41.702,
+   "capture_mark": 41.754,
+   "pusher_joined": 41.754,
+   "log_ended": 41.796,
+   "log_written": 41.797,
+   "capture_extras": 41.83,
+   "db_pulled": 41.831,
+   "run_json": 41.883,
+   "judged": 41.905,
+   "verdict_pushed": 41.951,
+   "settled": 42.452,
+   "neutral_post": 42.559,
+   "terminated_post": 42.591
   },
   "calls": {
    "_adb": {
     "n": 19,
-    "s": 0.788,
+    "s": 0.879,
     "bg_n": 1,
-    "bg_s": 0.038
+    "bg_s": 0.058
    },
    "_stop_stream": {
     "n": 2,
@@ -93,25 +93,25 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.125,
+    "s": 0.13,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.034,
+    "s": 0.041,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.045,
+    "s": 0.042,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "evict": {
     "n": 1,
-    "s": 0.026,
+    "s": 0.032,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -123,25 +123,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.025,
+    "s": 0.032,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.472,
+    "s": 0.398,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "location_accuracy": {
     "n": 2,
-    "s": 0.054,
+    "s": 0.047,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.105,
+    "s": 0.107,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -153,7 +153,7 @@
    },
    "network_default": {
     "n": 2,
-    "s": 0.0,
+    "s": 0.001,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -165,9 +165,9 @@
    },
    "peek": {
     "n": 40,
-    "s": 0.027,
+    "s": 0.022,
     "bg_n": 40,
-    "bg_s": 0.027
+    "bg_s": 0.022
    },
    "permissions": {
     "n": 1,
@@ -177,13 +177,13 @@
    },
    "push_verdict": {
     "n": 3,
-    "s": 0.116,
+    "s": 0.128,
     "bg_n": 1,
-    "bg_s": 0.038
+    "bg_s": 0.058
    },
    "reset_app": {
     "n": 1,
-    "s": 0.035,
+    "s": 0.041,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -195,22 +195,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.701,
+    "s": 0.767,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.082,
+    "s": 0.106,
     "bg_n": 0,
     "bg_s": 0.0
    }
   },
   "dialogs": [],
-  "clock_offset_s": -1.588,
-  "clock_offset_rtt_s": 0.019,
+  "clock_offset_s": -2.004,
+  "clock_offset_rtt_s": 0.018,
   "log_phases": {
-   "boot": 1.256
+   "boot": 1.212
   }
  },
  "measure_from": "launch",
@@ -354,5 +354,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-12 11:38:40"
+ "when": "2026-11-13 09:19:40"
 }

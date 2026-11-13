@@ -1,7 +1,7 @@
 ---
 id: WO-006
 title: Capacitor's scheduleTask() and stop() resolve undefined, where the shared types declare, and React Native resolves, true
-status: draft
+status: verify
 created: 2026-11-12
 platforms: [android, ios]
 submodules: [capacitor/background-fetch]
@@ -176,14 +176,14 @@ Under D1, no native file changes. The anchor `// (WO-006)` goes at each change. 
 
 ## Verification
 
-- [ ] D1–D4 decided
-- [ ] preflight's `(WO-006)` consumer assertions red at `9dd204a`, green on the fix; `npm run build` clean
-- [ ] Capacitor Android `api-smoke` green on the fix's label: the three hooks read boolean `true`, the job rows are unchanged
-- [ ] Capacitor events-duplicate and events-task-android still green; React Native `api-smoke` still green
+- [x] D1–D4 decided (2026-11-13: all four as recommended)
+- [x] preflight's `(WO-006)` consumer assertions red before the fix, green on the fix; `npm run build` clean (2026-11-13, at `5cf84f0`, whose `src/` is `9dd204a`'s: see the Log)
+- [x] Capacitor Android `api-smoke` green on the fix's label: the three hooks read boolean `true`, the job rows are unchanged (sweep `20261113-095342`)
+- [x] Capacitor events-duplicate and events-task-android still green; React Native `api-smoke` still green (sweeps `20261113-095342`, `20261113-091839`)
 - [ ] Capacitor iOS `api-smoke-ios`: `stop#5` and `stop#7` read `true`, once the host exists (WO-002)
-- [ ] `api-smoke.yaml:25-28` updated from PREDICTED to MEASURED, naming WO-006 and its red and green sweeps
-- [ ] `events-duplicate.yaml:40-41` and `events-task-android.yaml:32-33` updated: scheduleTask resolves `true` on both bridges (WO-006); their `outcome: resolved` hooks stay as they are
-- [ ] CHANGELOG `[Changed]` entry carries `(WO-006)`, in the release D3 picks
+- [x] `api-smoke.yaml:25-28` updated from PREDICTED to MEASURED, naming WO-006 and its red and green sweeps
+- [x] `events-duplicate.yaml:40-41` and `events-task-android.yaml:32-33` updated: scheduleTask resolves `true` on both bridges (WO-006); their `outcome: resolved` hooks stay as they are
+- [x] CHANGELOG `[Changed]` entry carries `(WO-006)`, in the release D3 picks (the next, under `## Unreleased`)
 - [ ] Platform parity: both OSes fixed through the one wrapper, as cited; React Native conforms (MEASURED on Android; on iOS, stop MEASURED, scheduleTask PROVEN); Cordova and Flutter recorded, not changed
 
 ## Log
@@ -196,3 +196,29 @@ Under D1, no native file changes. The anchor `// (WO-006)` goes at each change. 
   - **Measured while writing:** the TypeScript assignability results above, with tsc 4.1.6 on scratch files. No repo file was touched.
   - **Not done yet:** no branch, no code, nothing run on iOS.
   - **Corrected after two skeptics' review** (16 corrections; 0 declined). The `Pick` over `stop` alone, and the user patterns without `strict` and with `strictNullChecks` alone, were compiled then, with tsc 4.1.6 on scratch files.
+- 2026-11-13 — **Approved by Chris:** D1 (a) the wrapper, D2 (a) `true` as React Native, D3 (a) the next release with a `[Changed]` line, D4 (a) the preflight guard. Status `in-progress`.
+  - **Re-verified before code.** The Capacitor pointer on fetch-forge `master` moved `9dd204a` → `5cf84f0`. The only change is `68b4773` (`scripts/preflight.sh`, +8/-4): `src/`, `android/` and `ios/` are identical, so the diagnosis holds line for line. The `preflight.sh` citations above are `9dd204a`'s: at `5cf84f0` each is 4 lines later (the consumer `:92-118`, TypeScript 5 at `:90`).
+  - **Branch** `fix/WO-006-capacitor-void-returns` from `5cf84f0`, in a second worktree of the Capacitor repo, so the WO-007 sweep's staged checkout stayed untouched.
+  - **D4, first built as an `Omit`, then REVERSED to the approved `Pick`.** `Omit<typeof TypesBackgroundFetch, "prototype" | "registerHeadlessTask">` was the same member set today. A review lens pointed out that it was not what was approved and that it has a cost the `Pick` does not. The types package floats on `^1.0.0` from npm at every preflight run, so a static added to a types release would fail Capacitor's preflight, and with it the release workflow after the tag, without any Capacitor change. The guard is now a `Pick` naming the fourteen members Capacitor has (eight constants, `configure`, `scheduleTask`, `start`, `stop`, `finish`, `status`). Plus three `boolean` reads: `scheduleTask(task)`, `stop(task.taskId)`, `stop()`.
+    - The `Pick` guard checks presence and return types. Parameter lists are checked only loosely by assignability. The direct calls cover `configure`, `scheduleTask` and `stop`. Adjacent, pre-existing and out of scope: Capacitor's `status()` takes no `callback?`, where the types' (`BackgroundFetch.ts:247`) and React Native's do.
+  - **Red, MEASURED** (preflight on the unfixed `src/`, TypeScript 5.9.3): `TS2322 … typeof BackgroundFetch is not assignable to … Omit<…>. The types returned by 'stop(...)' are incompatible`, and TS2322 on each of the three `boolean` reads. TypeScript 5 names `stop` first, where 4.1.6 named `scheduleTask`; each reports one. The consumer resolves `@transistorsoft/background-fetch-types` from the tarball's dependency (npm 1.0.0): D4's INFERRED is now MEASURED.
+  - **Green, MEASURED** on the fix: preflight passes all four steps. The emitted `dist/esm/index.d.ts` declares both `Promise<boolean>` (`:180`, `:239`). So every other static (the eight constants, `configure`, `start`, `finish`, `status`) already conforms. Re-measured with the `Pick`: red on the unfixed `src/` (TS2322 on the `Pick` assignment and on the three reads), green on the fix.
+  - **The Scope check's TypeScript 5 question, MEASURED** (5.9.3, the packed fix, `node16`, scratch files). These fail with or without `strict`:
+    - a `Promise<void>` annotation on the result (TS2322);
+    - the method passed as `() => Promise<void>` (TS2322);
+    - `.then((v: void) => …)` (TS2345);
+    - a test double that resolves `Promise.resolve()` (TS2322). A review lens caught this one, the commonest form of a double (Jasmine's `returnValue(Promise.resolve())`). It is now in the CHANGELOG line.
+
+    A double that resolves an explicit `undefined` fails under `strict` only. A bare `await`, a fire-and-forget call and a truthiness test compile. These match 4.1.6.
+  - **`stop()`'s executor annotations dropped (Chris approved, 2026-11-13).** `(resolve:Function, reject:Function)` meant the compiler never checked the new `resolve(true)`, and preflight checks only the declared type. Without them the executor's `resolve` is `Promise<boolean>`'s, as `scheduleTask`'s already was. MEASURED with the plugin's own tsc 4.1.6 and its tsconfig (`strict`), on scratch copies of `src/`:
+    - mutant `resolve()` gives TS2794, mutant `resolve("nope")` gives TS2345, and `resolve(true)` compiles;
+    - with the annotations put back, `resolve("nope")` compiles.
+
+    `configure`, `start` and `status` keep theirs (out of scope). preflight is green again on the result.
+  - **Lab, Android: green with WO-007's fix under it.** The lab builds the checkout `lab.yaml` names, which carried WO-007's working tree. WO-006's `src/index.ts` diff was applied over it for one sweep, then reversed. The WO-007 diff afterwards was byte-identical to before (`shasum` c0192718…).
+    - **Sweep `20261113-095342` (Capacitor, plugin `5cf84f0+dirty`): 12/12 PASS.**
+    - **api-smoke:** `LAB app=ret id=scheduleTask#4 … type=boolean value=true`, and the same for `stop#5` and `stop#7`. `apiAssertions ok`; `jobsRegistered -592898938,999` and `jobIds -` are unchanged.
+    - **events-duplicate and events-task-android:** green.
+    - **React Native:** api-smoke green in sweep `20261113-091839`. WO-006 touches no React Native code.
+    - The Capacitor captures committed with this order are that sweep's. Re-scored against the edited scenario descriptions: 15 of 15 step captures PASS, and none reads `spec-changed`.
+- 2026-11-13 — **Committed** `c2bb2e4` on `fix/WO-006-capacitor-void-returns` (Capacitor plugin, from `5cf84f0`; not merged or pushed). Status `verify`: the only open box is iOS `api-smoke-ios`, which waits for WO-002's Capacitor iOS host. The branch and WO-007's both add a line at the same point under `## Unreleased`, so the second to merge resolves that conflict by keeping both lines.

@@ -1,7 +1,7 @@
    crashes                          0                      expected 0            ok
    fetchReceived                    1                      expected 1            ok
    fetchTimeouts                    1                      expected 1            ok
-   fetchTimeoutSkewMs               1                      expected <1000        ok
+   fetchTimeoutSkewMs               3                      expected <1000        ok
    driverEvents                     fetch=1,timeout=1      expected fetch=1,timeout=1 ok
    driverFinishes                   fetch:withheld=1,timeout:ok=1 expected fetch:withheld=1,timeout:ok=1 ok
    fetchFinished                    1                      expected 1            ok

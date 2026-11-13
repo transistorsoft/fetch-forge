@@ -34,9 +34,10 @@ description: >
   never sends ON_DESTROY (LifecycleManager.java:161-166).  The run goes to the destroyed Bridge's listener
   (BackgroundFetch.java:272-275) and nothing stops, cancels or finishes it: stoppingOnTerminate 0, jobsCancelled `-`,
   jobFinished 0 (the SDK's 60 s timeout falls after the window), headless false, jobIds 999, and the second job finds
-  job 999 still held (actionsDone `missed(present)`).  That red is the defect's, for its own work order: nothing here
-  is relaxed for it.  status#0 is only the kill's anchor, so it asserts `outcome: resolved`: what status() returns is
-  api-smoke's to score.
+  job 999 still held (actionsDone `missed(present)`).  That red was the defect's, for its own work order: nothing here
+  was relaxed for it.  MEASURED red in sweep 20261112-113743, exactly so; WO-007 (handleOnDestroy/handleOnResume in
+  the plugin) turned `finish` green from sweep 20261113-094121.  status#0 is only the kill's anchor, so it asserts
+  `outcome: resolved`: what status() returns is api-smoke's to score.
 platforms: [react-native, capacitor]
 not_applicable:
   ios: "2026-11-09 — iOS has no headless mode and stopOnTerminate is a no-op there (TSBackgroundFetch.m:388-393);
