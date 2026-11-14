@@ -754,6 +754,13 @@ RN_HEADLESS_COUNTS = {
     "rnHeadlessStarts": ("%[HeadlessTask] start taskId: %", "HeadlessTask.java:76"),
     "rnHeadlessEnds": ("%[HeadlessTask] end taskId: %", "HeadlessTask.java:80"),
 }
+# (WO-002, 2026-11-13) Flutter's HeadlessTask (flutter/background_fetch android HeadlessTask.java), also under the
+# SDK's tag: each background FlutterEngine it starts runs the Dart dispatcher, whose first call is `initialized`, logged
+# `$ initialized` (:87) — one per cold start, none when a task reuses the running engine.  React Native's
+# rnHeadlessInit, for the Dart bridge (headless-kill: one for two deliveries).  Another bridge logs none.
+FLUTTER_HEADLESS_COUNTS = {
+    "flutterHeadlessInit": ("%$ initialized%", "flutter HeadlessTask.java:87"),
+}
 RN_HEADLESS_ERRORS = ("%[HeadlessTask] Failed invoke HeadlessTask%",              # HeadlessTask.java:44
                       "%[HeadlessTask] task attempted to run in the foreground%",  # :86
                       "%[HeadlessTask] Reflection error%",                         # :106, :119
@@ -803,7 +810,8 @@ def _on_ios(c):
 
 
 def _fetch_metrics(m):
-    for name, (like, where) in list(SDK_COUNTS.items()) + list(RN_HEADLESS_COUNTS.items()):
+    for name, (like, where) in (list(SDK_COUNTS.items()) + list(RN_HEADLESS_COUNTS.items())
+                                + list(FLUTTER_HEADLESS_COUNTS.items())):
         def count(c, like=like, name=name):
             # (WO-002 phase 2a) iOS logs its own words for the two it shares; Android's others read '-' there.
             if _on_ios(c):

@@ -10,6 +10,7 @@
    rnHeadlessStarts                 0                      expected 0            ok
    rnHeadlessEnds                   0                      expected 0            ok
    rnHeadlessErrors                 0                      expected 0            ok
+   flutterHeadlessInit              0                      expected 0            ok
    driverEvents                     -                      expected -            ok
    appProcesses                     1                      expected 1            ok
    headless                         true                   expected True         ok

@@ -1,0 +1,19 @@
+name: lab_probe
+description: "(WO-002) The Flutter fetch lab's native channel `lab/probe`: launch args, persisted knobs, the probe, the verdict. A plugin so the background_fetch headless engine registers it too."
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: ^3.13.4
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.transistorsoft.fetchlab.labprobe
+        pluginClass: LabProbePlugin

@@ -14,6 +14,8 @@ description: >
 platforms: [react-native, capacitor]
 not_applicable:
   android: "2026-11-10 — `fire:` and `background:` are the Simulator's; Android's SDK timeout is events-timeout-sdk's."
+  flutter: "2026-11-13 — the Flutter host is Android-only until its iOS slice (WO-002: Flutter Android, then iOS on
+    CocoaPods and SwiftPM); un-excuse it with the iOS host."
 measure_from: launch
 # (WO-002, Capacitor iOS) Each bridge delivers its own fetch taskId: `returns` takes either, driverTally pins each.
 platform_expect:

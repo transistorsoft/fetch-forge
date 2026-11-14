@@ -35,6 +35,8 @@ platforms: [react-native, capacitor]
 not_applicable:
   android: "2026-11-11 — `fire:` is the Simulator's (a SpringBoard background fetch); Android's stop()/start() is
     stop-start's (suspected defect 2)."
+  flutter: "2026-11-13 — the Flutter host is Android-only until its iOS slice (WO-002: Flutter Android, then iOS on
+    CocoaPods and SwiftPM); un-excuse it with the iOS host."
 measure_from: launch
 steps:
   - name: stopped

@@ -22,7 +22,8 @@ description: >
 
   WHAT THE STEP READS (from the launch):
     * fetchReceived 2, headlessEvents.fetch 2 (timeout 0), headlessCalls `finish:ok=2`, fetchFinished 2, jobFinished 2.
-    * rnHeadlessInit 1 (cold once), rnHeadlessStarts 2, rnHeadlessEnds 2, rnHeadlessErrors 0, headlessNoTask 0.
+    * rnHeadlessInit 1 (cold once), rnHeadlessStarts 2, rnHeadlessEnds 2, rnHeadlessErrors 0, headlessNoTask 0;
+      flutterHeadlessInit 0 (Flutter's cold-once count: 1 there, platform_expect).
     * headlessLatencyMs < 500 (receipt to `point=headless event=fetch`): a revert of 4.4.2's queueing adds 500 ms to
       the cold hand-over.
     * appProcesses 2, headless true (the task's probe); duplicateJobs 0, stoppingOnTerminate 0, headlessTaskErrors 0,
@@ -35,7 +36,7 @@ description: >
   Every other value above is the SDK's own and the same: the task logs the same `point=headless` and `point=task-api`
   lines (termination-calibration's kill, MEASURED on Capacitor: a 3 ms hand-over).  status#0 is only the kill's
   anchor, so it asserts `outcome: resolved`: what status() returns is api-smoke's to score.
-platforms: [react-native, capacitor]
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   ios: "2026-11-09 — iOS has no headless mode (TSBackgroundFetch.m:388-393); `actions:` are Android's."
 stopOnTerminate: false
@@ -67,6 +68,7 @@ steps:
       rnHeadlessStarts: 2
       rnHeadlessEnds: 2
       rnHeadlessErrors: 0
+      flutterHeadlessInit: 0
       headlessNoTask: 0
       headlessLatencyMs: "<500"
       appProcesses: 2
@@ -80,6 +82,15 @@ steps:
       headlessTally: any
       bootBroadcasts: any
     # (WO-002, 2026-11-12) React Native's HeadlessTask lines, which a Java headless task never logs (description).
-    # rnHeadlessErrors and headlessNoTask already read 0 on both.
+    # rnHeadlessErrors and headlessNoTask already read 0 on both.  (2026-11-13) Nor does Flutter's Dart task.
+    # Flutter's own bound (Chris, 2026-11-13: measure, then pin): its cold hand-over starts a FlutterEngine and a Dart
+    # isolate (debug, JIT) in the new process, MEASURED 165-187 ms from the SDK's receipt to `point=headless` in ten
+    # cold hand-overs (headless-kill x5 on Lab1, termination-calibration's kill x5 on both AVDs; sweeps 20261113-175923,
+    # -180713, -180859, -181045, -181230); the warm second run 1-2 ms.  <400 is about twice the slowest.  The latency
+    # is the slower of the two hand-overs, so it cannot tell "cold once, then warm" from "cold twice";
+    # flutterHeadlessInit 1 does (the plugin's `$ initialized`, one per background FlutterEngine): React Native's
+    # rnHeadlessInit 1, for the Dart bridge.  No other bridge logs it (0).
     platform_expect:
       capacitor: {rnHeadlessInit: 0, rnHeadlessStarts: 0, rnHeadlessEnds: 0}
+      flutter: {rnHeadlessInit: 0, rnHeadlessStarts: 0, rnHeadlessEnds: 0, flutterHeadlessInit: 1,
+                headlessLatencyMs: "<400"}

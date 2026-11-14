@@ -22,8 +22,8 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "capacitor/background-fetch",
-  "commit": "4d431c1e21ba40e2329b5cc344eb4051401430a8",
-  "dirty": "yes"
+  "commit": "3fa169afc3cf4ec97b5f893c8d040e2017f01b0a",
+  "dirty": "no"
  },
  "device": {
   "model": "Lab2",
@@ -38,58 +38,58 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 42.7,
-  "t0": 1794592042.778,
+  "step_s": 42.9,
+  "t0": 1794610635.074,
   "phases": {
-   "terminated": 0.09,
-   "others_stopped": 0.192,
-   "reset": 0.687,
-   "swept": 0.885,
-   "neutral_pre": 0.885,
-   "permissions": 0.885,
-   "sleep_end": 0.885,
-   "log_begun": 1.299,
-   "launch_mark": 1.434,
-   "verdict_cleared": 1.544,
-   "launch": 1.667,
-   "settle_end": 11.677,
-   "trigger": 11.799,
-   "end": 42.225,
-   "capture_mark": 42.368,
-   "pusher_joined": 42.369,
-   "log_ended": 42.618,
-   "log_written": 42.618,
-   "capture_extras": 42.618,
-   "db_pulled": 42.619,
-   "run_json": 42.688,
-   "judged": 42.707,
-   "verdict_pushed": 42.708,
-   "settled": 43.216,
-   "neutral_post": 43.216,
-   "terminated_post": 43.361
+   "terminated": 0.101,
+   "others_stopped": 0.215,
+   "reset": 0.791,
+   "swept": 1.015,
+   "neutral_pre": 1.015,
+   "permissions": 1.015,
+   "sleep_end": 1.015,
+   "log_begun": 1.434,
+   "launch_mark": 1.564,
+   "verdict_cleared": 1.671,
+   "launch": 1.8,
+   "settle_end": 11.81,
+   "trigger": 11.962,
+   "end": 42.393,
+   "capture_mark": 42.54,
+   "pusher_joined": 42.54,
+   "log_ended": 42.792,
+   "log_written": 42.792,
+   "capture_extras": 42.792,
+   "db_pulled": 42.792,
+   "run_json": 42.852,
+   "judged": 42.872,
+   "verdict_pushed": 42.872,
+   "settled": 43.38,
+   "neutral_post": 43.38,
+   "terminated_post": 43.534
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.241,
+    "s": 0.245,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.194,
+    "s": 2.351,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_tap_text": {
     "n": 42,
-    "s": 0.015,
+    "s": 0.018,
     "bg_n": 40,
-    "bg_s": 0.015
+    "bg_s": 0.018
    },
    "begin_log": {
     "n": 1,
-    "s": 0.414,
+    "s": 0.419,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -101,19 +101,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.223,
+    "s": 0.24,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.198,
+    "s": 0.225,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.249,
+    "s": 0.252,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -125,25 +125,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.102,
+    "s": 0.115,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.123,
+    "s": 0.129,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.4,
+    "s": 0.428,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.124,
+    "s": 0.146,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,9 +155,9 @@
    },
    "peek": {
     "n": 40,
-    "s": 0.071,
+    "s": 0.091,
     "bg_n": 40,
-    "bg_s": 0.071
+    "bg_s": 0.091
    },
    "permissions": {
     "n": 1,
@@ -167,13 +167,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.111,
+    "s": 0.108,
     "bg_n": 2,
     "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.377,
+    "s": 0.437,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -185,13 +185,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.41,
+    "s": 0.413,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.235,
+    "s": 0.254,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -200,7 +200,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 4.507
+   "boot": 4.835
   }
  },
  "measure_from": "launch",
@@ -307,7 +307,7 @@
    "args": "react-native-background-fetch",
    "returns": {
     "$": {
-     "type": "undefined"
+     "type": "null|undefined"
     }
    }
   },
@@ -322,5 +322,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-13 12:48:05"
+ "when": "2026-11-13 17:57:57"
 }

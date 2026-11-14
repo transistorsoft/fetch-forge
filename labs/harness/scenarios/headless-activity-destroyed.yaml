@@ -17,6 +17,7 @@ description: >
     * configure@0 (the boot configure): no delivery.  driverEvents `-`: the driver's own onEvent saw nothing either.
     * fetchReceived 1, headlessEvents.fetch 1, headlessCalls `finish:ok=1`, fetchFinished 1, jobFinished 1.
     * rnHeadlessInit 0 (the context was reused), rnHeadlessStarts 1, rnHeadlessEnds 1; appProcesses 1; headless true.
+    * flutterHeadlessInit 0 (Flutter starts a background engine here: 1 there, platform_expect).
     * stoppingOnTerminate 0, fetchTimeouts 0; jobIds 999 at the end.
   NOT CHECKED: whether React Native 0.88's JS timers run after its Activity is destroyed (bg-forge left it unchecked
   too).  The headless task finishes after finishDelayMs (1000 ms, a setTimeout): if timers are paused, headlessCalls
@@ -32,7 +33,7 @@ description: >
   stand, and the red got its own work order, WO-007: MEASURED red in sweep 20261112-113743, green from sweep
   20261113-094121 (handleOnDestroy/handleOnResume in the plugin).  Only React Native's own HeadlessTask lines read 0
   on Capacitor (platform_expect).
-platforms: [react-native, capacitor]
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   ios: "2026-11-09 — iOS has no headless mode (TSBackgroundFetch.m:388-393); `actions:` are Android's."
 stopOnTerminate: false
@@ -62,6 +63,7 @@ steps:
       rnHeadlessStarts: 1
       rnHeadlessEnds: 1
       rnHeadlessErrors: 0
+      flutterHeadlessInit: 0
       driverEvents: "-"
       appProcesses: 1
       headless: true
@@ -71,6 +73,10 @@ steps:
       headlessTally: any
       bootBroadcasts: any
     # (WO-002, 2026-11-12) React Native's HeadlessTask lines, which a Java headless task never logs (description).
-    # rnHeadlessInit and rnHeadlessErrors already read 0 on both.
+    # rnHeadlessInit and rnHeadlessErrors already read 0 on both.  (2026-11-13) Nor does Flutter's: its headless task
+    # is Dart, run by the plugin's own HeadlessTask in a background FlutterEngine, which it starts here (the Activity's
+    # engine died with it): flutterHeadlessInit 1, the plugin's one `$ initialized` (MEASURED, sweep 20261113-175923
+    # and the four after it; the hand-over 87-90 ms).
     platform_expect:
       capacitor: {rnHeadlessStarts: 0, rnHeadlessEnds: 0}
+      flutter: {rnHeadlessStarts: 0, rnHeadlessEnds: 0, flutterHeadlessInit: 1}

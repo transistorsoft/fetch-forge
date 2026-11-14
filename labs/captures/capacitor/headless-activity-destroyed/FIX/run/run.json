@@ -6,7 +6,7 @@
  "scenario": "headless-activity-destroyed",
  "variant": "FIX",
  "step": "run",
- "serial": "emulator-5582",
+ "serial": "emulator-5580",
  "evicted": [
   "com.transistorsoft.backgroundgeolocation.react"
  ],
@@ -24,15 +24,15 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "capacitor/background-fetch",
-  "commit": "5cf84f0dbbb56848df286b942c0e521325d8a228",
-  "dirty": "yes"
+  "commit": "3fa169afc3cf4ec97b5f893c8d040e2017f01b0a",
+  "dirty": "no"
  },
  "device": {
-  "avd": "Lab2",
+  "avd": "Lab1",
   "model": "sdk_gphone64_arm64",
   "os": "Android 16",
   "sdk": "36",
-  "data_free_mb": 2617,
+  "data_free_mb": 2552,
   "display": "awake",
   "fgs_timeout_ms": null,
   "play_services": 263635035
@@ -47,44 +47,44 @@
  },
  "timings": {
   "install_s": 0.1,
-  "step_s": 47.1,
-  "t0": 1794581898.852,
+  "step_s": 47.0,
+  "t0": 1794613137.124,
   "phases": {
-   "terminated": 0.026,
-   "others_stopped": 0.076,
-   "reset": 0.106,
-   "swept": 0.133,
-   "neutral_pre": 0.194,
-   "accuracy": 0.236,
-   "permissions": 0.236,
-   "sleep_end": 0.236,
-   "log_begun": 0.357,
-   "launch_mark": 0.376,
-   "verdict_cleared": 0.4,
-   "launch": 0.8,
-   "settle_end": 10.811,
-   "trigger": 10.842,
-   "end": 46.971,
-   "runner_joined": 46.971,
-   "capture_mark": 47.004,
-   "pusher_joined": 47.004,
-   "log_ended": 47.036,
-   "log_written": 47.036,
-   "capture_extras": 47.072,
-   "db_pulled": 47.074,
-   "run_json": 47.126,
-   "judged": 47.142,
-   "verdict_pushed": 47.19,
-   "settled": 47.694,
-   "neutral_post": 47.799,
-   "terminated_post": 47.828
+   "terminated": 0.024,
+   "others_stopped": 0.066,
+   "reset": 0.094,
+   "swept": 0.115,
+   "neutral_pre": 0.164,
+   "accuracy": 0.201,
+   "permissions": 0.201,
+   "sleep_end": 0.201,
+   "log_begun": 0.314,
+   "launch_mark": 0.33,
+   "verdict_cleared": 0.349,
+   "launch": 0.745,
+   "settle_end": 10.749,
+   "trigger": 10.773,
+   "end": 46.85,
+   "runner_joined": 46.85,
+   "capture_mark": 46.873,
+   "pusher_joined": 46.873,
+   "log_ended": 46.894,
+   "log_written": 46.895,
+   "capture_extras": 46.916,
+   "db_pulled": 46.917,
+   "run_json": 46.954,
+   "judged": 46.974,
+   "verdict_pushed": 46.998,
+   "settled": 47.503,
+   "neutral_post": 47.577,
+   "terminated_post": 47.601
   },
   "calls": {
    "_adb": {
     "n": 20,
-    "s": 0.803,
+    "s": 0.614,
     "bg_n": 1,
-    "bg_s": 0.069
+    "bg_s": 0.026
    },
    "_stop_stream": {
     "n": 2,
@@ -94,63 +94,63 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.12,
+    "s": 0.114,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.027,
+    "s": 0.021,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.032,
+    "s": 0.021,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "evict": {
     "n": 1,
-    "s": 0.024,
+    "s": 0.021,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "fire": {
     "n": 1,
-    "s": 0.037,
+    "s": 0.024,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "installed": {
     "n": 1,
-    "s": 0.026,
+    "s": 0.021,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "job": {
     "n": 1,
-    "s": 0.031,
+    "s": 0.042,
     "bg_n": 1,
-    "bg_s": 0.031
+    "bg_s": 0.042
    },
    "launch": {
     "n": 1,
-    "s": 0.4,
+    "s": 0.396,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "location_accuracy": {
     "n": 2,
-    "s": 0.042,
+    "s": 0.037,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 4,
-    "s": 0.104,
+    "s": 0.082,
     "bg_n": 1,
-    "bg_s": 0.021
+    "bg_s": 0.019
    },
    "native_resolved": {
     "n": 1,
@@ -166,15 +166,15 @@
    },
    "neutral": {
     "n": 2,
-    "s": 0.167,
+    "s": 0.123,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "peek": {
-    "n": 102,
-    "s": 0.073,
-    "bg_n": 102,
-    "bg_s": 0.073
+    "n": 99,
+    "s": 0.063,
+    "bg_n": 99,
+    "bg_s": 0.063
    },
    "permissions": {
     "n": 1,
@@ -184,13 +184,13 @@
    },
    "push_verdict": {
     "n": 3,
-    "s": 0.14,
+    "s": 0.069,
     "bg_n": 1,
-    "bg_s": 0.069
+    "bg_s": 0.026
    },
    "reset_app": {
     "n": 1,
-    "s": 0.03,
+    "s": 0.028,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -202,22 +202,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 1.083,
+    "s": 1.042,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.079,
+    "s": 0.069,
     "bg_n": 0,
     "bg_s": 0.0
    }
   },
   "dialogs": [],
-  "clock_offset_s": -2.015,
-  "clock_offset_rtt_s": 0.02,
+  "clock_offset_s": -0.245,
+  "clock_offset_rtt_s": 0.016,
   "log_phases": {
-   "boot": 0.812
+   "boot": 0.792
   }
  },
  "measure_from": "launch",
@@ -249,10 +249,10 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 11.352
+   "action0": 10.564
   },
   "sent_s": {
-   "action0": 14.419
+   "action0": 13.64
   }
  },
  "network": {
@@ -301,5 +301,5 @@
  ],
  "hooks": [],
  "year": 2026,
- "when": "2026-11-13 09:59:05"
+ "when": "2026-11-13 18:39:44"
 }

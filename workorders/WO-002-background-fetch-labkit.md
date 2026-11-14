@@ -1179,3 +1179,46 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - a docs note: on iOS, code after `await BackgroundFetch.finish()` may not run until the next wake;
     - INFERRED, not measured: the plugin's `deinit` calls `removeListener`, which deletes the persisted subscriber if a background scene disconnect frees the bridge while the process lives;
     - the device-only 15 s WebKit cutoff.
+- 2026-11-13 — **Flutter host, Android (MEASURED): 11 of 13, and the two reds are findings.** Branch `feat/WO-002-flutter-host`, from `master` `7b586f7`. Chris chose it ("Yes, start Flutter"): Android first, then iOS on CocoaPods and SwiftPM.
+  - **The host** (`labs/platforms/flutter`, column 1, `flt`; package `com.transistorsoft.fetchlab.flutter`). Flutter 3.47.5's `flutter create` template (Gradle 9.3.1, AGP 9.1.0, Kotlin 2.4.0, KTS), with bg-forge's Flutter host (`addc50501`) as the model and the Capacitor host's fetch semantics.
+    - **The lab's native side is a plugin, `app/lab_probe`** (channel `lab/probe`: args, knobs, probe, verdict). The background_fetch plugin's HeadlessTask builds `new FlutterEngine(ctx)`, which registers only pubspec plugins, so a channel MainActivity registered would not exist in the headless isolate.
+    - **The Dart driver, `app/lib/main.dart`.** bg-forge's generic half verbatim (the view, `_armEvents`, `_runApiBatch`, `_ret`, the slots), and the Capacitor page's fetch half. Each FlutterActivity owns its engine, so `main()` runs again on a recreation or a restart, and the driver configures on EVERY boot. Dart's configure() keeps the first callbacks an isolate hands it (background_fetch.dart:442), so every configure() passes one stable pair, and the driver routes deliveries to the `events:` declarations itself. The headless task is a top-level `@pragma('vm:entry-point')` function printing the Capacitor Java task's lines.
+    - **The proofs (build.sh).**
+      - The plugin is staged (git ls-files minus example/) into `.stage/background_fetch`, and `package_config.json` must resolve it there.
+      - tsbackgroundfetch is resolved from labs/m2 alone (`exclusiveContent`, `rootProject.ext.backgroundFetchVersion` set to the label); the resolved version must be the label and the AAR byte-identical to labs/m2's.
+      - The dex defines the SDK's, the plugin's, LabProbePlugin's and MainActivity's classes.
+      - The debug kernel carries `app/lib/main.dart` and the stage's `lib/**/*.dart` byte for byte.
+    - **Triggers `[bold, finish, none]`:** the template's configChanges list fontScale but not fontWeightAdjustment, so `fontscale` recreates nothing.
+  - **Chris's decisions (2026-11-13):**
+    - (1) api-smoke `stop#5`/`stop#7` stay red on Flutter, a finding: Dart's `stop()` is `Future<int>` (background_fetch.dart:524).
+    - (2) `finish` is asserted `{type: null|undefined}` in api-smoke and api-smoke-ios, and React Native and Capacitor were re-swept on it: sweeps `20261113-175459` (Android), `-175553` (iOS FIX), `-175657` (iOS FIX-SPM), all PASS.
+    - (3) NETWORK_TYPE_* are aliased to `NetworkType.<X>.index`.
+    - (4) headless-kill's headlessLatencyMs: measured first, then a Flutter bound.
+  - **The scenarios.** The 13 Android scenarios list flutter, with its taskId (`flutter_background_fetch`) in driverTally/fetchTally, `jobsCancelled 999` on recreate and restart (a new engine configures again: the reschedule Capacitor shows), and `rnHeadless*` 0. The six iOS-only scenarios excuse flutter with a dated reason until its iOS slice. selftest registers flutter (column 1, Android only; board order flutter, react-native, capacitor).
+  - **Sweeps, native 4.1.1-master-399765c, plugin `11d53b8`:**
+
+    | Sweep | What | Result |
+    |---|---|---|
+    | `20261113-175923` | the suite, first run | 11/13 PASS, n/a 6 |
+    | `-180713`, `-180859`, `-181045`, `-181230` | headless-kill, termination-calibration, headless-activity-destroyed (latency) | all PASS |
+    | `20261113-183048` | the suite, `--build all`, after the review's fixes (the committed captures) | 11/13 PASS, n/a 6 |
+    | `20261113-183802` | React Native and Capacitor headless-kill, headless-activity-destroyed (new `flutterHeadlessInit: 0`) | 4/4 PASS |
+
+  - **The two reds, both PREDICTED from source and MEASURED:**
+    - api-smoke: `stop#5.$=want-boolean-got-number`, `stop#7` the same. Every other hook green; `finish#6` reads null.
+    - restart-foreground-android: the plugin's `onDetachedFromActivity` (BackgroundFetchPlugin.java:47-50) → `setActivity(null, null)` sets headless and clears the process-wide event channel (BackgroundFetchModule.java:108-114), with no check of which Activity is current. On a restart it runs after the new Activity attached: the old one's `onDestroy:afterSuper` reads headless=true with the new one current. `run`: stoppingOnTerminate 1, driverEvents `-`, jobIds `-`. `stop-on-terminate-false`: the fetch goes to a headless FlutterEngine started in the same process beside the live UI. WO-007's parity line ("Flutter: not affected") holds only for a plain finish and a recreation.
+    - recreate-foreground-android is green, as predicted: a recreation calls `onDetachedFromActivityForConfigChanges`, empty in the plugin.
+  - **headless-kill's Flutter bound:** ten cold hand-overs (SDK receipt to `point=headless`, a FlutterEngine and a debug Dart isolate in the new process) 165-187 ms across both AVDs; the warm second run 1-2 ms; headless-activity-destroyed (process alive, Activity gone) 87-90 ms. Pinned `<400`, about twice the slowest. React Native keeps `<500`.
+  - **Review (four lenses, three skeptics per finding: 10 findings, 8 upheld), and what it changed.** No finding changed a verdict.
+    - **`finish` could never read red on Flutter.** The row wrapped finish in a `Future<void>` parameter, which accepts any Future, so it always reported null. It now reports what finish()'s DECLARED type hands a caller, with the type inferred at the call site (`_declared<T>`): null for `Future<void>`, the value for anything else (checked with a standalone Dart program: `Future<bool>` reports true).
+    - **headless-kill could not tell "cold once, then warm" from "cold twice" on Flutter** (the latency is the slower of the two). New metric `flutterHeadlessInit` (fetch_pack.py, with a selftest case): the plugin's `$ initialized` lines, one per background FlutterEngine (HeadlessTask.java:87). Pinned 1 for Flutter in headless-kill and headless-activity-destroyed, 0 for the others: React Native's rnHeadlessInit, for the Dart bridge.
+    - **build.sh:** it removes run.py's `.lab-stamp` before the build replaces the APK; the kernel check is byte for byte (it was two marker strings).
+    - **The SDK levels** (compileSdk 36, minSdk 24, targetSdk 36) are literals, not `flutter.*`.
+    - **Wording:** MainActivity's doc names both destroy paths; api-smoke says Flutter's no-argument `stop()` cancels every task (below); the finish notes say where the null comes from.
+    - **Not changed: run.py's source stamp hashes nothing of the Flutter SDK** (the engine, the embedding, the framework). After a `flutter upgrade`, `--build stale` keeps the APK the previous SDK built. run.py is vendored (bg-forge's Flutter host has the same gap), so lab.yaml records it: sweep with `--build all` after an SDK change.
+  - **Re-scored on the final scenarios:** 135 captures, 11 not PASS — the three Flutter reds above, and eight React Native iOS captures of the done WO-004 variants that read `spec-changed-since-capture`: the six ios-fetch-sim / ios-timeout-sim ones already recorded, and api-smoke-ios on WO-004 and WO-004-SPM, whose `finish` assertion is the one widened here. selftest passes (201 checks); vendor_check passes.
+  - **Open, for work orders:**
+    - Flutter `stop()` resolves the status (`Future<int>`), not the types' boolean (api-smoke).
+    - Flutter restart ordering: the WO-007 rule (act on the current Activity alone), plus the EventChannel held on the plugin instance, not the process singleton.
+    - `stop()` with no argument: Flutter cancels every task, as the types' doc says; React Native and Capacitor map null to their own fetch taskId (RNBackgroundFetchModule.java:70, BackgroundFetchPlugin.java:115). api-smoke cannot tell them apart; a scenario that keeps a second task across `stop()` would.
+    - bg-forge: hash the Flutter SDK's revisions into run.py's stamp. Also the stale-stamp one-liner for the Capacitor and React Native Android builds (found here; not changed).

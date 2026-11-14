@@ -33,6 +33,24 @@ description: >
       no config either: a no-op there too.  A hook carries one argument for every bridge, and the id does not change
       what is asserted, the return.  Capacitor's finish() hands back the native call's promise, which resolves with
       no data, so the value labapi.js awaits is undefined there as well.
+    * (WO-002, 2026-11-13) finish is asserted `null|undefined`, the wire's two spellings of the types' void (labkit maps
+      a declared void to both): Flutter's finish() is declared `Future<void>` (lib/background_fetch.dart:585 at
+      11d53b8), and Dart has no undefined.  The Dart driver reports what that DECLARED type hands a typed caller, null
+      (the Future completes with the channel's `true` at runtime, which no typed caller sees), and follows the
+      signature: a finish() that came to declare a value would report it, and read red here.  Chris's decision; React
+      Native and Capacitor were re-swept on it (sweeps 20261113-175459, -175553, -175657: all PASS).
+    * (WO-002, 2026-11-13) Flutter's stop() is `Future<int>` (lib/background_fetch.dart:524 at 11d53b8): it resolves the
+      fetch status, not the boolean the types declare, so stop#5 and stop#7 are red there, PREDICTED from source and
+      MEASURED (`want-boolean-got-number`, sweep 20261113-175923; every other hook green, finish reading null).  A
+      finding for its own work order, left red (Chris, 2026-11-13), as Capacitor's
+      `undefined` was: never relaxed here.  Its NETWORK_TYPE_* are enum values, aliased by the driver to
+      `NetworkType.<X>.index` (api-constants).
+    * (WO-002, 2026-11-13) Flutter's stop() with no argument does NOT stop the fetch task alone, as the bullet above says
+      of the other two: it hands null to the SDK unmapped (BackgroundFetchModule.java:166-170 at 11d53b8), which cancels
+      EVERY task (native BackgroundFetch.java:147-159 at 399765c), as the types' doc says ("*all* background-fetch and
+      scheduled tasks are cancelled").  React Native and Capacitor map null to their own fetch taskId, which is the
+      divergence from the types.  This step cannot tell the two apart (stop#5 has already stopped the smoke task before
+      stop#7), so it pins neither: a finding to measure in its own scenario.
 
   WHAT ELSE IT READS (WO-002 review: the hooks alone pass with a broken SDK — status/start answer 2 on Android
   whatever happens, and stop() answers true):
@@ -48,7 +66,7 @@ description: >
       20261105-134121 (Lab1 emulator-5580, Android 16; native 4.1.1-master-5de5242, plugin 2acdc21).
     * bootBroadcasts: recorded (a launch after run.py's pre-step force-stop delivers BOOT_COMPLETED on Android 16).
   jobIds is read at the step's end, so the step keeps its full window rather than ending on its evidence.
-platforms: [react-native, capacitor]
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   ios: "2026-11-11 — iOS has its own scenario, api-smoke-ios: there scheduleTask rejects on the Simulator, and what
     else is read is BGTaskScheduler's requests, not JobScheduler's jobs (one scenario per OS, as bg-forge's
@@ -78,7 +96,7 @@ hooks:
     returns: {$: {type: boolean, equals: true}}
   - api: finish
     args: react-native-background-fetch
-    returns: {$: {type: undefined}}
+    returns: {$: {type: null|undefined}}
   - api: stop
     returns: {$: {type: boolean, equals: true}}
 expect:

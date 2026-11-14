@@ -28,7 +28,7 @@ description: >
     * jobStops: the initial run configure() caused and the dropped repeat both `onStartJob returned false`, the three
       delivered runs `app called jobFinished`.  PREDICTED for the dropped repeat (it calls jobFinished, then returns
       false, as the ignored initial run does, whose reason is MEASURED); the first board settles it.
-platforms: [react-native, capacitor]
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   ios: "2026-11-09 — the guard is FetchJobService's (Android's JobService); `job:` is an Android action."
 measure_from: launch
@@ -74,3 +74,4 @@ steps:
     platform_expect:
       react-native: {fetchTally: "com.transistorsoft.fetchlab.task=1,react-native-background-fetch=2"}
       capacitor: {fetchTally: "capacitor-background-fetch=2,com.transistorsoft.fetchlab.task=1"}
+      flutter: {fetchTally: "com.transistorsoft.fetchlab.task=1,flutter_background_fetch=2"}

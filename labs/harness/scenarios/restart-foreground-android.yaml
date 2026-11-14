@@ -30,7 +30,18 @@ description: >
   React Native keeps its JS context: the re-mounted root runs main() again as boot 2, which configures nothing new.
   Capacitor's page reloads and configures again on boot 2 (the reschedule recreate-foreground-android pins), so
   jobsCancelled reads 999 there (platform_expect).
-platforms: [react-native, capacitor]
+
+  (WO-002, 2026-11-13) Flutter is listed, PREDICTED RED on both steps from source, then MEASURED red (sweep
+  20261113-175923, Lab2).  Each FlutterActivity owns its engine and its plugin instance; the old one's
+  onDetachedFromActivity (BackgroundFetchPlugin.java:47-50) calls setActivity(null, null), which sets headless true and
+  clears the process-wide event channel (BackgroundFetchModule.java:108-114) with no check of which Activity is
+  current: on a restart it runs AFTER the new Activity attached — WO-007's regression, in the shipped plugin.  The old
+  Activity's `point=onDestroy:afterSuper` reads headless=true with the new one current, and the new one's resumed+2s
+  still does.  `run` reads the regression exactly (stoppingOnTerminate 1, driverEvents `-`, jobIds `-`, headless
+  true); in `stop-on-terminate-false` the fetch goes to a headless FlutterEngine started in the same process beside
+  the live UI (`point=headless`, its task-probe `current=` the new Activity).  The new engine configures again on
+  boot 2: jobsCancelled 999, as Capacitor's (platform_expect).  A finding for its own work order, never relaxed here.
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   ios: "2026-11-13 — iOS has no headless mode and the Simulator host no finish trigger; `job:` actions are Android's."
 measure_from: launch
@@ -38,6 +49,7 @@ measure_from: launch
 platform_expect:
   react-native: {driverTally: "fetch:react-native-background-fetch=1"}
   capacitor: {driverTally: "fetch:capacitor-background-fetch=1", jobsCancelled: "999"}
+  flutter: {driverTally: "fetch:flutter_background_fetch=1", jobsCancelled: "999"}
 steps:
   - name: run
     settle: 10

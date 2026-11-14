@@ -6,7 +6,7 @@
  "scenario": "api-smoke-ios",
  "variant": "FIX-SPM",
  "step": "run",
- "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
  "evicted": [],
  "foreignTransistorApps": [],
  "native": "4.1.1-master-399765c",
@@ -26,7 +26,7 @@
   "dirty": "no"
  },
  "device": {
-  "model": "Lab2",
+  "model": "Lab1",
   "os": "iOS 27.2"
  },
  "activity": "",
@@ -38,58 +38,58 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 42.7,
-  "t0": 1794589306.591,
+  "step_s": 42.9,
+  "t0": 1794610635.073,
   "phases": {
-   "terminated": 0.087,
-   "others_stopped": 0.183,
-   "reset": 0.741,
-   "swept": 0.94,
-   "neutral_pre": 0.94,
-   "permissions": 0.94,
-   "sleep_end": 0.94,
-   "log_begun": 1.342,
-   "launch_mark": 1.466,
-   "verdict_cleared": 1.569,
-   "launch": 1.69,
-   "settle_end": 11.694,
-   "trigger": 11.822,
-   "end": 42.233,
-   "capture_mark": 42.372,
-   "pusher_joined": 42.372,
-   "log_ended": 42.62,
-   "log_written": 42.621,
-   "capture_extras": 42.621,
-   "db_pulled": 42.621,
-   "run_json": 42.682,
-   "judged": 42.702,
-   "verdict_pushed": 42.702,
-   "settled": 43.203,
-   "neutral_post": 43.203,
-   "terminated_post": 43.345
+   "terminated": 0.102,
+   "others_stopped": 0.216,
+   "reset": 0.876,
+   "swept": 1.07,
+   "neutral_pre": 1.07,
+   "permissions": 1.07,
+   "sleep_end": 1.07,
+   "log_begun": 1.49,
+   "launch_mark": 1.603,
+   "verdict_cleared": 1.71,
+   "launch": 1.859,
+   "settle_end": 11.861,
+   "trigger": 11.983,
+   "end": 42.394,
+   "capture_mark": 42.541,
+   "pusher_joined": 42.541,
+   "log_ended": 42.793,
+   "log_written": 42.793,
+   "capture_extras": 42.793,
+   "db_pulled": 42.793,
+   "run_json": 42.851,
+   "judged": 42.871,
+   "verdict_pushed": 42.871,
+   "settled": 43.381,
+   "neutral_post": 43.381,
+   "terminated_post": 43.532
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.24,
+    "s": 0.245,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.215,
+    "s": 2.381,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_tap_text": {
     "n": 42,
-    "s": 0.015,
+    "s": 0.017,
     "bg_n": 40,
-    "bg_s": 0.015
+    "bg_s": 0.016
    },
    "begin_log": {
     "n": 1,
-    "s": 0.401,
+    "s": 0.42,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -101,19 +101,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.208,
+    "s": 0.214,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.2,
+    "s": 0.194,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.248,
+    "s": 0.252,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -125,25 +125,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.096,
+    "s": 0.114,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.121,
+    "s": 0.148,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.39,
+    "s": 0.381,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.117,
+    "s": 0.118,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,9 +155,9 @@
    },
    "peek": {
     "n": 40,
-    "s": 0.083,
+    "s": 0.089,
     "bg_n": 40,
-    "bg_s": 0.083
+    "bg_s": 0.089
    },
    "permissions": {
     "n": 1,
@@ -167,13 +167,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.104,
+    "s": 0.109,
     "bg_n": 2,
     "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.448,
+    "s": 0.549,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -185,13 +185,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.406,
+    "s": 0.392,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.225,
+    "s": 0.252,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -200,7 +200,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.09
+   "boot": 3.475
   }
  },
  "measure_from": "launch",
@@ -307,7 +307,7 @@
    "args": "react-native-background-fetch",
    "returns": {
     "$": {
-     "type": "undefined"
+     "type": "null|undefined"
     }
    }
   },
@@ -322,5 +322,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-13 12:02:29"
+ "when": "2026-11-13 17:57:57"
 }

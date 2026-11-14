@@ -26,7 +26,7 @@ description: >
   A revert of c88f7d8: fetchReceived 2, configure@0 over its max, jobStops `999:app_called_jobFinished=2`.  Of
   07e597c's return value: the ignored run's reason changes.  Known risk: an initial run JobScheduler starts ≥ 1 s
   after scheduling (a loaded emulator) is delivered as a real fetch — measured 26-40 ms after (api-smoke's history).
-platforms: [react-native, capacitor]
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   ios: "2026-11-09 — JobScheduler is Android's: iOS schedules BGAppRefresh with no immediate first run, and `job:` is an
     Android action."
@@ -62,3 +62,4 @@ steps:
     platform_expect:
       react-native: {driverTally: "fetch:react-native-background-fetch=1"}
       capacitor: {driverTally: "fetch:capacitor-background-fetch=1"}
+      flutter: {driverTally: "fetch:flutter_background_fetch=1"}
