@@ -10,8 +10,9 @@
    rnHeadlessStarts                 2                      expected 2            ok
    rnHeadlessEnds                   2                      expected 2            ok
    rnHeadlessErrors                 0                      expected 0            ok
+   flutterHeadlessInit              0                      expected 0            ok
    headlessNoTask                   0                      expected 0            ok
-   headlessLatencyMs                76                     expected <500         ok
+   headlessLatencyMs                72                     expected <500         ok
    appProcesses                     2                      expected 2            ok
    headless                         true                   expected True         ok
    duplicateJobs                    0                      expected 0            ok
@@ -21,7 +22,7 @@
    jobIds                           999                    expected 999          ok
    jobStops                         999:app_called_jobFinished=2,999:onStartJob_returned_false=1 expected 999:app_called_jobFinished=2,999:onStartJob_returned_false=1 ok
    headlessTally                    fetch=2                expected any          ok
-   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   bootBroadcasts                   -                      expected any          ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok

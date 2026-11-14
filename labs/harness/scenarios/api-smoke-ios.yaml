@@ -21,6 +21,8 @@ description: >
       (WO-002, 2026-11-13) On Capacitor that id is not its fetch's (`capacitor-background-fetch`): the same no-op, and
       the same line (as api-smoke.yaml says for Android).  Capacitor's start() is declared CAPPluginReturnCallback
       (BackgroundFetchPlugin.swift), so its promise resolves undefined: start#3 reads red there (suspected defect 1).
+      (WO-002, 2026-11-13) Asserted `null|undefined`, the wire's two spellings of void, as in api-smoke (Flutter's
+      Dart driver reports what finish()'s declared `Future<void>` hands a caller, null; Chris's decision).
 
   WHAT ELSE IT READS (the hooks alone pass with a broken SDK, as on Android):
     * bgSubmits `com.transistorsoft.fetch:appRefresh=1,com.transistorsoft.fetchlab.task:processing=1`:
@@ -36,6 +38,8 @@ description: >
 platforms: [react-native, capacitor]
 not_applicable:
   android: "2026-11-11 — api-smoke is Android's: its scheduleTask resolves, and it reads JobScheduler's jobs."
+  flutter: "2026-11-13 — the Flutter host is Android-only until its iOS slice (WO-002: Flutter Android, then iOS on
+    CocoaPods and SwiftPM); un-excuse it with the iOS host."
 measure_from: launch
 settle: 10
 after: 30
@@ -61,7 +65,7 @@ hooks:
     returns: {$: {type: boolean, equals: true}}
   - api: finish
     args: react-native-background-fetch
-    returns: {$: {type: undefined}}
+    returns: {$: {type: null|undefined}}
   - api: stop
     returns: {$: {type: boolean, equals: true}}
 expect:

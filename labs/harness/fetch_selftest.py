@@ -611,6 +611,7 @@ def test_tier1(tmp):
         S(69.5, 201, "☯️  HeadlessMode? true"),
         S(70.0, 201, "- Background Fetch event received: react-native-background-fetch"),
         S(70.01, 201, "[HeadlessTask] initializing ReactContext"),
+        S(70.015, 201, "$ initialized", "I"),        # Flutter's cold start: the counts read lines, not the bridge
         S(70.05, 201, "- Background Fetch event received: com.lab.other"),           # another task's: never paired
         S(70.06, 201, "[HeadlessTask] start taskId: 1"),
         J(70.071, 201, "LAB point=headless event=fetch taskId=react-native-background-fetch timeout=false"),
@@ -627,10 +628,12 @@ def test_tier1(tmp):
         J(81.4, 201, "LAB point=headless event=timeout taskId=react-native-background-fetch timeout=true"),  # no hand-over
         LT(82.0, "I", "LAB     ", 300, "point=appCreate pid=300 process=com.other.lab headless=-"),
         S(82.1, 300, "[HeadlessTask] start taskId: 9"),
+        S(82.15, 300, "$ initialized", "I"),
         LT(82.2, "W", "ReactNativeJS", 300, "No task registered for key BackgroundFetch"),
         J(82.3, 300, "LAB app=event=fetch n=1 taskId=x"),
         LT(90.0, "I", "LAB     ", 100, "point=capture"),
         S(91.0, 201, "[HeadlessTask] start taskId: 3"),                                   # after the window
+        S(91.1, 201, "$ initialized", "I"),
     ]
     with open(os.path.join(out, "logcat.txt"), "w") as f:
         f.write("\n".join(lines) + "\n")
@@ -657,12 +660,13 @@ def test_tier1(tmp):
                     % (pkg, exit_, head_extra, history))
         return labkit.Capture(out)
     c = capture()
-    names = ("rnHeadlessInit", "rnHeadlessStarts", "rnHeadlessEnds", "rnHeadlessErrors", "headlessNoTask",
+    names = ("rnHeadlessInit", "rnHeadlessStarts", "rnHeadlessEnds", "rnHeadlessErrors", "flutterHeadlessInit",
+             "headlessNoTask",
              "driverEvents", "driverFinishes", "appProcesses", "fetchTimeoutSkewMs", "headlessLatencyMs",
              "lifecycleTally", "jobsCancelled", "jobStops")
     check("Tier 1 metrics: the app's own processes, in the window",
           {n: labkit.METRICS[n](c) for n in names},
-          {"rnHeadlessInit": 1, "rnHeadlessStarts": 2, "rnHeadlessEnds": 2, "rnHeadlessErrors": 4,
+          {"rnHeadlessInit": 1, "rnHeadlessStarts": 2, "rnHeadlessEnds": 2, "rnHeadlessErrors": 4, "flutterHeadlessInit": 1,
            "headlessNoTask": 1, "driverEvents": "fetch=2,timeout=1",
            "driverFinishes": "fetch:ok=1,fetch:withheld=1,timeout:ok=1", "appProcesses": 2,
            "fetchTimeoutSkewMs": 4, "headlessLatencyMs": 71, "lifecycleTally": "headless:true=2,onCreate=1,onStart=1",
@@ -692,9 +696,10 @@ def test_tier1(tmp):
     check("history_age_ms: days, hours, zero-padded minutes, seconds, ms; not a bare dash",
           [fetch_pack.history_age_ms(a) for a in ("-2h26m50s884ms", "-2m09s691ms", "-40s597ms", "-884ms", "-1d2h", "-")],
           [8810884, 129691, 40597, 884, 93600000, None])
-    check("every Tier 1 metric is registered, and the RN HeadlessTask counts beside the SDK's",
-          (sorted(n for n in names if n not in labkit.METRICS), sorted(fetch_pack.RN_HEADLESS_COUNTS)),
-          ([], ["rnHeadlessEnds", "rnHeadlessInit", "rnHeadlessStarts"]))
+    check("every Tier 1 metric is registered, and the RN and Flutter HeadlessTask counts beside the SDK's",
+          (sorted(n for n in names if n not in labkit.METRICS), sorted(fetch_pack.RN_HEADLESS_COUNTS),
+           sorted(fetch_pack.FLUTTER_HEADLESS_COUNTS)),
+          ([], ["rnHeadlessEnds", "rnHeadlessInit", "rnHeadlessStarts"], ["flutterHeadlessInit"]))
 
 
 def test_restart(tmp):
@@ -1380,12 +1385,14 @@ def test_shipped():
             check("variant %s loads" % name, why, None)
     # (WO-002) Every platform this lab ships registers with its board column, board name and hosts; a new host's
     # lab.yaml that loses one shows up here, not as a board with a missing or misplaced column.
-    for name, column, short, hosts in (("react-native", 2, "rn", ["android", "ios"]),
+    # (2026-11-13) Flutter is Android-only until its iOS slice.
+    for name, column, short, hosts in (("flutter", 1, "flt", ["android"]),
+                                       ("react-native", 2, "rn", ["android", "ios"]),
                                        ("capacitor", 3, "cap", ["android", "ios"])):
         check("platform %s column" % name, labkit.platform(name).get("column"), column)
         check("platform %s board name" % name, labkit.board_name(name), short)
         check("platform %s hosts" % name, labkit.hosts(name), hosts)
-    check("board order", labkit.board_order(), ["react-native", "capacitor"])
+    check("board order", labkit.board_order(), ["flutter", "react-native", "capacitor"])
 
 
 def main():

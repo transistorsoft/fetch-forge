@@ -1,0 +1,6 @@
+# (WO-002) No lint package: the lab app depends on the SDK and two path packages only, so `flutter pub get` needs no
+# network.  `flutter analyze` still runs the analyzer's own checks.
+analyzer:
+  exclude:
+    - build/**
+    - android/**

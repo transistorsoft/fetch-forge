@@ -10,6 +10,7 @@
    rnHeadlessStarts                 1                      expected 1            ok
    rnHeadlessEnds                   1                      expected 1            ok
    rnHeadlessErrors                 0                      expected 0            ok
+   flutterHeadlessInit              0                      expected 0            ok
    driverEvents                     -                      expected -            ok
    appProcesses                     1                      expected 1            ok
    headless                         true                   expected True         ok
@@ -17,7 +18,7 @@
    fetchTimeouts                    0                      expected 0            ok
    jobIds                           999                    expected 999          ok
    headlessTally                    fetch=1                expected any          ok
-   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   bootBroadcasts                   -                      expected any          ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok

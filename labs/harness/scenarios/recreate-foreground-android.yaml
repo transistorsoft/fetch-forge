@@ -42,7 +42,13 @@ description: >
       jobIds 999 and the driver's delivery still tell the defect apart.  The job at +4 s must come over 1 s after
       that reschedule (FetchJobService.java:24-31): a cold page boot reached configure() 0.3 s after its process
       started (termination-calibration's kill, MEASURED); a recreation's reload is NOT CHECKED.
-platforms: [react-native, capacitor]
+
+  (WO-002, 2026-11-13) Flutter is listed, PREDICTED GREEN on both steps from source, then MEASURED green (sweep
+  20261113-175923, Lab1): on a recreation Flutter 3.47.5's FlutterActivityAndFragmentDelegate detaches the plugin FOR
+  CONFIG CHANGES, whose handler is empty (BackgroundFetchPlugin.java:34-38), so onDetachedFromActivity's
+  setHeadless(true) (BackgroundFetchModule.java:108-114) does not run.  Each FlutterActivity owns its engine, so the
+  new one runs main() and configures again: the same reschedule as Capacitor's, jobsCancelled 999 (platform_expect).
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   ios: "2026-11-09 — iOS has no headless mode; `job:` and the bold trigger's recreation are Android's."
 measure_from: launch
@@ -50,6 +56,7 @@ measure_from: launch
 platform_expect:
   react-native: {driverTally: "fetch:react-native-background-fetch=1"}
   capacitor: {driverTally: "fetch:capacitor-background-fetch=1", jobsCancelled: "999"}
+  flutter: {driverTally: "fetch:flutter_background_fetch=1", jobsCancelled: "999"}
 steps:
   - name: run
     settle: 10

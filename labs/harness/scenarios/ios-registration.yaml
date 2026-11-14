@@ -49,6 +49,8 @@ platforms: [react-native, capacitor]
 not_applicable:
   android: "2026-11-11 — BGTaskScheduler's launch-handler registration is iOS's; Android schedules JobScheduler jobs at
     configure() and scheduleTask() (api-smoke, events-task-android)."
+  flutter: "2026-11-13 — the Flutter host is Android-only until its iOS slice (WO-002: Flutter Android, then iOS on
+    CocoaPods and SwiftPM); un-excuse it with the iOS host."
 measure_from: launch
 steps:
   - name: delegate

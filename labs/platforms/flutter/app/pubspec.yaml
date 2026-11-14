@@ -1,0 +1,22 @@
+name: fetch_lab
+description: "(WO-002) The fetch lab's Flutter host: drives background_fetch for the device lab (labs/README.md)."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # The plugin under test: build.sh STAGES the checkout lab.yaml names (default: this repo's flutter/background_fetch
+  # submodule) into ../.stage/background_fetch, so no build ever writes into the submodule.
+  background_fetch:
+    path: ../.stage/background_fetch
+  # The lab's own native channel (lab/probe), a plugin so the headless engine registers it too.
+  lab_probe:
+    path: lab_probe
+
+flutter:
+  uses-material-design: true
