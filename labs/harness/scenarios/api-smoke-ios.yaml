@@ -35,11 +35,9 @@ description: >
     * sdkTasks `-` and sdkSubscribers `-`: at the step's end the SDK lists no task (stop(taskId) destroyed it) and no
       fetch listener (stop() removed the plugin's).  Android's jobIds `-` is the counterpart.
     * MEASURED 2026-11-11 on Lab1 (iPhone 17 Pro Simulator, iOS 27.2; native 4.1.1-master-5de5242, plugin 85a6bf4).
-platforms: [react-native, capacitor]
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   android: "2026-11-11 — api-smoke is Android's: its scheduleTask resolves, and it reads JobScheduler's jobs."
-  flutter: "2026-11-13 — the Flutter host is Android-only until its iOS slice (WO-002: Flutter Android, then iOS on
-    CocoaPods and SwiftPM); un-excuse it with the iOS host."
 measure_from: launch
 settle: 10
 after: 30

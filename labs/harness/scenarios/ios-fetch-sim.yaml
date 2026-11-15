@@ -10,25 +10,32 @@ description: >
 
   WHAT EACH STEP READS:
     * foreground: the app on screen; the fetch is delivered `active`.
-    * background: Settings launched over the app (`background: true`); the Simulator suspends it within 1 s, and the
-      push resumes it in the background.
+    * background: Settings launched over the app (`background: true`); the Simulator suspends it 0.4-3 s later
+      (MEASURED across the bridges), and the push, 8 s after the action, resumes it in the background.
     * cold: the app terminated (`terminate: true`); the push launches it in the background, with no launch args, so
       the driver configures with its defaults and the delivery reaches that configure (no `events:` arm survives the
       relaunch).  The SDK reloads its persisted subscriber at +load, so the fetch is not lost while JavaScript boots
       (MEASURED 2026-11-10).
     * Each: the SDK's own `performFetchWithCompletionHandler` and `finish … (1 of 1)` lines, the driver's delivery,
       UIKit's result `newData`, and SpringBoard's `RetrievedNewData`.
-platforms: [react-native, capacitor]
+
+  (WO-002, 2026-11-14) On Flutter the host does not hand the fetch to the SDK: the PLUGIN does
+  (BackgroundFetchPlugin.m:29-34), through FlutterAppDelegate's lifecycle forwarding, the path a customer's app takes.
+  The host's AppDelegate only wraps it: `point=legacyFetch` before, `point=legacyFetchForward plugins=true` after (a
+  fetch no plugin took reads `plugins=false`, and UIKit's handler is left uncalled, as in a customer's app: SpringBoard
+  records the failure).  MEASURED in all three states, `cold`
+  included: the background launch connects its scene, whose engine registers the plugin before UIKit delivers the
+  fetch (sweeps 20261114-114801 pods, 20261114-115249 SwiftPM).
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   android: "2026-11-10 — `fire:`, `background:` and `terminate:` are the Simulator's (a SpringBoard background fetch);
     Android's fetches are JobScheduler's, events-fetch-android's."
-  flutter: "2026-11-13 — the Flutter host is Android-only until its iOS slice (WO-002: Flutter Android, then iOS on
-    CocoaPods and SwiftPM); un-excuse it with the iOS host."
 measure_from: launch
 # (WO-002, Capacitor iOS) Each bridge delivers its own fetch taskId: `returns` takes either, driverTally pins each.
 platform_expect:
   react-native: {driverTally: "fetch:react-native-background-fetch=1"}
   capacitor: {driverTally: "fetch:capacitor-background-fetch=1"}
+  flutter: {driverTally: "fetch:flutter_background_fetch=1"}
 steps:
   - name: foreground
     settle: 10
@@ -41,7 +48,8 @@ steps:
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
         min: 1
         max: 1
-        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch]}}
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
+                                         flutter_background_fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 3, fire: fetch}
     expect:
@@ -55,7 +63,8 @@ steps:
       springboardResults: "RetrievedNewData=1"
   - name: background
     settle: 10
-    after: 15
+    # (2026-11-14) 20 (was 15): the push moved 3 s later; the window still ends before the SDK's own expiry.
+    after: 20
     hooks:
       - api: status
         returns: {$: {type: number, in: [0, 1, 2]}}
@@ -64,10 +73,13 @@ steps:
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
         min: 1
         max: 1
-        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch]}}
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
+                                         flutter_background_fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 2, background: true}
-      - {after: {api: "status#0"}, delay_s: 7, fire: fetch}
+      # (WO-002, 2026-11-14) 8 s after the background action (was 5 s): bgSilenceMs is about that gap minus the
+      # time the Simulator takes to suspend the app, which MEASURED 0.4-3.0 s across the bridges (Flutter 0.5-3.0).
+      - {after: {api: "status#0"}, delay_s: 10, fire: fetch}
     # (WO-002, Capacitor iOS, MEASURED 2026-11-13) A woken Capacitor app is suspended again as soon as the SDK
     # completes the fetch, so the reply to the driver's `await BackgroundFetch.finish()` — and the
     # `app=finish … outcome=ok` it logs — can reach the page only at its next wake: in sweep 20261113-113435
@@ -78,6 +90,7 @@ steps:
     platform_expect:
       react-native: {driverTally: "fetch:react-native-background-fetch=1"}
       capacitor: {driverTally: "fetch:capacitor-background-fetch=1", driverFinishes: any}
+      flutter: {driverTally: "fetch:flutter_background_fetch=1"}
     expect:
       crashes: 0
       fetchReceived: 1
@@ -89,6 +102,8 @@ steps:
       springboardResults: "RetrievedNewData=1"
       # (WO-002, Capacitor iOS) The app really slept before the push: the driver's beat fell silent for seconds.  A
       # driver kept awake reads ~1000 (the Capacitor driver's native polling did, until it paused while hidden).
+      # (2026-11-14) With the push at 5 s a sound Flutter run read 2047 (suspended 3.0 s after the action); at 8 s
+      # the bound keeps its meaning with seconds to spare.
       bgSilenceMs: ">=2000"
   # (WO-002, Capacitor iOS) The cold page is a background app too, suspended again once the SDK completes: its reply
   # to `await finish()` has the same race as `background`, but came 81-82 ms after the SDK's finish in every capture

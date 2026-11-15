@@ -197,8 +197,9 @@ Future<void> _driver() async {
   // The beat: every 0.5 s from the boot line, touching neither the SDK nor the lab channel.  main() runs once per
   // engine, so there is one beat per engine.
   Timer.periodic(const Duration(milliseconds: 500), (_) => _log('beat n=${++_beats}'));
-  // The host's verdict, every 0.25 s: run.py waits that plus a frame before its screenshot.  Android only for now, so
-  // it never pauses while hidden (Capacitor's iOS rule: a periodic native call keeps an iOS app from suspending).
+  // The host's verdict, every 0.25 s: run.py waits that plus a frame before its screenshot.  It runs on iOS too and never
+  // pauses while hidden: unlike the Capacitor page's, these native calls do not keep a Flutter app from suspending
+  // (MEASURED 2026-11-14: lab.yaml's iOS notes).
   Timer.periodic(const Duration(milliseconds: 250), (_) => _pollVerdict());
   final scenario = args['scenario'];
   _scenario = scenario is String && scenario.isNotEmpty ? scenario : 'lab';

@@ -1,0 +1,289 @@
+{
+ "label": "flutter.ios-stop-start.FIX-SPM.stopped",
+ "platform": "flutter",
+ "os": "ios",
+ "package": "com.transistorsoft.fetchlab.flutter",
+ "scenario": "ios-stop-start",
+ "variant": "FIX-SPM",
+ "step": "stopped",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
+ "evicted": [],
+ "foreignTransistorApps": [],
+ "native": "4.1.1-master-399765c",
+ "native_source": {
+  "branch": "",
+  "commit": "399765cc89f03ccaec19464ea87f47c3f3d66f4d",
+  "dirty": "no",
+  "marketing": "4.2.1",
+  "build": "4201"
+ },
+ "channel": "spm",
+ "native_resolved": "4201",
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "flutter/background_fetch",
+  "commit": "11d53b8dd8194cd0c8335415976599d3dc8272cd",
+  "dirty": "no"
+ },
+ "device": {
+  "model": "Lab1",
+  "os": "iOS 27.2"
+ },
+ "activity": "",
+ "process": null,
+ "settle": 10,
+ "after": 45,
+ "end": {
+  "policy": "window",
+  "ended": "window"
+ },
+ "timings": {
+  "step_s": 57.4,
+  "t0": 1794678161.368,
+  "phases": {
+   "terminated": 0.082,
+   "others_stopped": 0.18,
+   "reset": 0.642,
+   "swept": 0.813,
+   "neutral_pre": 0.814,
+   "permissions": 0.814,
+   "sleep_end": 0.814,
+   "log_begun": 1.121,
+   "launch_mark": 1.224,
+   "verdict_cleared": 1.323,
+   "launch": 1.447,
+   "settle_end": 11.456,
+   "trigger": 11.58,
+   "end": 56.96,
+   "runner_joined": 56.961,
+   "capture_mark": 57.101,
+   "pusher_joined": 57.101,
+   "log_ended": 57.333,
+   "log_written": 57.333,
+   "capture_extras": 57.333,
+   "db_pulled": 57.334,
+   "run_json": 57.389,
+   "judged": 57.433,
+   "verdict_pushed": 57.433,
+   "settled": 57.934,
+   "neutral_post": 57.934,
+   "terminated_post": 58.064
+  },
+  "calls": {
+   "_alive": {
+    "n": 1,
+    "s": 0.226,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "_run": {
+    "n": 15,
+    "s": 2.14,
+    "bg_n": 1,
+    "bg_s": 0.103
+   },
+   "_tap_text": {
+    "n": 78,
+    "s": 0.027,
+    "bg_n": 76,
+    "bg_s": 0.027
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.307,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "close": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "container": {
+    "n": 6,
+    "s": 0.201,
+    "bg_n": 2,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.171,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.232,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "installed": {
+    "n": 1,
+    "s": 0.097,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.124,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 4,
+    "s": 0.47,
+    "bg_n": 1,
+    "bg_s": 0.103
+   },
+   "native_resolved": {
+    "n": 2,
+    "s": 0.111,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 76,
+    "s": 0.149,
+    "bg_n": 76,
+    "bg_s": 0.149
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_fetch": {
+    "n": 1,
+    "s": 0.135,
+    "bg_n": 1,
+    "bg_s": 0.135
+   },
+   "push_verdict": {
+    "n": 4,
+    "s": 0.101,
+    "bg_n": 2,
+    "bg_s": 0.002
+   },
+   "reset_app": {
+    "n": 1,
+    "s": 0.356,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.375,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 2,
+    "s": 0.213,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": null,
+  "clock_offset_rtt_s": null,
+  "log_phases": {
+   "boot": 3.24
+  }
+ },
+ "measure_from": "launch",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": true,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": [
+  {
+   "after": [
+    {
+     "api": "stop#1"
+    }
+   ],
+   "delay_s": 3,
+   "fire": "fetch"
+  }
+ ],
+ "host": {
+  "error": null,
+  "held_s": {
+   "action0": 2.056
+  },
+  "sent_s": {
+   "action0": 5.135
+  }
+ },
+ "network": null,
+ "privacy": null,
+ "location_accuracy": null,
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [],
+ "hooks": [
+  {
+   "api": "status",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "api": "stop",
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-14 12:43:38"
+}

@@ -1,0 +1,15 @@
+   crashes                          0                      expected 0            ok
+   taskSubmitErrors                 BGTaskSchedulerErrorDomain:1=1 expected BGTaskSchedulerErrorDomain:1=1 ok
+   taskFires                        task:missing=1,task:ran=1 expected task:missing=1,task:ran=1 ok
+   driverEvents                     fetch=1                expected fetch=1      ok
+   driverTally                      fetch:com.transistorsoft.fetchlab.task=1 expected fetch:com.transistorsoft.fetchlab.task=1 ok
+   driverFinishes                   fetch:ok=1             expected fetch:ok=1   ok
+   fetchReceived                    0                      expected 0            ok
+   sdkTasks                         -                      expected -            ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   eventAssertions                  ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => PASS

@@ -45,12 +45,22 @@ description: >
   UIKit posts the scene notification the host logs `sceneWillConnect` and makes the call on AFTER the template's
   SceneDelegate has built the bridge (`pluginLoad` 15-21 ms before it, MEASURED 2026-11-13).  sdkLaunchCalls counts the
   host's calls only; `point=pluginLoad` dates the plugin's roughly (Capacitor loads its plugin list from a Set).
-platforms: [react-native, capacitor]
+
+  (WO-002, 2026-11-14) On Flutter the plugin makes the call too, from the scene: the scene's FlutterViewController
+  builds the implicit engine, the host registers the plugins there (`point=pluginLoad`, 3-5 ms before
+  `sceneWillConnect` in millisecond-truncated stamps, MEASURED), and the engine replays the launch to them
+  (FlutterViewController.mm:327-335, in an app
+  with a scene delegate), so BackgroundFetchPlugin's application:didFinishLaunchingWithOptions: calls didFinishLaunching()
+  (BackgroundFetchPlugin.m:38-42) — INFERRED for the replay: neither the engine nor the plugin logs it.  So, as on
+  Capacitor, `none` reads `finished` (+load's registrations, ~40 ms before the engine) but no longer isolates +load,
+  and `scene` is a call after the plugin's.  Flutter's install docs (help/INSTALL-IOS.md) ask for no AppDelegate call
+  — CHANGELOG 0.5.1 has customers remove theirs — so on Flutter `none` is the documented setup and `delegate` the lab's
+  default, as React Native's docs have it.  Every step reads as on the other bridges (sweeps 20261114-114801 pods,
+  20261114-115249 SwiftPM).
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   android: "2026-11-11 — BGTaskScheduler's launch-handler registration is iOS's; Android schedules JobScheduler jobs at
     configure() and scheduleTask() (api-smoke, events-task-android)."
-  flutter: "2026-11-13 — the Flutter host is Android-only until its iOS slice (WO-002: Flutter Android, then iOS on
-    CocoaPods and SwiftPM); un-excuse it with the iOS host."
 measure_from: launch
 steps:
   - name: delegate
