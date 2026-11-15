@@ -1385,8 +1385,7 @@ def test_shipped():
             check("variant %s loads" % name, why, None)
     # (WO-002) Every platform this lab ships registers with its board column, board name and hosts; a new host's
     # lab.yaml that loses one shows up here, not as a board with a missing or misplaced column.
-    # (2026-11-13) Flutter is Android-only until its iOS slice.
-    for name, column, short, hosts in (("flutter", 1, "flt", ["android"]),
+    for name, column, short, hosts in (("flutter", 1, "flt", ["android", "ios"]),
                                        ("react-native", 2, "rn", ["android", "ios"]),
                                        ("capacitor", 3, "cap", ["android", "ios"])):
         check("platform %s column" % name, labkit.platform(name).get("column"), column)

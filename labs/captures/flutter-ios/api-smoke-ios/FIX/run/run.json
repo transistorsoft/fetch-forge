@@ -1,0 +1,326 @@
+{
+ "label": "flutter.api-smoke-ios.FIX.run",
+ "platform": "flutter",
+ "os": "ios",
+ "package": "com.transistorsoft.fetchlab.flutter",
+ "scenario": "api-smoke-ios",
+ "variant": "FIX",
+ "step": "run",
+ "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
+ "evicted": [],
+ "foreignTransistorApps": [],
+ "native": "4.1.1-master-399765c",
+ "native_source": {
+  "branch": "",
+  "commit": "399765cc89f03ccaec19464ea87f47c3f3d66f4d",
+  "dirty": "no",
+  "marketing": "4.2.1",
+  "build": "4201"
+ },
+ "channel": null,
+ "native_resolved": "4201",
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "flutter/background_fetch",
+  "commit": "11d53b8dd8194cd0c8335415976599d3dc8272cd",
+  "dirty": "no"
+ },
+ "device": {
+  "model": "Lab2",
+  "os": "iOS 27.2"
+ },
+ "activity": "",
+ "process": null,
+ "settle": 10,
+ "after": 30,
+ "end": {
+  "policy": "window",
+  "ended": "window"
+ },
+ "timings": {
+  "step_s": 42.4,
+  "t0": 1794677866.245,
+  "phases": {
+   "terminated": 0.093,
+   "others_stopped": 0.193,
+   "reset": 0.655,
+   "swept": 0.825,
+   "neutral_pre": 0.825,
+   "permissions": 0.825,
+   "sleep_end": 0.825,
+   "log_begun": 1.127,
+   "launch_mark": 1.229,
+   "verdict_cleared": 1.33,
+   "launch": 1.451,
+   "settle_end": 11.46,
+   "trigger": 11.595,
+   "end": 41.993,
+   "capture_mark": 42.122,
+   "pusher_joined": 42.122,
+   "log_ended": 42.354,
+   "log_written": 42.355,
+   "capture_extras": 42.355,
+   "db_pulled": 42.355,
+   "run_json": 42.41,
+   "judged": 42.436,
+   "verdict_pushed": 42.436,
+   "settled": 42.94,
+   "neutral_post": 42.94,
+   "terminated_post": 43.068
+  },
+  "calls": {
+   "_alive": {
+    "n": 1,
+    "s": 0.227,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "_run": {
+    "n": 14,
+    "s": 2.057,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "_tap_text": {
+    "n": 42,
+    "s": 0.015,
+    "bg_n": 40,
+    "bg_s": 0.015
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.302,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "close": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "container": {
+    "n": 6,
+    "s": 0.204,
+    "bg_n": 2,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.17,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.233,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "installed": {
+    "n": 1,
+    "s": 0.1,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.121,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 3,
+    "s": 0.365,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "native_resolved": {
+    "n": 2,
+    "s": 0.113,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 40,
+    "s": 0.084,
+    "bg_n": 40,
+    "bg_s": 0.084
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 4,
+    "s": 0.103,
+    "bg_n": 2,
+    "bg_s": 0.002
+   },
+   "reset_app": {
+    "n": 1,
+    "s": 0.354,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.386,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 2,
+    "s": 0.222,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": null,
+  "clock_offset_rtt_s": null,
+  "log_phases": {
+   "boot": 3.23
+  }
+ },
+ "measure_from": "launch",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": true,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": null,
+ "host": null,
+ "network": null,
+ "privacy": null,
+ "location_accuracy": null,
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [],
+ "hooks": [
+  {
+   "api": "configure",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "function"
+    }
+   }
+  },
+  {
+   "api": "registerHeadlessTask",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "function"
+    }
+   },
+   "absent_on": {
+    "capacitor": "2026-11-13 \u2014 iOS has no headless mode, and src/index.ts's BackgroundFetch declares no registerHeadlessTask (as api-smoke.yaml, WO-002)."
+   }
+  },
+  {
+   "api": "status",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "api": "start",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "api": "scheduleTask",
+   "args": {
+    "taskId": "com.transistorsoft.fetchlab.task",
+    "delay": 600000,
+    "periodic": false
+   },
+   "outcome": "rejected"
+  },
+  {
+   "api": "stop",
+   "args": "com.transistorsoft.fetchlab.task",
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  },
+  {
+   "api": "finish",
+   "args": "react-native-background-fetch",
+   "returns": {
+    "$": {
+     "type": "null|undefined"
+    }
+   }
+  },
+  {
+   "api": "stop",
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-14 12:38:28"
+}

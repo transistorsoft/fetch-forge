@@ -1,0 +1,241 @@
+{
+ "label": "flutter.ios-registration.FIX.none",
+ "platform": "flutter",
+ "os": "ios",
+ "package": "com.transistorsoft.fetchlab.flutter",
+ "scenario": "ios-registration",
+ "variant": "FIX",
+ "step": "none",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
+ "evicted": null,
+ "foreignTransistorApps": null,
+ "native": "4.1.1-master-399765c",
+ "native_source": {
+  "branch": "",
+  "commit": "399765cc89f03ccaec19464ea87f47c3f3d66f4d",
+  "dirty": "no",
+  "marketing": "4.2.1",
+  "build": "4201"
+ },
+ "channel": null,
+ "native_resolved": "4201",
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "flutter/background_fetch",
+  "commit": "11d53b8dd8194cd0c8335415976599d3dc8272cd",
+  "dirty": "no"
+ },
+ "device": {
+  "model": "Lab1",
+  "os": "iOS 27.2"
+ },
+ "activity": "",
+ "process": null,
+ "settle": 8,
+ "after": 5,
+ "end": {
+  "policy": "window",
+  "ended": "window"
+ },
+ "timings": {
+  "step_s": 14.7,
+  "t0": 1794677833.667,
+  "phases": {
+   "terminated": 0.09,
+   "swept": 0.26,
+   "neutral_pre": 0.26,
+   "permissions": 0.26,
+   "sleep_end": 0.26,
+   "log_begun": 0.561,
+   "launch_mark": 0.664,
+   "verdict_cleared": 0.664,
+   "launch": 0.771,
+   "settle_end": 8.777,
+   "trigger": 8.912,
+   "end": 14.319,
+   "capture_mark": 14.444,
+   "pusher_joined": 14.445,
+   "log_ended": 14.677,
+   "log_written": 14.677,
+   "capture_extras": 14.677,
+   "db_pulled": 14.677,
+   "run_json": 14.731,
+   "judged": 14.756,
+   "verdict_pushed": 14.756,
+   "settled": 15.265,
+   "neutral_post": 15.265,
+   "terminated_post": 15.401
+  },
+  "calls": {
+   "_alive": {
+    "n": 1,
+    "s": 0.227,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "_run": {
+    "n": 9,
+    "s": 1.412,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "_tap_text": {
+    "n": 15,
+    "s": 0.004,
+    "bg_n": 13,
+    "bg_s": 0.004
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.301,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "close": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "container": {
+    "n": 5,
+    "s": 0.0,
+    "bg_n": 2,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.17,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.232,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.107,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 3,
+    "s": 0.363,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "native_resolved": {
+    "n": 1,
+    "s": 0.006,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 13,
+    "s": 0.014,
+    "bg_n": 13,
+    "bg_s": 0.014
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 4,
+    "s": 0.002,
+    "bg_n": 2,
+    "bg_s": 0.001
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.405,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 2,
+    "s": 0.226,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": null,
+  "clock_offset_rtt_s": null,
+  "log_phases": {
+   "boot": 2.443
+  }
+ },
+ "measure_from": "launch",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": false,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": null,
+ "host": null,
+ "network": null,
+ "privacy": null,
+ "location_accuracy": null,
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [],
+ "hooks": [
+  {
+   "api": "status",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-14 12:37:28"
+}

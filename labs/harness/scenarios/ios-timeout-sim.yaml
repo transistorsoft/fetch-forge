@@ -11,16 +11,15 @@ description: >
   NewData here, setTaskCompletedWithSuccess:YES on a device's BGTask), so a timed-out fetch is reported as one with
   new data (the spike's `.failed` gave SpringBoard `Error`).  Pinned here as what the SDK does today, not as right:
   WO-002 suspected defect 11.
-platforms: [react-native, capacitor]
+platforms: [react-native, capacitor, flutter]
 not_applicable:
   android: "2026-11-10 — `fire:` and `background:` are the Simulator's; Android's SDK timeout is events-timeout-sdk's."
-  flutter: "2026-11-13 — the Flutter host is Android-only until its iOS slice (WO-002: Flutter Android, then iOS on
-    CocoaPods and SwiftPM); un-excuse it with the iOS host."
 measure_from: launch
 # (WO-002, Capacitor iOS) Each bridge delivers its own fetch taskId: `returns` takes either, driverTally pins each.
 platform_expect:
   react-native: {driverTally: "fetch:react-native-background-fetch=1,timeout:react-native-background-fetch=1"}
   capacitor: {driverTally: "fetch:capacitor-background-fetch=1,timeout:capacitor-background-fetch=1"}
+  flutter: {driverTally: "fetch:flutter_background_fetch=1,timeout:flutter_background_fetch=1"}
 steps:
   - name: run
     settle: 10
@@ -35,10 +34,13 @@ steps:
         min: 1
         max: 1
         errors: true
-        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch]}}
+        returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
+                                         flutter_background_fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 2, background: true}
-      - {after: {api: "status#0"}, delay_s: 7, fire: fetch}
+      # (WO-002, 2026-11-14) 8 s after the background action (was 5 s): bgSilenceMs is about that gap minus the
+      # time the Simulator takes to suspend the app, which MEASURED 0.4-3.0 s across the bridges (Flutter 0.5-3.0).
+      - {after: {api: "status#0"}, delay_s: 10, fire: fetch}
     expect:
       crashes: 0
       fetchReceived: 1
@@ -49,6 +51,8 @@ steps:
       legacyTimeoutAfterMs: "<28000"
       # (WO-002, Capacitor iOS) The app really slept before the push: the driver's beat fell silent for seconds.  A
       # driver kept awake reads ~1000 (the Capacitor driver's native polling did, until it paused while hidden).
+      # (2026-11-14) With the push at 5 s a sound Flutter run read 2047 (suspended 3.0 s after the action); at 8 s
+      # the bound keeps its meaning with seconds to spare.
       bgSilenceMs: ">=2000"
       legacyResults: "newData=1"
       springboardResults: "RetrievedNewData=1"

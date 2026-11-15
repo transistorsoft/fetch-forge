@@ -1,0 +1,12 @@
+   crashes                          0                      expected 0            ok
+   sdkLaunchCalls                   delegate=2             expected delegate=2   ok
+   bgRegistrations                  com.transistorsoft.fetch:launching=2,com.transistorsoft.fetchlab.task:launching=2 expected com.transistorsoft.fetch:launching=2,com.transistorsoft.fetchlab.task:launching=2 ok
+   fetchReceived                    1                      expected 1            ok
+   legacyFetchStates                background=1           expected background=1 ok
+   legacyResults                    newData=1              expected newData=1    ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => PASS
