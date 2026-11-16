@@ -1,7 +1,7 @@
 ---
 id: WO-012
 title: On Flutter Android, when an app restarts itself the old Activity detaches after the new one has attached, and that detach makes TSBackgroundFetch headless with the new screen up and removes the new engine's fetch event channel
-status: in-progress
+status: done
 created: 2026-11-16
 platforms: [android]
 submodules: [flutter/background_fetch]
@@ -452,3 +452,4 @@ Two changes, both in `flutter/background_fetch/android/`. There is no Dart, iOS 
     - **Refuted (4),** among them: that the CHANGELOG must list every customer-visible change the Scope check records, and that the shared plugin stamp makes the probe builds indistinguishable.
     - All of these came after the sweeps; the Java edits are comments only.
 - 2026-11-16 — **Committed** (Chris: "Commit both"): plugin `4cf0ae2` on `fix/WO-012-flutter-android-restart-ordering` (from `9ccc569`), and fetch-forge's branch of the same name (this Log, the lab text, the captures). Not merged; the `flutter/background_fetch` pointer moves when the plugin branch is merged, and the order is `done` then. It ships in 2.0.0 with WO-011 unless a 1.x branch carries it (D3).
+- 2026-11-16 — **Merged and done.** Plugin `master` `5a01d8d` (the `--no-ff` merge of `4cf0ae2`), pushed to GitHub (Chris: "Merge, push plugin, bump"; `9ccc569..5a01d8d`); fetch-forge `master` `6a76af4`, and the `flutter/background_fetch` pointer moved to `5a01d8d` in the commit that marks this order `done`. Every Verification box is ticked. Not released: the CHANGELOG line waits under `## Unreleased`, for 2.0.0 with WO-011 (D3). WO-002's own step for change 2 (D4 a) stays WO-002's to build.
