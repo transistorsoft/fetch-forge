@@ -30,9 +30,9 @@ description: >
   (WO-002, 2026-11-15) On Cordova too the PLUGIN forwards the fetch, through its category on CDVAppDelegate
   (CDVBackgroundFetch.m), and the host's AppDelegate override only wraps it: its `super` IS that category's method
   (AppDelegate : CDVAppDelegate), logged `point=legacyFetchForward category=…`; build.sh proves the category is in the
-  app.  MEASURED in all three states (sweeps 20261115-220040 FIX, -220507 FIX-SPM).  Its finish reply crosses
+  app.  MEASURED in all three states (sweeps 20261115-223641 FIX, -224122 FIX-SPM).  Its finish reply crosses
   Capacitor's WKWebView race: the plugin finishes the SDK (which completes UIKit's handler) before it replies, so the
-  driver's `app=finish … outcome=ok` came 73-76 ms after the SDK's finish, as SpringBoard recorded the result.  So
+  driver's `app=finish … outcome=ok` came 64-69 ms after the SDK's finish, as SpringBoard recorded the result.  So
   `background` does not pin driverFinishes for Cordova, as for Capacitor (Chris's decision, 2026-11-13); `cold` stays
   pinned, as Capacitor's.
 platforms: [react-native, capacitor, flutter, cordova]

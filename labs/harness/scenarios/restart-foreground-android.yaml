@@ -32,7 +32,7 @@ description: >
   jobsCancelled reads 999 there (platform_expect).
 
   (WO-002, 2026-11-13) Flutter is listed, PREDICTED RED on both steps from source, then MEASURED red (sweep
-  20261113-175923, Lab2).  Each FlutterActivity owns its engine and its plugin instance; the old one's
+  20261113-175923, then 20261113-183048, whose captures are the committed ones; Lab2; WO-012).  Each FlutterActivity owns its engine and its plugin instance; the old one's
   onDetachedFromActivity (BackgroundFetchPlugin.java:47-50) calls setActivity(null, null), which sets headless true and
   clears the process-wide event channel (BackgroundFetchModule.java:108-114) with no check of which Activity is
   current: on a restart it runs AFTER the new Activity attached — WO-007's regression, in the shipped plugin.  The old
@@ -43,11 +43,11 @@ description: >
   boot 2: jobsCancelled 999, as Capacitor's (platform_expect).  A finding for its own work order, never relaxed here.
 
   (WO-002, 2026-11-15) Cordova is listed, PREDICTED RED on both steps from source, then MEASURED red (sweep
-  20261115-183522, Lab2).  CDVBackgroundFetch.onDestroy goes headless for any destroy that is not a recreation
+  20261115-183522, then 20261115-215127, whose captures are the committed ones; Lab2; WO-010).  CDVBackgroundFetch.onDestroy goes headless for any destroy that is not a recreation
   (CDVBackgroundFetch.java:160-170) — WO-007's first approved condition, the one the probe measured red — with no check
   of which Activity is current.  That is the one cause: the new Activity resumed and its plugin instance was created
-  (on the page's first exec()) BEFORE the old Activity's destroy set the flag (MEASURED, e.g. 58.242 / 58.285 / 58.734
-  in `run`), so no onResume could have cleared it; the lazy creation matters only to a fix, which needs some record of
+  (on the page's first exec()) BEFORE the old Activity's destroy set the flag (MEASURED in the committed `run`: resumed
+  36.324, pluginInitialize 36.351, the old Activity's onDestroy 36.800), so no onResume could have cleared it; the lazy creation matters only to a fix, which needs some record of
   the current Activity.  The old Activity's
   `point=onDestroy:afterSuper` reads headless=true with the new one current, its resumed+2s still does, and `run`
   reads the regression exactly (stoppingOnTerminate 1, driverEvents `-`, jobIds `-`); `stop-on-terminate-false`

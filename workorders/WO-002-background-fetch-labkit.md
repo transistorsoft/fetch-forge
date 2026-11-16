@@ -1312,3 +1312,39 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - The Cordova JS surface, on iOS too: start, stop, status and scheduleTask return nothing; stop(taskId) throws on iOS and cancels every task on Android; start's native half is asynchronous and unordered against a later stop.
     - api-smoke-ios: an ordered reading of stop(taskId)'s own cancel, between stop#5 and stop#7, on every bridge.
     - The 26 WO-004 captures: re-sweep or retire.
+- 2026-11-16 — **Work orders WO-009 to WO-013 drafted for the board's findings: every FAIL capture now names one.** Branch `docs/workorders-bridge-findings`, from `master` `0c596d2`. Chris: "proceed next task" (the bridge order done, the next unticked box: "each failure linked to a work order"). All five are `draft`; no code until Chris approves each.
+  - **The red captures and their work orders** (18 FAIL captures, each claimed by exactly one):
+
+    | Work order | Bridge, OS | Red captures |
+    |---|---|---|
+    | WO-009, Cordova's callback-style API | Cordova, both | `cordova/api-smoke/FIX/run`; `cordova-ios/api-smoke-ios/{FIX,FIX-SPM}/run`; `cordova-ios/ios-stop-start/{FIX,FIX-SPM}/{stopped,restarted}` |
+    | WO-010, Cordova Android restart ordering | Cordova, Android | `cordova/restart-foreground-android/FIX/{run,stop-on-terminate-false}` |
+    | WO-011, Flutter's `stop()` is `Future<int>` | Flutter, both | `flutter/api-smoke/FIX/run`; `flutter-ios/api-smoke-ios/{FIX,FIX-SPM}/run`; `flutter-ios/ios-stop-start/{FIX,FIX-SPM}/{stopped,restarted}` |
+    | WO-012, Flutter Android restart ordering | Flutter, Android | `flutter/restart-foreground-android/FIX/{run,stop-on-terminate-false}` |
+    | WO-013, `stop()` with no argument on React Native and Capacitor Android | React Native, Capacitor, Android | none: unmeasured; it describes the scenario that would measure it, for WO-002 to build |
+
+    The other 26 not-PASS captures are React Native's WO-004 captures, `spec-changed-since-capture` and no failed measurement (2026-11-15 entry).
+  - **The open items** of the earlier entries:
+    - Flutter Android (`:1221-1223`): WO-011, WO-012, WO-013. The bg-forge stamp item (`:1224`) stays open: run.py is vendored, so it is a bg-forge work order.
+    - Cordova Android (`:1271`): WO-009, except its two configure points (the error that reaches the page through onTimeout, and the rejection with a bare number), which WO-009 puts out of scope (the onTimeout path SUSPECTED; the bare-number rejection PROVEN in source, `index.ts:63-69`). They stay open here: first a WO-002 lab step that feeds configure a bad option, then their own work order. `:1272`: WO-010. `:1273`: done (the Cordova iOS entry). The cordova CLI stamp gap (`:1274`) stays open.
+    - Cordova iOS (`:1312`): WO-009, except the order of an un-awaited `start()` then `stop()`, which WO-009 records as out of scope: unordered on every iOS bridge (MEASURED on Cordova only), and ordered by awaiting once start returns a Promise. The ordered `stop(taskId)` reading (`:1313`) and the 26 WO-004 captures (`:1314`) stay WO-002's.
+    - Capacitor iOS (`:1179-1181`): the `await finish()` docs note, the INFERRED `deinit` removeListener and the device-only WebKit cutoff stay open.
+  - **How they were drafted:** one drafter per work order, re-reading the captures and the source at the measured commits (cordova `368eb85`, flutter `11d53b8`, react-native `8d9ab19`, capacitor `3fa169a`, types `dc4f5b8`, native `399765c`), then three review lenses each (citations; evidence and labels; the fix and its guard rails), three skeptics per finding, kept on two of three. 130 findings, 111 upheld and applied. Then a cross-check of the five together against the board and these open lists (12 consistency findings, applied, none declined), and two re-checks, whose remaining findings were all in this entry and the scenario comments, corrected below.
+  - **Beyond this Log** (each PROVEN or MEASURED in its work order):
+    - WO-009: Android's `execute()` returns false for scheduleTask (`CDVBackgroundFetch.java:47-49`), so cordova-android also answers "Invalid action" (`cordova/api-smoke/FIX/run/logcat.txt:370`). Both native halves reply to start only after the native start (PROVEN: `CDVBackgroundFetch.java:74-79`, `CDVBackgroundFetch.m:77-91`), so a Promise the caller awaits would order it (INFERRED: WO-009's proposed fix).
+    - WO-010: the new Activity resumed (36.324) and the page created the plugin (36.351) before the old Activity's onDestroy (36.800) set headless, in the committed `run`.
+    - WO-013: the split is Android-only. On iOS React Native and Capacitor remove the listener and pass nil (`RNBackgroundFetch.mm:92-95`, `BackgroundFetchPlugin.swift:91-94`; MEASURED `[TSBackgroundFetch stop] (null)` in both bridges' api-smoke-ios captures).
+  - **Corrections to earlier entries** (found by the drafters and the cross-check, checked against the committed captures):
+    - **Captures the Cordova iOS slice replaced (`82d306e`).** Its re-sweeps were committed over earlier captures, so where an entry calls a sweep "the committed captures" for these, git now holds:
+
+      | Host | Scenarios | Sweeps now in git |
+      |---|---|---|
+      | Cordova (Android) | all 13 | `20261115-215127` (the Cordova Android entry, `:1260`, names `-190943`, committed in `1796d96`) |
+      | React Native, Capacitor, Flutter (iOS) | ios-registration, ios-stop-start | `20261115-195448` FIX, `-200600` FIX-SPM |
+      | React Native, Capacitor, Flutter (iOS) | ios-fetch-sim, ios-timeout-sim, ios-task-sim | `20261115-213730` FIX, `-214427` FIX-SPM |
+
+      Their api-constants and api-smoke-ios captures are unchanged (Capacitor iOS: api-constants `:1178`, api-smoke-ios `:1194`; Flutter iOS `:1238`), as are React Native's WO-004 variants.
+    - **Cordova iOS (2026-11-15, `:1303`):** bgSubmits `appRefresh=2` and sdkSubscribers are a race, not a constant red. The committed FIX capture (`-223641`) reads both ok (`[TSBackgroundFetch start]` 40.344, `stop` 40.345); the committed FIX-SPM (`-224122`) reads both red (stop 13.427, start 13.428). The `.647`/`.648` quoted there are in no committed capture or sweep record: that they are `-220040`'s is INFERRED from the scenario's own citation, and `-212810` (also FIX, also `appRefresh=2`) is the other candidate (WO-009, which lists every sweep's reading). Both captures still FAIL on apiAssertions.
+    - **Cordova iOS (2026-11-15, `:1307`):** in the committed `background` captures the driver's `app=finish … outcome=ok` came 69 ms (FIX) and 64 ms (FIX-SPM) after the SDK's finish, not 73-76 ms.
+    - **Scenario comments:** api-smoke-ios.yaml, ios-stop-start.yaml, ios-fetch-sim.yaml and ios-registration.yaml cited the pre-review Cordova iOS sweeps `-220040`/`-220507`; they now cite `-223641`/`-224122`. api-smoke-ios.yaml describes the race with the committed times, and ios-fetch-sim.yaml the committed 64-69 ms. restart-foreground-android.yaml's Cordova paragraph cited only the first sweep `-183522` and its times, which no committed capture holds; it now adds `-215127`, whose captures are committed, and its times. Its Flutter paragraph adds `20261113-183048`, likewise. Comments only: all 208 captures re-score as before (164 PASS, 44 not).
+    - **Flutter Android (2026-11-13, `:1223`):** the no-argument `stop()` divergence is Android-only (WO-013).

@@ -40,18 +40,19 @@ description: >
       unpinned here (a WO-002 open item: an ordered reading between stop#5 and stop#7).
     * MEASURED 2026-11-11 on Lab1 (iPhone 17 Pro Simulator, iOS 27.2; native 4.1.1-master-5de5242, plugin 85a6bf4).
 
-  (WO-002, 2026-11-15) Cordova (SwiftPM, cordova-ios 8.1.1; sweeps 20261115-220040 FIX, -220507 FIX-SPM): red, the
+  (WO-002, 2026-11-15) Cordova (SwiftPM, cordova-ios 8.1.1; sweeps 20261115-223641 FIX, -224122 FIX-SPM): red, the
   callback-style finding api-smoke reads on Android (Chris's decision: findings).  status#2 and start#3 read undefined,
   scheduleTask#4 resolves (nothing to reject: it returns nothing), stop#7 reads undefined, and stop#5 THROWS: stop(taskId)
   hands the id to cordova.js as the success callback, and iOSExec refuses a string as exec's first argument, so nothing
   reaches native (on Android the same call cancels every task); bgCancels and sdkTasks read the task gone all the
   same, from stop#7's stop-everything.  registerHeadlessTask is absent (absent_on).  Two
-  metrics read red with them, and they are the same finding: bgSubmits `appRefresh=2` and sdkSubscribers
-  `cordova-background-fetch`.  The plugin's start does its work in the SDK's asynchronous status callback
-  (CDVBackgroundFetch.m start:), and the callback-style start gives a caller nothing to wait on, so the hooks run on
-  and start's native half lands AFTER stop#7's: `[TSBackgroundFetch stop]` at .647, `[TSBackgroundFetch start]` with a
-  second submit at .648 (MEASURED, FIX).  A customer who calls start() then stop() without chaining the callbacks gets
-  the same order.
+  more metrics can read red with them, and they are the same finding, a race: bgSubmits `appRefresh=2` and
+  sdkSubscribers `cordova-background-fetch`.  The plugin's start does its work in the SDK's asynchronous status
+  callback (CDVBackgroundFetch.m start:), and the callback-style start gives a caller nothing to wait on, so the hooks
+  run on and start's native half can land AFTER stop#7's: in FIX-SPM `[TSBackgroundFetch stop]` at 13.427,
+  `[TSBackgroundFetch start]` with a second submit at 13.428, both rows red; in FIX start at 40.344 and stop at 40.345,
+  both rows ok (MEASURED, the committed captures).  A customer who calls start() then stop() without chaining the
+  callbacks gets either order (WO-009).
 platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-11 — api-smoke is Android's: its scheduleTask resolves, and it reads JobScheduler's jobs."
