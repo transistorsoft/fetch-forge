@@ -31,17 +31,26 @@ description: >
   Capacitor's page reloads and configures again on boot 2 (the reschedule recreate-foreground-android pins), so
   jobsCancelled reads 999 there (platform_expect).
 
-  (WO-002, 2026-11-13) Flutter is listed, PREDICTED RED on both steps from source, then MEASURED red (sweep
-  20261113-175923, then 20261113-183048, whose captures are the committed ones; Lab2; WO-012).  Each FlutterActivity
-  owns its engine and its plugin instance; the old one's
-  onDetachedFromActivity (BackgroundFetchPlugin.java:47-50) calls setActivity(null, null), which sets headless true and
-  clears the process-wide event channel (BackgroundFetchModule.java:108-114) with no check of which Activity is
-  current: on a restart it runs AFTER the new Activity attached — WO-007's regression, in the shipped plugin.  The old
-  Activity's `point=onDestroy:afterSuper` reads headless=true with the new one current, and the new one's resumed+2s
-  still does.  `run` reads the regression exactly (stoppingOnTerminate 1, driverEvents `-`, jobIds `-`, headless
-  true); in `stop-on-terminate-false` the fetch goes to a headless FlutterEngine started in the same process beside
-  the live UI (`point=headless`, its task-probe `current=` the new Activity).  The new engine configures again on
-  boot 2: jobsCancelled 999, as Capacitor's (platform_expect).  A finding for its own work order, never relaxed here.
+  (WO-002, 2026-11-13) Flutter is listed, PREDICTED RED on both steps from source, then MEASURED red (sweeps
+  20261113-175923 and -183048, Lab2, captures at 6b8fcbc; red again in WO-011's 20261116-135555, at 62a813a; WO-012).
+  Each FlutterActivity owns its engine and its plugin instance; the old one's onDetachedFromActivity
+  (BackgroundFetchPlugin.java:47-50 and BackgroundFetchModule.java:108-114, both at 11d53b8) called
+  setActivity(null, null), which set headless true and cleared the process-wide event channel with no check of which
+  Activity is current: on a restart it ran AFTER the new Activity attached — WO-007's regression, in the shipped
+  plugin.  The old Activity's `point=onDestroy:afterSuper` read headless=true with the new one current, and the new
+  one's resumed+2s still did.  `run` read the regression exactly (stoppingOnTerminate 1, driverEvents `-`, jobIds `-`,
+  headless true); in `stop-on-terminate-false` the fetch went to a headless FlutterEngine started in the same process
+  beside the live UI (`point=headless`, its task-probe `current=` the new Activity).  The new engine configures again
+  on boot 2: jobsCancelled 999, as Capacitor's (platform_expect).  A finding for its own work order, never relaxed here.
+
+  (WO-012, 2026-11-16) Fixed: the module records the plugin instances attached to an Activity, and a real detach goes
+  headless only when no other is attached; each engine keeps its own event channel.  Green on both steps: sweep
+  20261116-145336 (Lab2) and `labkit run` on Lab1 and Lab2 (the committed captures are Lab2's run): the old Activity's
+  detach logs "An Activity detached while another is attached: not headless", and its `onDestroy:afterSuper` reads
+  headless=false.  The event-channel half, which these steps cannot show (the new isolate configures 24-36 ms before
+  the old destroy in the committed captures), was MEASURED with this scenario on a temporarily patched driver (boot 2's
+  configure() held 1.5 s; `labkit run`, Lab2; captures not committed): the flag rule alone lost the fetch to the
+  destroyed engine (FlutterJNI "detached ... Could not send"), and the fix delivered it (WO-012 Log).
 
   (WO-002, 2026-11-15) Cordova is listed, PREDICTED RED on both steps from source, then MEASURED red (sweeps
   20261115-183522, -190943 and -215127, Lab2; WO-010).  CDVBackgroundFetch.onDestroy went headless for any destroy that
