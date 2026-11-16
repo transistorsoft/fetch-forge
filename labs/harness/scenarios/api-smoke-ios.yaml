@@ -30,16 +30,31 @@ description: >
       processing request; start() adds none (the SDK's fetchScheduled guard, TSBackgroundFetch.m:104).  Android's
       jobsRegistered is the counterpart; like it, this shows the SDK asked, not that the OS took the request.
     * taskSubmitErrors `BGTaskSchedulerErrorDomain:1=1`: scheduleTask's rejection is the Simulator's Unavailable.
-    * bgCancels `com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1`: stop(taskId) cancelled the task's
-      request and stop() the fetch's (BGTaskScheduler's own `cancelTaskRequestWithIdentifier:` lines).
-    * sdkTasks `-` and sdkSubscribers `-`: at the step's end the SDK lists no task (stop(taskId) destroyed it) and no
-      fetch listener (stop() removed the plugin's).  Android's jobIds `-` is the counterpart.
+    * bgCancels `com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1`: the task's request and the fetch's
+      were cancelled (BGTaskScheduler's own `cancelTaskRequestWithIdentifier:` lines).
+    * sdkTasks `-` and sdkSubscribers `-`: at the step's end the SDK lists no task and no fetch listener.  Android's
+      jobIds `-` is the counterpart.
+    * (2026-11-15, the review) Neither row says WHICH stop did it: both are tallies at the step's end, and the SDK's
+      stop() with no taskId also cancels and destroys every task (TSBackgroundFetch.m stop:).  On Cordova stop#5
+      reaches nothing native and both rows still read the task gone, from stop#7 alone.  stop(taskId)'s own effect is
+      unpinned here (a WO-002 open item: an ordered reading between stop#5 and stop#7).
     * MEASURED 2026-11-11 on Lab1 (iPhone 17 Pro Simulator, iOS 27.2; native 4.1.1-master-5de5242, plugin 85a6bf4).
-platforms: [react-native, capacitor, flutter]
+
+  (WO-002, 2026-11-15) Cordova (SwiftPM, cordova-ios 8.1.1; sweeps 20261115-220040 FIX, -220507 FIX-SPM): red, the
+  callback-style finding api-smoke reads on Android (Chris's decision: findings).  status#2 and start#3 read undefined,
+  scheduleTask#4 resolves (nothing to reject: it returns nothing), stop#7 reads undefined, and stop#5 THROWS: stop(taskId)
+  hands the id to cordova.js as the success callback, and iOSExec refuses a string as exec's first argument, so nothing
+  reaches native (on Android the same call cancels every task); bgCancels and sdkTasks read the task gone all the
+  same, from stop#7's stop-everything.  registerHeadlessTask is absent (absent_on).  Two
+  metrics read red with them, and they are the same finding: bgSubmits `appRefresh=2` and sdkSubscribers
+  `cordova-background-fetch`.  The plugin's start does its work in the SDK's asynchronous status callback
+  (CDVBackgroundFetch.m start:), and the callback-style start gives a caller nothing to wait on, so the hooks run on
+  and start's native half lands AFTER stop#7's: `[TSBackgroundFetch stop]` at .647, `[TSBackgroundFetch start]` with a
+  second submit at .648 (MEASURED, FIX).  A customer who calls start() then stop() without chaining the callbacks gets
+  the same order.
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-11 — api-smoke is Android's: its scheduleTask resolves, and it reads JobScheduler's jobs."
-  cordova: "2026-11-15 — the Cordova host is Android-only until its iOS slice (WO-002: Cordova Android, then
-    iOS); un-excuse it with the iOS host."
 measure_from: launch
 settle: 10
 after: 30
@@ -52,6 +67,8 @@ hooks:
     returns: {$: {type: function}}
     absent_on:
       capacitor: "2026-11-13 — iOS has no headless mode, and src/index.ts's BackgroundFetch declares no
+        registerHeadlessTask (as api-smoke.yaml, WO-002)."
+      cordova: "2026-11-15 — iOS has no headless mode, and src/typescript/index.ts declares no
         registerHeadlessTask (as api-smoke.yaml, WO-002)."
   - api: status
     returns: {$: {type: number, in: [0, 1, 2]}}

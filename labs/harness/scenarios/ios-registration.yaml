@@ -57,20 +57,27 @@ description: >
   — CHANGELOG 0.5.1 has customers remove theirs — so on Flutter `none` is the documented setup and `delegate` the lab's
   default, as React Native's docs have it.  Every step reads as on the other bridges (sweeps 20261114-114801 pods,
   20261114-115249 SwiftPM).
-platforms: [react-native, capacitor, flutter]
+
+  (WO-002, 2026-11-15) On Cordova (SwiftPM) the plugin makes its call from pluginInitialize (CDVBackgroundFetch.m).  On
+  iOS it is onload (its plugin.xml ios feature), so CDVViewController's viewDidLoad initializes it when the scene
+  connects: just before LabPlugin's `point=pluginLoad`, ~50 ms after `sceneWillConnect` and ~40 ms before BGTaskScheduler's
+  `Handling app launch` (MEASURED, every ios-registration process).  So, as on Capacitor and Flutter, `none` reads
+  `finished` without isolating +load, and `scene` is a call before the plugin's.  The plugin's install docs ask for no
+  AppDelegate call.  Every step reads as on the other bridges (sweeps 20261115-220040 FIX, -220507 FIX-SPM).
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-11 — BGTaskScheduler's launch-handler registration is iOS's; Android schedules JobScheduler jobs at
     configure() and scheduleTask() (api-smoke, events-task-android)."
-  cordova: "2026-11-15 — the Cordova host is Android-only until its iOS slice (WO-002: Cordova Android, then
-    iOS); un-excuse it with the iOS host."
 measure_from: launch
 steps:
   - name: delegate
     settle: 8
     after: 5
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     expect:
       crashes: 0
       sdkLaunchCalls: "delegate=1"
@@ -80,8 +87,10 @@ steps:
     after: 5
     extras: {sdkLaunchCall: scene}
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     expect:
       crashes: 0
       sdkLaunchCalls: "scene=1"
@@ -91,8 +100,10 @@ steps:
     after: 5
     extras: {sdkLaunchCall: none}
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     expect:
       crashes: 0
       sdkLaunchCalls: "-"
@@ -101,8 +112,10 @@ steps:
     settle: 10
     after: 20
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     actions:
       - {after: {api: "status#0"}, delay_s: 2, terminate: true}
       - {after: {api: "status#0"}, delay_s: 5, fire: fetch}

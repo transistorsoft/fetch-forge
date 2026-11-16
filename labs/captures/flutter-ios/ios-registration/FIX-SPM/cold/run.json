@@ -6,7 +6,7 @@
  "scenario": "ios-registration",
  "variant": "FIX-SPM",
  "step": "cold",
- "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
+ "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
  "evicted": null,
  "foreignTransistorApps": null,
  "native": "4.1.1-master-399765c",
@@ -26,7 +26,7 @@
   "dirty": "no"
  },
  "device": {
-  "model": "Lab1",
+  "model": "Lab2",
   "os": "iOS 27.2"
  },
  "activity": "",
@@ -38,47 +38,47 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 31.8,
-  "t0": 1794678128.378,
+  "step_s": 32.0,
+  "t0": 1794791713.273,
   "phases": {
-   "terminated": 0.092,
-   "swept": 0.263,
-   "neutral_pre": 0.263,
-   "permissions": 0.263,
-   "sleep_end": 0.263,
-   "log_begun": 0.57,
-   "launch_mark": 0.682,
-   "verdict_cleared": 0.682,
-   "launch": 0.788,
-   "settle_end": 10.791,
-   "trigger": 10.92,
-   "end": 31.38,
-   "runner_joined": 31.38,
-   "capture_mark": 31.51,
-   "pusher_joined": 31.51,
-   "log_ended": 31.745,
-   "log_written": 31.745,
-   "capture_extras": 31.745,
-   "db_pulled": 31.745,
-   "run_json": 31.799,
-   "judged": 31.843,
-   "verdict_pushed": 31.843,
-   "settled": 32.353,
-   "neutral_post": 32.353,
-   "terminated_post": 32.486
+   "terminated": 0.098,
+   "swept": 0.282,
+   "neutral_pre": 0.282,
+   "permissions": 0.282,
+   "sleep_end": 0.282,
+   "log_begun": 0.687,
+   "launch_mark": 0.821,
+   "verdict_cleared": 0.821,
+   "launch": 0.945,
+   "settle_end": 10.952,
+   "trigger": 11.088,
+   "end": 31.559,
+   "runner_joined": 31.559,
+   "capture_mark": 31.702,
+   "pusher_joined": 31.703,
+   "log_ended": 31.943,
+   "log_written": 31.943,
+   "capture_extras": 31.943,
+   "db_pulled": 31.943,
+   "run_json": 32.003,
+   "judged": 32.047,
+   "verdict_pushed": 32.047,
+   "settled": 32.553,
+   "neutral_post": 32.553,
+   "terminated_post": 32.686
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.229,
+    "s": 0.235,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 12,
-    "s": 1.806,
+    "s": 1.879,
     "bg_n": 3,
-    "bg_s": 0.335
+    "bg_s": 0.327
    },
    "_tap_text": {
     "n": 59,
@@ -88,7 +88,7 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.308,
+    "s": 0.404,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.171,
+    "s": 0.185,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.234,
+    "s": 0.24,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,19 +124,19 @@
    },
    "launch": {
     "n": 1,
-    "s": 0.106,
+    "s": 0.123,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.574,
+    "s": 0.627,
     "bg_n": 2,
-    "bg_s": 0.204
+    "bg_s": 0.213
    },
    "native_resolved": {
     "n": 1,
-    "s": 0.005,
+    "s": 0.007,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -148,9 +148,9 @@
    },
    "peek": {
     "n": 57,
-    "s": 0.071,
+    "s": 0.066,
     "bg_n": 57,
-    "bg_s": 0.071
+    "bg_s": 0.066
    },
    "permissions": {
     "n": 1,
@@ -160,15 +160,15 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.138,
+    "s": 0.137,
     "bg_n": 1,
-    "bg_s": 0.138
+    "bg_s": 0.137
    },
    "push_verdict": {
     "n": 4,
     "s": 0.002,
     "bg_n": 2,
-    "bg_s": 0.002
+    "bg_s": 0.001
    },
    "sdk_db": {
     "n": 1,
@@ -178,22 +178,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.456,
+    "s": 0.46,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.356,
+    "s": 0.343,
     "bg_n": 1,
-    "bg_s": 0.131
+    "bg_s": 0.113
    }
   },
   "dialogs": [],
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 2.437
+   "boot": 2.645
   }
  },
  "measure_from": "launch",
@@ -234,12 +234,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.794,
-   "action1": 1.794
+   "action0": 1.801,
+   "action1": 1.801
   },
   "sent_s": {
-   "action0": 3.859,
-   "action1": 6.932
+   "action0": 3.865,
+   "action1": 6.92
   }
  },
  "network": null,
@@ -262,18 +262,9 @@
  "hooks": [
   {
    "api": "status",
-   "returns": {
-    "$": {
-     "type": "number",
-     "in": [
-      0,
-      1,
-      2
-     ]
-    }
-   }
+   "outcome": "resolved"
   }
  ],
  "year": 2026,
- "when": "2026-11-14 12:42:40"
+ "when": "2026-11-15 20:15:45"
 }

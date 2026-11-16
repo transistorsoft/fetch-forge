@@ -8,7 +8,7 @@
  "step": "run",
  "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
  "evicted": [
-  "com.transistorsoft.fetchlab.capacitor"
+  "com.transistorsoft.fetchlab.flutter"
  ],
  "foreignTransistorApps": [],
  "native": "4.1.1-master-399765c",
@@ -41,58 +41,58 @@
  },
  "timings": {
   "step_s": 63.0,
-  "t0": 1794678437.936,
+  "t0": 1794797090.077,
   "phases": {
-   "terminated": 0.103,
-   "others_stopped": 0.512,
-   "reset": 1.129,
-   "swept": 1.374,
-   "neutral_pre": 1.374,
-   "permissions": 1.374,
-   "sleep_end": 1.374,
-   "log_begun": 1.809,
-   "launch_mark": 1.919,
-   "verdict_cleared": 2.02,
-   "launch": 2.152,
-   "settle_end": 12.163,
-   "trigger": 12.268,
-   "end": 62.635,
-   "runner_joined": 62.635,
-   "capture_mark": 62.746,
-   "pusher_joined": 62.746,
-   "log_ended": 62.972,
-   "log_written": 62.973,
-   "capture_extras": 62.973,
-   "db_pulled": 62.973,
-   "run_json": 63.017,
-   "judged": 63.077,
-   "verdict_pushed": 63.077,
-   "settled": 63.587,
-   "neutral_post": 63.587,
-   "terminated_post": 63.713
+   "terminated": 0.098,
+   "others_stopped": 0.497,
+   "reset": 1.128,
+   "swept": 1.36,
+   "neutral_pre": 1.36,
+   "permissions": 1.36,
+   "sleep_end": 1.36,
+   "log_begun": 1.676,
+   "launch_mark": 1.793,
+   "verdict_cleared": 1.912,
+   "launch": 2.025,
+   "settle_end": 12.027,
+   "trigger": 12.143,
+   "end": 62.562,
+   "runner_joined": 62.562,
+   "capture_mark": 62.672,
+   "pusher_joined": 62.673,
+   "log_ended": 62.901,
+   "log_written": 62.902,
+   "capture_extras": 62.902,
+   "db_pulled": 62.902,
+   "run_json": 62.951,
+   "judged": 63.026,
+   "verdict_pushed": 63.026,
+   "settled": 63.535,
+   "neutral_post": 63.535,
+   "terminated_post": 63.665
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.221,
+    "s": 0.223,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 18,
-    "s": 2.735,
+    "s": 2.777,
     "bg_n": 2,
-    "bg_s": 0.247
+    "bg_s": 0.227
    },
    "_tap_text": {
     "n": 108,
-    "s": 0.034,
+    "s": 0.032,
     "bg_n": 106,
-    "bg_s": 0.033
+    "bg_s": 0.031
    },
    "begin_log": {
     "n": 1,
-    "s": 0.435,
+    "s": 0.317,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -104,25 +104,25 @@
    },
    "container": {
     "n": 8,
-    "s": 0.369,
+    "s": 0.386,
     "bg_n": 3,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.244,
+    "s": 0.232,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.227,
+    "s": 0.229,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "evict": {
     "n": 1,
-    "s": 0.297,
+    "s": 0.288,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -134,25 +134,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.113,
+    "s": 0.111,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.133,
+    "s": 0.113,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.572,
+    "s": 0.57,
     "bg_n": 2,
-    "bg_s": 0.247
+    "bg_s": 0.227
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.134,
+    "s": 0.137,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -164,9 +164,9 @@
    },
    "peek": {
     "n": 106,
-    "s": 0.173,
+    "s": 0.167,
     "bg_n": 106,
-    "bg_s": 0.173
+    "bg_s": 0.167
    },
    "permissions": {
     "n": 1,
@@ -176,19 +176,19 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.134,
+    "s": 0.14,
     "bg_n": 1,
-    "bg_s": 0.134
+    "bg_s": 0.14
    },
    "push_verdict": {
     "n": 5,
-    "s": 0.103,
+    "s": 0.121,
     "bg_n": 3,
     "bg_s": 0.002
    },
    "reset_app": {
     "n": 1,
-    "s": 0.488,
+    "s": 0.498,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -200,28 +200,28 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.364,
+    "s": 0.405,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.226,
+    "s": 0.228,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "to_background": {
     "n": 1,
-    "s": 0.13,
+    "s": 0.142,
     "bg_n": 1,
-    "bg_s": 0.13
+    "bg_s": 0.142
    }
   },
   "dialogs": [],
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.695
+   "boot": 3.531
   }
  },
  "measure_from": "launch",
@@ -262,12 +262,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.792,
-   "action1": 1.792
+   "action0": 1.795,
+   "action1": 1.795
   },
   "sent_s": {
-   "action0": 3.83,
-   "action1": 11.808
+   "action0": 3.849,
+   "action1": 11.828
   }
  },
  "network": null,
@@ -302,7 +302,8 @@
      "in": [
       "react-native-background-fetch",
       "capacitor-background-fetch",
-      "flutter_background_fetch"
+      "flutter_background_fetch",
+      "cordova-background-fetch"
      ]
     }
    }
@@ -311,18 +312,9 @@
  "hooks": [
   {
    "api": "status",
-   "returns": {
-    "$": {
-     "type": "number",
-     "in": [
-      0,
-      1,
-      2
-     ]
-    }
-   }
+   "outcome": "resolved"
   }
  ],
  "year": 2026,
- "when": "2026-11-14 12:48:20"
+ "when": "2026-11-15 21:45:53"
 }

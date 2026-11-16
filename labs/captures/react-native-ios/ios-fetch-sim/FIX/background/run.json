@@ -38,57 +38,57 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 31.9,
-  "t0": 1794678292.826,
+  "step_s": 32.0,
+  "t0": 1794796701.239,
   "phases": {
-   "terminated": 0.093,
-   "swept": 0.266,
-   "neutral_pre": 0.266,
-   "permissions": 0.266,
-   "sleep_end": 0.266,
-   "log_begun": 0.671,
-   "launch_mark": 0.798,
-   "verdict_cleared": 0.799,
-   "launch": 0.91,
-   "settle_end": 10.913,
-   "trigger": 11.048,
-   "end": 31.49,
-   "runner_joined": 31.49,
-   "capture_mark": 31.622,
-   "pusher_joined": 31.622,
-   "log_ended": 31.84,
-   "log_written": 31.841,
-   "capture_extras": 31.841,
-   "db_pulled": 31.841,
-   "run_json": 31.896,
-   "judged": 31.962,
-   "verdict_pushed": 31.962,
-   "settled": 32.469,
-   "neutral_post": 32.469,
-   "terminated_post": 32.597
+   "terminated": 0.097,
+   "swept": 0.277,
+   "neutral_pre": 0.277,
+   "permissions": 0.277,
+   "sleep_end": 0.277,
+   "log_begun": 0.678,
+   "launch_mark": 0.803,
+   "verdict_cleared": 0.803,
+   "launch": 0.926,
+   "settle_end": 10.934,
+   "trigger": 11.074,
+   "end": 31.522,
+   "runner_joined": 31.522,
+   "capture_mark": 31.661,
+   "pusher_joined": 31.661,
+   "log_ended": 31.898,
+   "log_written": 31.899,
+   "capture_extras": 31.899,
+   "db_pulled": 31.899,
+   "run_json": 31.953,
+   "judged": 32.029,
+   "verdict_pushed": 32.03,
+   "settled": 32.536,
+   "neutral_post": 32.536,
+   "terminated_post": 32.664
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.214,
+    "s": 0.233,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 11,
-    "s": 1.664,
+    "s": 1.728,
     "bg_n": 2,
-    "bg_s": 0.213
+    "bg_s": 0.223
    },
    "_tap_text": {
     "n": 77,
-    "s": 0.022,
+    "s": 0.026,
     "bg_n": 75,
-    "bg_s": 0.022
+    "bg_s": 0.026
    },
    "begin_log": {
     "n": 1,
-    "s": 0.405,
+    "s": 0.4,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.173,
+    "s": 0.18,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.218,
+    "s": 0.238,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,19 +124,19 @@
    },
    "launch": {
     "n": 1,
-    "s": 0.111,
+    "s": 0.123,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.607,
+    "s": 0.626,
     "bg_n": 2,
-    "bg_s": 0.213
+    "bg_s": 0.223
    },
    "native_resolved": {
     "n": 1,
-    "s": 0.007,
+    "s": 0.005,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -148,9 +148,9 @@
    },
    "peek": {
     "n": 75,
-    "s": 0.092,
+    "s": 0.099,
     "bg_n": 75,
-    "bg_s": 0.092
+    "bg_s": 0.099
    },
    "permissions": {
     "n": 1,
@@ -160,9 +160,9 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.123,
+    "s": 0.138,
     "bg_n": 1,
-    "bg_s": 0.123
+    "bg_s": 0.138
    },
    "push_verdict": {
     "n": 5,
@@ -178,28 +178,28 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.427,
+    "s": 0.435,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.219,
+    "s": 0.225,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "to_background": {
     "n": 1,
-    "s": 0.141,
+    "s": 0.161,
     "bg_n": 1,
-    "bg_s": 0.141
+    "bg_s": 0.161
    }
   },
   "dialogs": [],
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 2.215
+   "boot": 2.234
   }
  },
  "measure_from": "launch",
@@ -244,8 +244,8 @@
    "action1": 1.542
   },
   "sent_s": {
-   "action0": 3.587,
-   "action1": 11.572
+   "action0": 3.605,
+   "action1": 11.605
   }
  },
  "network": null,
@@ -279,7 +279,8 @@
      "in": [
       "react-native-background-fetch",
       "capacitor-background-fetch",
-      "flutter_background_fetch"
+      "flutter_background_fetch",
+      "cordova-background-fetch"
      ]
     }
    }
@@ -288,18 +289,9 @@
  "hooks": [
   {
    "api": "status",
-   "returns": {
-    "$": {
-     "type": "number",
-     "in": [
-      0,
-      1,
-      2
-     ]
-    }
-   }
+   "outcome": "resolved"
   }
  ],
  "year": 2026,
- "when": "2026-11-14 12:45:24"
+ "when": "2026-11-15 21:38:53"
 }

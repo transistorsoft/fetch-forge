@@ -1,0 +1,232 @@
+{
+ "label": "cordova.ios-registration.FIX.scene",
+ "platform": "cordova",
+ "os": "ios",
+ "package": "com.transistorsoft.fetchlab.cordova",
+ "scenario": "ios-registration",
+ "variant": "FIX",
+ "step": "scene",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
+ "evicted": null,
+ "foreignTransistorApps": null,
+ "native": "4.1.1-master-399765c",
+ "native_source": {
+  "branch": "",
+  "commit": "399765cc89f03ccaec19464ea87f47c3f3d66f4d",
+  "dirty": "no",
+  "marketing": "4.2.1",
+  "build": "4201"
+ },
+ "channel": null,
+ "native_resolved": "4201",
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "cordova/background-fetch",
+  "commit": "368eb853a4ef021b9e1558b0a80bc8b2cdc6e88e",
+  "dirty": "no"
+ },
+ "device": {
+  "model": "Lab1",
+  "os": "iOS 27.2"
+ },
+ "activity": "",
+ "process": null,
+ "settle": 8,
+ "after": 5,
+ "end": {
+  "policy": "window",
+  "ended": "window"
+ },
+ "timings": {
+  "step_s": 14.7,
+  "t0": 1794800327.085,
+  "phases": {
+   "terminated": 0.092,
+   "swept": 0.264,
+   "neutral_pre": 0.264,
+   "permissions": 0.264,
+   "sleep_end": 0.264,
+   "log_begun": 0.574,
+   "launch_mark": 0.682,
+   "verdict_cleared": 0.682,
+   "launch": 0.791,
+   "settle_end": 8.794,
+   "trigger": 8.904,
+   "end": 14.296,
+   "capture_mark": 14.421,
+   "pusher_joined": 14.421,
+   "log_ended": 14.654,
+   "log_written": 14.654,
+   "capture_extras": 14.654,
+   "db_pulled": 14.654,
+   "run_json": 14.709,
+   "judged": 14.739,
+   "verdict_pushed": 14.739,
+   "settled": 15.247,
+   "neutral_post": 15.247,
+   "terminated_post": 15.379
+  },
+  "calls": {
+   "_alive": {
+    "n": 1,
+    "s": 0.227,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "_run": {
+    "n": 9,
+    "s": 1.378,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "_tap_text": {
+    "n": 15,
+    "s": 0.004,
+    "bg_n": 13,
+    "bg_s": 0.004
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.309,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "close": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "container": {
+    "n": 5,
+    "s": 0.0,
+    "bg_n": 2,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.172,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.233,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.109,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 3,
+    "s": 0.343,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "native_resolved": {
+    "n": 1,
+    "s": 0.006,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 13,
+    "s": 0.012,
+    "bg_n": 13,
+    "bg_s": 0.012
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 4,
+    "s": 0.002,
+    "bg_n": 2,
+    "bg_s": 0.002
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.39,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 2,
+    "s": 0.224,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": null,
+  "clock_offset_rtt_s": null,
+  "log_phases": {
+   "boot": 3.347
+  }
+ },
+ "measure_from": "launch",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": false,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": null,
+ "host": null,
+ "network": null,
+ "privacy": null,
+ "location_accuracy": null,
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [],
+ "hooks": [
+  {
+   "api": "status",
+   "outcome": "resolved"
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-15 22:39:01"
+}

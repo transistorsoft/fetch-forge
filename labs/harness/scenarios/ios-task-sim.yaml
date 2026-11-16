@@ -19,23 +19,25 @@ description: >
       no task: the finish destroyed it, and the probe lists none at the end.  No legacy fetch (fetchReceived 0).
     * timeout: the finish withheld, then `fire: task-timeout` 5 s after the delivery: onTimeout's delivery goes to the
       declaration's onTimeout (`errors: true`), the driver finishes it there (finishOnTimeout), and the task is gone.
-platforms: [react-native, capacitor, flutter]
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-10 — `fire: task` is the Simulator's lab hook (a Darwin notification into LabModule); Android's custom
     task is fired through JobScheduler, events-task-android's."
-  cordova: "2026-11-15 — the Cordova host is Android-only until its iOS slice (WO-002: Cordova Android, then
-    iOS); un-excuse it with the iOS host."
 measure_from: launch
 steps:
   - name: run
     settle: 10
     after: 30
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
+      # (WO-002, 2026-11-15) The fire's anchor, so bridge-neutral (Chris's decision): recorded, not asserted.  The
+      # Simulator's rejection is still proven natively (taskSubmitErrors) and scored by api-smoke-ios.
       - api: scheduleTask
         args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
-        outcome: rejected
+        outcome: settled 2026-11-15 the fire's anchor; the promise rejects on the Simulator (Unavailable), and Cordova's callback-style scheduleTask returns nothing
     events:
       - subscribe: configure
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
@@ -59,11 +61,15 @@ steps:
     after: 30
     extras: {withholdFinish: true}
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
+      # (WO-002, 2026-11-15) The fire's anchor, so bridge-neutral (Chris's decision): recorded, not asserted.  The
+      # Simulator's rejection is still proven natively (taskSubmitErrors) and scored by api-smoke-ios.
       - api: scheduleTask
         args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
-        outcome: rejected
+        outcome: settled 2026-11-15 the fire's anchor; the promise rejects on the Simulator (Unavailable), and Cordova's callback-style scheduleTask returns nothing
     events:
       - subscribe: configure
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}

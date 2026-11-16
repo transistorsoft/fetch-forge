@@ -48,41 +48,41 @@
  "timings": {
   "install_s": 0.1,
   "step_s": 43.7,
-  "t0": 1794787839.605,
+  "t0": 1794797541.274,
   "phases": {
-   "terminated": 0.023,
-   "others_stopped": 0.062,
-   "reset": 0.089,
-   "swept": 0.117,
-   "neutral_pre": 0.17,
-   "accuracy": 0.208,
-   "permissions": 0.208,
-   "sleep_end": 0.208,
-   "log_begun": 0.328,
-   "launch_mark": 0.346,
-   "verdict_cleared": 0.367,
-   "launch": 0.803,
-   "settle_end": 10.813,
-   "trigger": 10.85,
-   "end": 43.552,
-   "runner_joined": 43.552,
-   "capture_mark": 43.591,
-   "pusher_joined": 43.591,
-   "log_ended": 43.614,
-   "log_written": 43.614,
-   "capture_extras": 43.638,
-   "db_pulled": 43.639,
-   "run_json": 43.68,
-   "judged": 43.751,
-   "verdict_pushed": 43.774,
-   "settled": 44.277,
-   "neutral_post": 44.337,
-   "terminated_post": 44.362
+   "terminated": 0.02,
+   "others_stopped": 0.064,
+   "reset": 0.09,
+   "swept": 0.115,
+   "neutral_pre": 0.172,
+   "accuracy": 0.21,
+   "permissions": 0.211,
+   "sleep_end": 0.211,
+   "log_begun": 0.331,
+   "launch_mark": 0.348,
+   "verdict_cleared": 0.368,
+   "launch": 0.81,
+   "settle_end": 10.815,
+   "trigger": 10.852,
+   "end": 43.566,
+   "runner_joined": 43.566,
+   "capture_mark": 43.603,
+   "pusher_joined": 43.603,
+   "log_ended": 43.627,
+   "log_written": 43.627,
+   "capture_extras": 43.648,
+   "db_pulled": 43.649,
+   "run_json": 43.686,
+   "judged": 43.761,
+   "verdict_pushed": 43.785,
+   "settled": 44.293,
+   "neutral_post": 44.369,
+   "terminated_post": 44.394
   },
   "calls": {
    "_adb": {
     "n": 20,
-    "s": 0.644,
+    "s": 0.678,
     "bg_n": 2,
     "bg_s": 0.083
    },
@@ -94,25 +94,25 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.12,
+    "s": 0.121,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.028,
+    "s": 0.025,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.022,
+    "s": 0.024,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "evict": {
     "n": 1,
-    "s": 0.02,
+    "s": 0.022,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,33 +124,33 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.02,
+    "s": 0.022,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "job": {
     "n": 2,
-    "s": 0.083,
+    "s": 0.068,
     "bg_n": 2,
-    "bg_s": 0.083
+    "bg_s": 0.068
    },
    "launch": {
     "n": 1,
-    "s": 0.436,
+    "s": 0.442,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "location_accuracy": {
     "n": 2,
-    "s": 0.038,
+    "s": 0.039,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.131,
+    "s": 0.129,
     "bg_n": 2,
-    "bg_s": 0.038
+    "bg_s": 0.039
    },
    "native_resolved": {
     "n": 1,
@@ -166,15 +166,15 @@
    },
    "neutral": {
     "n": 2,
-    "s": 0.113,
+    "s": 0.133,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "peek": {
     "n": 80,
-    "s": 0.041,
+    "s": 0.047,
     "bg_n": 80,
-    "bg_s": 0.041
+    "bg_s": 0.047
    },
    "permissions": {
     "n": 1,
@@ -184,13 +184,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.128,
+    "s": 0.127,
     "bg_n": 2,
     "bg_s": 0.083
    },
    "reset_app": {
     "n": 1,
-    "s": 0.026,
+    "s": 0.025,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -202,22 +202,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.691,
+    "s": 0.7,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.064,
+    "s": 0.067,
     "bg_n": 0,
     "bg_s": 0.0
    }
   },
   "dialogs": [],
-  "clock_offset_s": -0.334,
+  "clock_offset_s": -31.596,
   "clock_offset_rtt_s": 0.017,
   "log_phases": {
-   "boot": 0.73
+   "boot": 0.755
   }
  },
  "measure_from": "launch",
@@ -259,11 +259,11 @@
   "error": null,
   "held_s": {
    "action0": 0.001,
-   "action1": 3.394
+   "action1": 3.424
   },
   "sent_s": {
-   "action0": 3.074,
-   "action1": 9.554
+   "action0": 3.102,
+   "action1": 9.578
   }
  },
  "network": {
@@ -328,5 +328,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-15 19:11:23"
+ "when": "2026-11-15 21:53:04"
 }

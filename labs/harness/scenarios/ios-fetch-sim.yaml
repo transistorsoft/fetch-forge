@@ -26,32 +26,42 @@ description: >
   records the failure).  MEASURED in all three states, `cold`
   included: the background launch connects its scene, whose engine registers the plugin before UIKit delivers the
   fetch (sweeps 20261114-114801 pods, 20261114-115249 SwiftPM).
-platforms: [react-native, capacitor, flutter]
+
+  (WO-002, 2026-11-15) On Cordova too the PLUGIN forwards the fetch, through its category on CDVAppDelegate
+  (CDVBackgroundFetch.m), and the host's AppDelegate override only wraps it: its `super` IS that category's method
+  (AppDelegate : CDVAppDelegate), logged `point=legacyFetchForward category=…`; build.sh proves the category is in the
+  app.  MEASURED in all three states (sweeps 20261115-220040 FIX, -220507 FIX-SPM).  Its finish reply crosses
+  Capacitor's WKWebView race: the plugin finishes the SDK (which completes UIKit's handler) before it replies, so the
+  driver's `app=finish … outcome=ok` came 73-76 ms after the SDK's finish, as SpringBoard recorded the result.  So
+  `background` does not pin driverFinishes for Cordova, as for Capacitor (Chris's decision, 2026-11-13); `cold` stays
+  pinned, as Capacitor's.
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-10 — `fire:`, `background:` and `terminate:` are the Simulator's (a SpringBoard background fetch);
     Android's fetches are JobScheduler's, events-fetch-android's."
-  cordova: "2026-11-15 — the Cordova host is Android-only until its iOS slice (WO-002: Cordova Android, then
-    iOS); un-excuse it with the iOS host."
 measure_from: launch
 # (WO-002, Capacitor iOS) Each bridge delivers its own fetch taskId: `returns` takes either, driverTally pins each.
 platform_expect:
   react-native: {driverTally: "fetch:react-native-background-fetch=1"}
   capacitor: {driverTally: "fetch:capacitor-background-fetch=1"}
   flutter: {driverTally: "fetch:flutter_background_fetch=1"}
+  cordova: {driverTally: "fetch:cordova-background-fetch=1"}
 steps:
   - name: foreground
     settle: 10
     after: 15
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     events:
       - subscribe: configure
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
         min: 1
         max: 1
         returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
-                                         flutter_background_fetch]}}
+                                         flutter_background_fetch, cordova-background-fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 3, fire: fetch}
     expect:
@@ -68,15 +78,17 @@ steps:
     # (2026-11-14) 20 (was 15): the push moved 3 s later; the window still ends before the SDK's own expiry.
     after: 20
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     events:
       - subscribe: configure
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
         min: 1
         max: 1
         returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
-                                         flutter_background_fetch]}}
+                                         flutter_background_fetch, cordova-background-fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 2, background: true}
       # (WO-002, 2026-11-14) 8 s after the background action (was 5 s): bgSilenceMs is about that gap minus the
@@ -93,6 +105,7 @@ steps:
       react-native: {driverTally: "fetch:react-native-background-fetch=1"}
       capacitor: {driverTally: "fetch:capacitor-background-fetch=1", driverFinishes: any}
       flutter: {driverTally: "fetch:flutter_background_fetch=1"}
+      cordova: {driverTally: "fetch:cordova-background-fetch=1", driverFinishes: any}
     expect:
       crashes: 0
       fetchReceived: 1
@@ -115,8 +128,10 @@ steps:
     settle: 10
     after: 20
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     actions:
       - {after: {api: "status#0"}, delay_s: 2, terminate: true}
       - {after: {api: "status#0"}, delay_s: 5, fire: fetch}

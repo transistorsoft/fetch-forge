@@ -8,7 +8,7 @@
  "step": "foreground",
  "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
  "evicted": [
-  "com.transistorsoft.fetchlab.capacitor"
+  "com.transistorsoft.fetchlab.flutter"
  ],
  "foreignTransistorApps": [],
  "native": "4.1.1-master-399765c",
@@ -40,47 +40,47 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 28.1,
-  "t0": 1794678437.936,
+  "step_s": 28.0,
+  "t0": 1794797090.077,
   "phases": {
-   "terminated": 0.103,
-   "others_stopped": 0.512,
-   "reset": 1.129,
-   "swept": 1.324,
-   "neutral_pre": 1.324,
-   "permissions": 1.324,
-   "sleep_end": 1.324,
-   "log_begun": 1.744,
-   "launch_mark": 1.859,
-   "verdict_cleared": 1.962,
-   "launch": 2.082,
-   "settle_end": 12.083,
-   "trigger": 12.213,
-   "end": 27.643,
-   "runner_joined": 27.643,
-   "capture_mark": 27.774,
-   "pusher_joined": 27.775,
-   "log_ended": 28.013,
-   "log_written": 28.014,
-   "capture_extras": 28.014,
-   "db_pulled": 28.014,
-   "run_json": 28.067,
-   "judged": 28.134,
-   "verdict_pushed": 28.134,
-   "settled": 28.639,
-   "neutral_post": 28.639,
-   "terminated_post": 28.768
+   "terminated": 0.098,
+   "others_stopped": 0.497,
+   "reset": 1.128,
+   "swept": 1.31,
+   "neutral_pre": 1.31,
+   "permissions": 1.31,
+   "sleep_end": 1.31,
+   "log_begun": 1.708,
+   "launch_mark": 1.818,
+   "verdict_cleared": 1.933,
+   "launch": 2.067,
+   "settle_end": 12.07,
+   "trigger": 12.179,
+   "end": 27.568,
+   "runner_joined": 27.568,
+   "capture_mark": 27.705,
+   "pusher_joined": 27.705,
+   "log_ended": 27.939,
+   "log_written": 27.939,
+   "capture_extras": 27.939,
+   "db_pulled": 27.939,
+   "run_json": 27.993,
+   "judged": 28.071,
+   "verdict_pushed": 28.072,
+   "settled": 28.577,
+   "neutral_post": 28.578,
+   "terminated_post": 28.703
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.233,
+    "s": 0.228,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 17,
-    "s": 2.692,
+    "s": 2.64,
     "bg_n": 1,
     "bg_s": 0.103
    },
@@ -92,7 +92,7 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.42,
+    "s": 0.398,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -104,25 +104,25 @@
    },
    "container": {
     "n": 8,
-    "s": 0.373,
+    "s": 0.386,
     "bg_n": 3,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.194,
+    "s": 0.183,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.239,
+    "s": 0.234,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "evict": {
     "n": 1,
-    "s": 0.297,
+    "s": 0.288,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -134,25 +134,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.113,
+    "s": 0.111,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.12,
+    "s": 0.135,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 4,
-    "s": 0.479,
+    "s": 0.459,
     "bg_n": 1,
     "bg_s": 0.103
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.134,
+    "s": 0.137,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -164,9 +164,9 @@
    },
    "peek": {
     "n": 45,
-    "s": 0.058,
+    "s": 0.057,
     "bg_n": 45,
-    "bg_s": 0.058
+    "bg_s": 0.057
    },
    "permissions": {
     "n": 1,
@@ -176,19 +176,19 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.117,
+    "s": 0.131,
     "bg_n": 1,
-    "bg_s": 0.117
+    "bg_s": 0.131
    },
    "push_verdict": {
     "n": 5,
-    "s": 0.105,
+    "s": 0.117,
     "bg_n": 3,
     "bg_s": 0.002
    },
    "reset_app": {
     "n": 1,
-    "s": 0.487,
+    "s": 0.498,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -200,13 +200,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.42,
+    "s": 0.373,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.228,
+    "s": 0.223,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -215,7 +215,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.635
+   "boot": 3.565
   }
  },
  "measure_from": "launch",
@@ -247,10 +247,10 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.778
+   "action0": 1.781
   },
   "sent_s": {
-   "action0": 4.862
+   "action0": 4.883
   }
  },
  "network": null,
@@ -284,7 +284,8 @@
      "in": [
       "react-native-background-fetch",
       "capacitor-background-fetch",
-      "flutter_background_fetch"
+      "flutter_background_fetch",
+      "cordova-background-fetch"
      ]
     }
    }
@@ -293,18 +294,9 @@
  "hooks": [
   {
    "api": "status",
-   "returns": {
-    "$": {
-     "type": "number",
-     "in": [
-      0,
-      1,
-      2
-     ]
-    }
-   }
+   "outcome": "resolved"
   }
  ],
  "year": 2026,
- "when": "2026-11-14 12:47:46"
+ "when": "2026-11-15 21:45:18"
 }

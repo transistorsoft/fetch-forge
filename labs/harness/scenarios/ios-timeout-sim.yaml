@@ -11,25 +11,26 @@ description: >
   NewData here, setTaskCompletedWithSuccess:YES on a device's BGTask), so a timed-out fetch is reported as one with
   new data (the spike's `.failed` gave SpringBoard `Error`).  Pinned here as what the SDK does today, not as right:
   WO-002 suspected defect 11.
-platforms: [react-native, capacitor, flutter]
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-10 — `fire:` and `background:` are the Simulator's; Android's SDK timeout is events-timeout-sdk's."
-  cordova: "2026-11-15 — the Cordova host is Android-only until its iOS slice (WO-002: Cordova Android, then
-    iOS); un-excuse it with the iOS host."
 measure_from: launch
 # (WO-002, Capacitor iOS) Each bridge delivers its own fetch taskId: `returns` takes either, driverTally pins each.
 platform_expect:
   react-native: {driverTally: "fetch:react-native-background-fetch=1,timeout:react-native-background-fetch=1"}
   capacitor: {driverTally: "fetch:capacitor-background-fetch=1,timeout:capacitor-background-fetch=1"}
   flutter: {driverTally: "fetch:flutter_background_fetch=1,timeout:flutter_background_fetch=1"}
+  cordova: {driverTally: "fetch:cordova-background-fetch=1,timeout:cordova-background-fetch=1"}
 steps:
   - name: run
     settle: 10
     after: 50
     extras: {withholdFinish: true}
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     events:
       - subscribe: configure
         args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
@@ -37,7 +38,7 @@ steps:
         max: 1
         errors: true
         returns: {$: {type: string, in: [react-native-background-fetch, capacitor-background-fetch,
-                                         flutter_background_fetch]}}
+                                         flutter_background_fetch, cordova-background-fetch]}}
     actions:
       - {after: {api: "status#0"}, delay_s: 2, background: true}
       # (WO-002, 2026-11-14) 8 s after the background action (was 5 s): bgSilenceMs is about that gap minus the

@@ -22,8 +22,8 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "capacitor/background-fetch",
-  "commit": "4d431c1e21ba40e2329b5cc344eb4051401430a8",
-  "dirty": "yes"
+  "commit": "3fa169afc3cf4ec97b5f893c8d040e2017f01b0a",
+  "dirty": "no"
  },
  "device": {
   "model": "Lab2",
@@ -38,57 +38,57 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 32.1,
-  "t0": 1794591842.941,
+  "step_s": 31.8,
+  "t0": 1794790866.032,
   "phases": {
-   "terminated": 0.102,
-   "swept": 0.338,
-   "neutral_pre": 0.338,
-   "permissions": 0.338,
-   "sleep_end": 0.338,
-   "log_begun": 0.752,
-   "launch_mark": 0.896,
-   "verdict_cleared": 0.897,
-   "launch": 1.031,
-   "settle_end": 11.036,
-   "trigger": 11.182,
-   "end": 31.609,
-   "runner_joined": 31.609,
-   "capture_mark": 31.755,
-   "pusher_joined": 31.755,
-   "log_ended": 32.005,
-   "log_written": 32.005,
-   "capture_extras": 32.005,
-   "db_pulled": 32.005,
-   "run_json": 32.066,
-   "judged": 32.098,
-   "verdict_pushed": 32.098,
-   "settled": 32.603,
-   "neutral_post": 32.603,
-   "terminated_post": 32.754
+   "terminated": 0.095,
+   "swept": 0.27,
+   "neutral_pre": 0.27,
+   "permissions": 0.27,
+   "sleep_end": 0.27,
+   "log_begun": 0.67,
+   "launch_mark": 0.796,
+   "verdict_cleared": 0.796,
+   "launch": 0.917,
+   "settle_end": 10.922,
+   "trigger": 11.038,
+   "end": 31.408,
+   "runner_joined": 31.408,
+   "capture_mark": 31.547,
+   "pusher_joined": 31.548,
+   "log_ended": 31.788,
+   "log_written": 31.788,
+   "capture_extras": 31.788,
+   "db_pulled": 31.789,
+   "run_json": 31.848,
+   "judged": 31.892,
+   "verdict_pushed": 31.893,
+   "settled": 32.394,
+   "neutral_post": 32.394,
+   "terminated_post": 32.531
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.242,
+    "s": 0.234,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 10,
-    "s": 1.691,
+    "s": 1.533,
     "bg_n": 1,
-    "bg_s": 0.113
+    "bg_s": 0.111
    },
    "_tap_text": {
-    "n": 57,
-    "s": 0.016,
-    "bg_n": 55,
+    "n": 56,
+    "s": 0.015,
+    "bg_n": 54,
     "bg_s": 0.015
    },
    "begin_log": {
     "n": 1,
-    "s": 0.414,
+    "s": 0.4,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.236,
+    "s": 0.175,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.25,
+    "s": 0.24,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,19 +124,19 @@
    },
    "launch": {
     "n": 1,
-    "s": 0.134,
+    "s": 0.121,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 4,
-    "s": 0.548,
+    "s": 0.492,
     "bg_n": 1,
-    "bg_s": 0.113
+    "bg_s": 0.111
    },
    "native_resolved": {
     "n": 1,
-    "s": 0.005,
+    "s": 0.004,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -147,10 +147,10 @@
     "bg_s": 0.0
    },
    "peek": {
-    "n": 55,
-    "s": 0.067,
-    "bg_n": 55,
-    "bg_s": 0.067
+    "n": 54,
+    "s": 0.06,
+    "bg_n": 54,
+    "bg_s": 0.06
    },
    "permissions": {
     "n": 1,
@@ -160,15 +160,15 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.141,
+    "s": 0.134,
     "bg_n": 1,
-    "bg_s": 0.141
+    "bg_s": 0.134
    },
    "push_verdict": {
     "n": 4,
     "s": 0.002,
     "bg_n": 2,
-    "bg_s": 0.001
+    "bg_s": 0.002
    },
    "sdk_db": {
     "n": 1,
@@ -178,13 +178,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.418,
+    "s": 0.365,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.253,
+    "s": 0.232,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -193,7 +193,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 4.002
+   "boot": 3.499
   }
  },
  "measure_from": "launch",
@@ -225,10 +225,10 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 3.047
+   "action0": 2.793
   },
   "sent_s": {
-   "action0": 6.108
+   "action0": 5.841
   }
  },
  "network": null,
@@ -249,16 +249,7 @@
  "hooks": [
   {
    "api": "status",
-   "returns": {
-    "$": {
-     "type": "number",
-     "in": [
-      0,
-      1,
-      2
-     ]
-    }
-   }
+   "outcome": "resolved"
   },
   {
    "api": "stop",
@@ -284,5 +275,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-13 12:44:35"
+ "when": "2026-11-15 20:01:37"
 }

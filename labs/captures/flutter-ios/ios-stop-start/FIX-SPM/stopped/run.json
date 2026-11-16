@@ -38,59 +38,59 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 57.4,
-  "t0": 1794678161.368,
+  "step_s": 57.6,
+  "t0": 1794791696.007,
   "phases": {
-   "terminated": 0.082,
-   "others_stopped": 0.18,
-   "reset": 0.642,
-   "swept": 0.813,
-   "neutral_pre": 0.814,
-   "permissions": 0.814,
-   "sleep_end": 0.814,
-   "log_begun": 1.121,
-   "launch_mark": 1.224,
-   "verdict_cleared": 1.323,
-   "launch": 1.447,
-   "settle_end": 11.456,
-   "trigger": 11.58,
-   "end": 56.96,
-   "runner_joined": 56.961,
-   "capture_mark": 57.101,
-   "pusher_joined": 57.101,
-   "log_ended": 57.333,
-   "log_written": 57.333,
-   "capture_extras": 57.333,
-   "db_pulled": 57.334,
-   "run_json": 57.389,
-   "judged": 57.433,
-   "verdict_pushed": 57.433,
-   "settled": 57.934,
-   "neutral_post": 57.934,
-   "terminated_post": 58.064
+   "terminated": 0.09,
+   "others_stopped": 0.196,
+   "reset": 0.701,
+   "swept": 0.891,
+   "neutral_pre": 0.891,
+   "permissions": 0.891,
+   "sleep_end": 0.891,
+   "log_begun": 1.303,
+   "launch_mark": 1.433,
+   "verdict_cleared": 1.548,
+   "launch": 1.689,
+   "settle_end": 11.697,
+   "trigger": 11.837,
+   "end": 57.237,
+   "runner_joined": 57.237,
+   "capture_mark": 57.344,
+   "pusher_joined": 57.344,
+   "log_ended": 57.578,
+   "log_written": 57.578,
+   "capture_extras": 57.578,
+   "db_pulled": 57.579,
+   "run_json": 57.633,
+   "judged": 57.676,
+   "verdict_pushed": 57.676,
+   "settled": 58.183,
+   "neutral_post": 58.183,
+   "terminated_post": 58.304
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.226,
+    "s": 0.227,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 15,
-    "s": 2.14,
+    "s": 2.258,
     "bg_n": 1,
-    "bg_s": 0.103
+    "bg_s": 0.111
    },
    "_tap_text": {
     "n": 78,
-    "s": 0.027,
+    "s": 0.024,
     "bg_n": 76,
-    "bg_s": 0.027
+    "bg_s": 0.024
    },
    "begin_log": {
     "n": 1,
-    "s": 0.307,
+    "s": 0.412,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -102,19 +102,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.201,
+    "s": 0.226,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.171,
+    "s": 0.19,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.232,
+    "s": 0.234,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -126,25 +126,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.097,
+    "s": 0.106,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.124,
+    "s": 0.141,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 4,
-    "s": 0.47,
+    "s": 0.488,
     "bg_n": 1,
-    "bg_s": 0.103
+    "bg_s": 0.111
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.111,
+    "s": 0.122,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -156,9 +156,9 @@
    },
    "peek": {
     "n": 76,
-    "s": 0.149,
+    "s": 0.115,
     "bg_n": 76,
-    "bg_s": 0.149
+    "bg_s": 0.115
    },
    "permissions": {
     "n": 1,
@@ -168,19 +168,19 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.135,
+    "s": 0.134,
     "bg_n": 1,
-    "bg_s": 0.135
+    "bg_s": 0.134
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.101,
+    "s": 0.116,
     "bg_n": 2,
-    "bg_s": 0.002
+    "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.356,
+    "s": 0.389,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -192,13 +192,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.375,
+    "s": 0.387,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.213,
+    "s": 0.208,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -207,7 +207,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.24
+   "boot": 3.681
   }
  },
  "measure_from": "launch",
@@ -239,10 +239,10 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 2.056
+   "action0": 2.072
   },
   "sent_s": {
-   "action0": 5.135
+   "action0": 5.147
   }
  },
  "network": null,
@@ -263,16 +263,7 @@
  "hooks": [
   {
    "api": "status",
-   "returns": {
-    "$": {
-     "type": "number",
-     "in": [
-      0,
-      1,
-      2
-     ]
-    }
-   }
+   "outcome": "resolved"
   },
   {
    "api": "stop",
@@ -285,5 +276,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-14 12:43:38"
+ "when": "2026-11-15 20:15:53"
 }

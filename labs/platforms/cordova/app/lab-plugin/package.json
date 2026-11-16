@@ -6,7 +6,8 @@
   "cordova": {
     "id": "lab-plugin",
     "platforms": [
-      "android"
+      "android",
+      "ios"
     ]
   }
 }
