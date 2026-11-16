@@ -1,7 +1,7 @@
 ---
 id: WO-010
 title: On Cordova Android, when an app restarts itself the old Activity's destroy arrives after the new Activity has resumed, and CDVBackgroundFetch.onDestroy then makes TSBackgroundFetch headless with the new page on screen, so that page's next fetch is stopped (stopOnTerminate true) or sent to the headless task (false)
-status: in-progress
+status: done
 created: 2026-11-16
 platforms: [android]
 submodules: [cordova/background-fetch]
@@ -424,3 +424,4 @@ The case stays SUSPECTED. The scenario asserts only `resumed-first`, so no lab c
     - **By hand, on the final captures:** restart, both steps: `resumed-first`, `headless false`, no `HeadlessMode? true` after the trigger, `getPlugin` before `Resumed the activity.` on both boots (42.073/42.086, 52.349/52.352; 24.434/24.447, 34.710/34.715), no `startupPlugins` line. `finish` (`:523`, `:527`, `:530`) and `headless-activity-destroyed` (`:516`, `:520`, `:523`): one `HeadlessMode? true` each, between `point=onDestroy` and `onDestroy:afterSuper`. `kill`: its one, the new process's (pid 18011: `appCreate` 03.854, `☯️  onCreate` 03.857, headless 03.909). Both recreate steps: none.
     - **Re-scored:** 208 captures, 35 not PASS, the same verdicts as after the first sweep. selftest passes (204 checks).
 - 2026-11-16 — **Committed** (Chris: "Commit both"): plugin `256372c` on `fix/WO-010-cordova-android-restart-ordering` (from `5e3602d`), and fetch-forge's branch of the same name (this Log, the lab prose, the captures). Not merged; the `cordova/background-fetch` pointer moves when the plugin branch is merged, and the order is `done` then.
+- 2026-11-16 — **Merged and done.** Plugin `master` `2b5f956` (the `--no-ff` merge of `256372c`), pushed to GitHub (Chris: "Merge, push plugin, bump"); fetch-forge `master` `a29422c`, and the `cordova/background-fetch` pointer moved to `2b5f956` in the commit that marks this order `done`. Every Verification box is ticked. Not released: the CHANGELOG line waits under `## Unreleased` (D2 a).
