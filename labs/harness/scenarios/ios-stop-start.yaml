@@ -33,7 +33,7 @@ description: >
       stop() works here: MEASURED 2026-11-11.
 
   (WO-002, 2026-11-15) Cordova: stop#1 and start#2 read undefined, the callback-style finding (api-smoke-ios); every
-  metric holds, the SDK's own record of the stop and the restart (sweeps 20261115-220040 FIX, -220507 FIX-SPM).
+  metric holds, the SDK's own record of the stop and the restart (sweeps 20261115-223641 FIX, -224122 FIX-SPM; WO-009).
 platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-11 — `fire:` is the Simulator's (a SpringBoard background fetch); Android's stop()/start() is

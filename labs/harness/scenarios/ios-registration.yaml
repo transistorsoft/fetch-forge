@@ -63,7 +63,7 @@ description: >
   connects: just before LabPlugin's `point=pluginLoad`, ~50 ms after `sceneWillConnect` and ~40 ms before BGTaskScheduler's
   `Handling app launch` (MEASURED, every ios-registration process).  So, as on Capacitor and Flutter, `none` reads
   `finished` without isolating +load, and `scene` is a call before the plugin's.  The plugin's install docs ask for no
-  AppDelegate call.  Every step reads as on the other bridges (sweeps 20261115-220040 FIX, -220507 FIX-SPM).
+  AppDelegate call.  Every step reads as on the other bridges (sweeps 20261115-223641 FIX, -224122 FIX-SPM).
 platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-11 — BGTaskScheduler's launch-handler registration is iOS's; Android schedules JobScheduler jobs at
