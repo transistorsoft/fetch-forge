@@ -35,8 +35,10 @@ description: >
     * sdkTasks `-` and sdkSubscribers `-`: at the step's end the SDK lists no task and no fetch listener.  Android's
       jobIds `-` is the counterpart.
     * (2026-11-15, the review) Neither row says WHICH stop did it: both are tallies at the step's end, and the SDK's
-      stop() with no taskId also cancels and destroys every task (TSBackgroundFetch.m stop:).  On Cordova stop#5
-      reaches nothing native and both rows still read the task gone, from stop#7 alone.  stop(taskId)'s own effect is
+      stop() with no taskId also cancels and destroys every task (TSBackgroundFetch.m stop:).  On Cordova, until
+      WO-009, stop#5 reached nothing native and both rows read the task gone from stop#7 alone; with the fix stop#5
+      cancels it (`[TSBackgroundFetch stop] com.transistorsoft.fetchlab.task`, then `cancelTaskRequestWithIdentifier:
+      com.transistorsoft.fetchlab.task`, sweeps 20261116-124433 FIX and -124612 FIX-SPM).  stop(taskId)'s own effect is
       unpinned here (a WO-002 open item: an ordered reading between stop#5 and stop#7).
     * MEASURED 2026-11-11 on Lab1 (iPhone 17 Pro Simulator, iOS 27.2; native 4.1.1-master-5de5242, plugin 85a6bf4).
 
@@ -51,8 +53,14 @@ description: >
   callback (CDVBackgroundFetch.m start:), and the callback-style start gives a caller nothing to wait on, so the hooks
   run on and start's native half can land AFTER stop#7's: in FIX-SPM `[TSBackgroundFetch stop]` at 13.427,
   `[TSBackgroundFetch start]` with a second submit at 13.428, both rows red; in FIX start at 40.344 and stop at 40.345,
-  both rows ok (MEASURED, the committed captures).  A customer who calls start() then stop() without chaining the
+  both rows ok (MEASURED, the 2026-11-15 captures, whose logcats WO-009's sweeps overwrote: the times survive only
+  here and in WO-009's Diagnosis).  A customer who calls start() then stop() without chaining the
   callbacks gets either order (WO-009).
+
+  (WO-009, 2026-11-16) Green on WO-009's fix, three sweeps per channel (20261116-123205, -124114, -124433 FIX;
+  -123640, -124254, -124612 FIX-SPM): every return as the types declare, scheduleTask#4 rejected with iOS's message,
+  stop#5 reaching native (`[TSBackgroundFetch stop] com.transistorsoft.fetchlab.task`) before it settles, and start's
+  native half before start#3 returns, so bgSubmits `appRefresh=1` and sdkSubscribers `-` each time.
 platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-11 — api-smoke is Android's: its scheduleTask resolves, and it reads JobScheduler's jobs."

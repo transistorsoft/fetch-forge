@@ -1,7 +1,7 @@
 ---
 id: WO-010
 title: On Cordova Android, when an app restarts itself the old Activity's destroy arrives after the new Activity has resumed, and CDVBackgroundFetch.onDestroy then makes TSBackgroundFetch headless with the new page on screen, so that page's next fetch is stopped (stopOnTerminate true) or sent to the headless task (false)
-status: draft
+status: approved
 created: 2026-11-16
 platforms: [android]
 submodules: [cordova/background-fetch]
@@ -324,7 +324,7 @@ The case stays SUSPECTED. The scenario asserts only `resumed-first`, so no lab c
 
 ## Verification
 
-- [ ] D1–D4 decided
+- [x] D1–D4 decided
 - [ ] `restart-foreground-android` (both steps) green on the fix, Cordova Android, Lab1 and Lab2: `restartOrder resumed-first`, no `☯️  HeadlessMode? true` after the trigger
 - [ ] Under D1 (a): `getPlugin - put: BackgroundFetch` before `Resumed the activity.` on boot 1 and boot 2, and no `startupPlugins: put - BackgroundFetch`
 - [ ] `stop-on-terminate` `finish` and `headless-activity-destroyed` green on the fix, one `HeadlessMode? true` each, between `point=onDestroy` and `onDestroy:afterSuper`; `stop-on-terminate` `kill` green, its one headless line at the new process's start; `recreate-foreground-android` green with no `headless:true`
@@ -366,3 +366,4 @@ The case stays SUSPECTED. The scenario asserts only `resumed-first`, so no lab c
     - **Sweep count:** 12/13 with WO-009's red, or 13/13 if its fix is in the swept code; the Log records each sweep's plugin stamp and any other order's code.
     - **D1 (d):** WO-012's Flutter rule (a count of live instances, with onload) added as an option; (a) kept, since Cordova has the resume hook Flutter lacks. The page-reload order read in `PluginManager.init`.
     - **The scenario:** its Cordova paragraph already names WO-010 and `20261115-215127`'s times (WO-002's 2026-11-16 entry), so the fix adds only its green sweep. The two "WO-002 says -190943" notes now say that entry corrected it.
+- 2026-11-16 — **Approved by Chris** ("approve all WO 9-12"), with the recommended decisions: D1 (a) `onload` on Android, the record set in `onResume`; D2 (a) the plugin's next release; D3 (a) the page-reload route left for its own work order; D4 (a) WO-007's probe on Lab1, before and after the fix. Status `approved`. Chris chose to take the orders one at a time: this one follows WO-009.

@@ -1,7 +1,7 @@
 ---
 id: WO-011
 title: Flutter's stop() is Future<int> and resolves the background-fetch status, where the shared types declare Promise<boolean> and React Native and Capacitor resolve true
-status: draft
+status: approved
 created: 2026-11-16
 platforms: [android, ios]
 submodules: [flutter/background_fetch]
@@ -229,7 +229,7 @@ The choice decides what else can ship in a 1.x: WO-001's iOS 15 change, already 
 
 ## Verification
 
-- [ ] D1–D4 decided
+- [x] D1–D4 decided
 - [ ] (D4 a) both `(WO-011)` test files red at `11d53b8` (the mock test's TypeError and the guard's compile error, each recorded), green on the fix; `flutter test` passes; `flutter analyze` adds no issue to the baseline recorded at `11d53b8`
 - [ ] Flutter Android `api-smoke` green on the fix: `stop#5` and `stop#7` read boolean `true`; `jobsRegistered` and `jobIds` unchanged; the suite otherwise 12/13 (restart-foreground-android is WO-012's), or 13/13 if WO-012's fix is in the swept tree; the Log records the plugin stamp and any other order's tree under each sweep
 - [ ] Flutter iOS `api-smoke-ios` green on FIX and FIX-SPM; `stop#5` and `stop#7` read `true`; the BGTaskScheduler rows unchanged
@@ -273,3 +273,4 @@ The choice decides what else can ship in a 1.x: WO-001's iOS 15 change, already 
     - Cordova's native stop success sends `"OK"` on Android and null on iOS, not "no value" (cordova-android 15.0.0 `CallbackContext.success()`; WO-009).
     - Sibling citations name the section, not a line (those orders are being edited). The release-branch flow rests on the merges `39ec643` and `a998627`; the plugin's `CLAUDE.md:72-76` is only the checklist and is no longer cited.
     - `api-smoke-ios.yaml`'s scheduleTask hook is now `:78-80` (one comment line added above it). No step here pointed WO-002's open items at this order or corrected its sweep citations: WO-002's 2026-11-16 entry does that.
+- 2026-11-16 — **Approved by Chris** ("approve all WO 9-12"), with the recommended decisions: D1 (a) `Future<bool>` resolving `true`; D2 (b) both natives answer `true` and Dart forwards it; D3 (a) 2.0.0, with a Breaking section; D4 (a) the plugin's first Dart unit tests. Status `approved`. Chris chose to take the orders one at a time: this one follows WO-010.

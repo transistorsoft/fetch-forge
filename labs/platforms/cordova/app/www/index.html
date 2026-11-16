@@ -271,9 +271,9 @@ async function tick() {
   const n = ++ticks;
   await batchChain;
   let status = '-';
-  // Cordova's status() hands the status to its callback and returns nothing: `await BG.status()` would read undefined.
-  // Its failure callback is an empty function (www/index.js status()), so a native error would never settle: bounded,
-  // a tick still prints (`status=timeout`) and the probe it carries still reaches the host.
+  // The tick reads status() through its callback, as a callback caller does (WO-009 made it return a Promise too).  It
+  // passes no failure callback, so a native error would never settle this wrapper: bounded, a tick still prints
+  // (`status=timeout`) and the probe it carries still reaches the host.
   try {
     status = await Promise.race([new Promise((r) => BG.status(r)),
                                  new Promise((r) => setTimeout(() => r('timeout'), 2000))]);

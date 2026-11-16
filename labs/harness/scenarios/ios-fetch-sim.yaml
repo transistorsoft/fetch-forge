@@ -52,7 +52,7 @@ steps:
     after: 15
     hooks:
       # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
-      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
+      # api-smoke-ios's to score, and Cordova's resolved nothing until WO-009.
       - api: status
         outcome: resolved
     events:
@@ -79,7 +79,7 @@ steps:
     after: 20
     hooks:
       # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
-      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
+      # api-smoke-ios's to score, and Cordova's resolved nothing until WO-009.
       - api: status
         outcome: resolved
     events:
@@ -129,7 +129,7 @@ steps:
     after: 20
     hooks:
       # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
-      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
+      # api-smoke-ios's to score, and Cordova's resolved nothing until WO-009.
       - api: status
         outcome: resolved
     actions:

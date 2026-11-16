@@ -61,6 +61,10 @@ description: >
       callback and sends the native side no taskId, so stop#5 cancels EVERY task (CDVBackgroundFetch.java:81-88 →
       BackgroundFetch.java stop(null)), then cordova.js throws `TypeError: callback.success.apply is not a function`
       calling the string (MEASURED, the same sweep's logcat).  jobIds `-` cannot tell that from stopping one task.
+    * (WO-009, 2026-11-16) Fixed: start, stop, status, scheduleTask and stopTask return Promises settled by the native
+      reply, and stop(taskId) stops that task alone.  Cordova reads green (sweep 20261116-122513): status#2 and start#3
+      read 2, scheduleTask#4, stop#5 and stop#7 true; stop#5 cancels only the smoke job (`- stop:
+      com.transistorsoft.fetchlab.smoke`), stop#7 job 999, and no TypeError (MEASURED, its logcat).
 
   WHAT ELSE IT READS (WO-002 review: the hooks alone pass with a broken SDK — status/start answer 2 on Android
   whatever happens, and stop() answers true):

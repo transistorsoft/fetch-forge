@@ -58,7 +58,7 @@ steps:
     after: 35
     hooks:
       # (WO-002, 2026-11-15) The kill's anchor only, so bridge-neutral: `outcome: resolved` (Chris's decision; what
-      # status() returns is api-smoke's to score, and Cordova's resolves nothing, callback-style).
+      # status() returns is api-smoke's to score, and Cordova's resolved nothing until WO-009).
       - api: status
         outcome: resolved
     actions:
@@ -85,7 +85,7 @@ steps:
     after: 35
     hooks:
       # (WO-002, 2026-11-15) The force-stop's anchor only, so bridge-neutral: `outcome: resolved` (Chris's decision; what
-      # status() returns is api-smoke's to score, and Cordova's resolves nothing, callback-style).
+      # status() returns is api-smoke's to score, and Cordova's resolved nothing until WO-009).
       - api: status
         outcome: resolved
     actions:
