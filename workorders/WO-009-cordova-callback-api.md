@@ -1,7 +1,7 @@
 ---
 id: WO-009
 title: Cordova's start(), stop(), status() and scheduleTask() return nothing where the shared types declare Promises; stop(taskId) throws on iOS and cancels every task on Android; on iOS start's native half is unordered against a later stop
-status: in-progress
+status: done
 created: 2026-11-16
 platforms: [android, ios]
 submodules: [cordova/background-fetch]
@@ -386,3 +386,4 @@ The anchor `// (WO-009)` goes at each change in `index.ts` and at `CDVBackground
     - **By hand, on the final captures** (`-122513`; `-124433` FIX, `-124612` FIX-SPM): the same lines as above, with `cancelTaskRequestWithIdentifier: com.transistorsoft.fetchlab.task` right after stop#5's native stop.
     - **Re-scored:** 208 captures, 37 not PASS, the same verdicts as after the first sweeps. selftest passes.
 - 2026-11-16 — **Committed** (Chris: "Commit both"): plugin `f905ec4` on `fix/WO-009-cordova-callback-api` (from `368eb85`), and fetch-forge's branch of the same name (this Log, the lab text, the captures). Not merged; the `cordova/background-fetch` pointer moves when the plugin branch is merged, and the order is `done` then.
+- 2026-11-16 — **Merged and done.** Plugin `master` `5e3602d` (the `--no-ff` merge of `f905ec4`), pushed to GitHub (Chris: "Push plugin, then bump"); fetch-forge `master` `3ffd215`, and the `cordova/background-fetch` pointer moved to `5e3602d` in the commit that marks this order `done`. Every Verification box is ticked. Not released: the CHANGELOG lines wait under `## Unreleased` (D6 a).
