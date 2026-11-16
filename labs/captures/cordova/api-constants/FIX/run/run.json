@@ -24,7 +24,7 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "cordova/background-fetch",
-  "commit": "368eb853a4ef021b9e1558b0a80bc8b2cdc6e88e",
+  "commit": "5e3602da8013ab9330a9ff88c31057e97ad734d8",
   "dirty": "yes"
  },
  "device": {
@@ -32,7 +32,7 @@
   "model": "sdk_gphone64_arm64",
   "os": "Android 16",
   "sdk": "36",
-  "data_free_mb": 2651,
+  "data_free_mb": 2653,
   "display": "awake",
   "fgs_timeout_ms": null,
   "play_services": 263635035
@@ -54,51 +54,51 @@
    "floor_s": 0.0
   },
   "poll_s": 0.25,
-  "parse_ms": 1.5,
-  "parse_ms_max": 2.8
+  "parse_ms": 1.2,
+  "parse_ms_max": 2.3
  },
  "timings": {
   "install_s": 0.1,
   "step_s": 3.6,
-  "t0": 1794850008.552,
+  "t0": 1794854250.124,
   "phases": {
-   "terminated": 0.024,
-   "others_stopped": 0.067,
-   "reset": 0.092,
-   "swept": 0.117,
-   "neutral_pre": 0.172,
-   "accuracy": 0.211,
-   "permissions": 0.211,
-   "sleep_end": 0.211,
-   "log_begun": 0.331,
-   "launch_mark": 0.349,
-   "verdict_cleared": 0.371,
-   "launch": 0.851,
-   "evidence": 0.852,
-   "grace_end": 2.89,
-   "alive": 3.438,
-   "trigger": 3.474,
-   "end": 3.474,
-   "capture_mark": 3.495,
-   "pusher_joined": 3.495,
-   "log_ended": 3.515,
-   "log_written": 3.516,
-   "capture_extras": 3.537,
-   "db_pulled": 3.539,
-   "run_json": 3.582,
-   "judged": 3.623,
-   "verdict_pushed": 3.648,
-   "settled": 4.153,
-   "snapshot": 4.862,
-   "neutral_post": 4.909,
-   "terminated_post": 4.935
+   "terminated": 0.021,
+   "others_stopped": 0.063,
+   "reset": 0.087,
+   "swept": 0.115,
+   "neutral_pre": 0.171,
+   "accuracy": 0.21,
+   "permissions": 0.21,
+   "sleep_end": 0.21,
+   "log_begun": 0.326,
+   "launch_mark": 0.344,
+   "verdict_cleared": 0.365,
+   "launch": 0.849,
+   "evidence": 0.849,
+   "grace_end": 2.877,
+   "alive": 3.42,
+   "trigger": 3.45,
+   "end": 3.45,
+   "capture_mark": 3.47,
+   "pusher_joined": 3.47,
+   "log_ended": 3.492,
+   "log_written": 3.492,
+   "capture_extras": 3.514,
+   "db_pulled": 3.516,
+   "run_json": 3.559,
+   "judged": 3.601,
+   "verdict_pushed": 3.626,
+   "settled": 4.13,
+   "snapshot": 4.845,
+   "neutral_post": 4.895,
+   "terminated_post": 4.922
   },
   "calls": {
    "_adb": {
     "n": 20,
-    "s": 0.641,
+    "s": 0.629,
     "bg_n": 1,
-    "bg_s": 0.046
+    "bg_s": 0.031
    },
    "_stop_stream": {
     "n": 2,
@@ -108,31 +108,31 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.12,
+    "s": 0.117,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.025,
+    "s": 0.028,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.02,
+    "s": 0.021,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "evict": {
     "n": 1,
-    "s": 0.021,
+    "s": 0.02,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "fgs_all_foreground": {
     "n": 1,
-    "s": 0.039,
+    "s": 0.032,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -150,19 +150,19 @@
    },
    "launch": {
     "n": 1,
-    "s": 0.48,
+    "s": 0.483,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "location_accuracy": {
     "n": 2,
-    "s": 0.039,
+    "s": 0.038,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.074,
+    "s": 0.065,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -180,13 +180,13 @@
    },
    "neutral": {
     "n": 2,
-    "s": 0.102,
+    "s": 0.106,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "peek": {
     "n": 13,
-    "s": 0.006,
+    "s": 0.004,
     "bg_n": 2,
     "bg_s": 0.001
    },
@@ -198,9 +198,9 @@
    },
    "push_verdict": {
     "n": 3,
-    "s": 0.093,
+    "s": 0.077,
     "bg_n": 1,
-    "bg_s": 0.046
+    "bg_s": 0.031
    },
    "reset_app": {
     "n": 1,
@@ -216,24 +216,24 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.709,
+    "s": 0.715,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.068,
+    "s": 0.067,
     "bg_n": 0,
     "bg_s": 0.0
    }
   },
   "dialogs": [],
-  "clock_offset_s": -0.393,
-  "clock_offset_rtt_s": 0.018,
+  "clock_offset_s": -0.413,
+  "clock_offset_rtt_s": 0.017,
   "log_phases": {
-   "boot": 0.778,
-   "evidence": 0.783,
-   "beat": 3.282
+   "boot": 0.775,
+   "evidence": 0.782,
+   "beat": 3.281
   }
  },
  "measure_from": "trigger",
@@ -368,5 +368,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-16 12:26:52"
+ "when": "2026-11-16 13:37:33"
 }
