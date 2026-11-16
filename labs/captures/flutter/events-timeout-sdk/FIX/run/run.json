@@ -25,7 +25,7 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "flutter/background_fetch",
-  "commit": "11d53b8dd8194cd0c8335415976599d3dc8272cd",
+  "commit": "9ccc5692798810b3d67eda0d8ad6bcb7818b18f5",
   "dirty": "yes"
  },
  "device": {
@@ -48,44 +48,44 @@
  },
  "timings": {
   "install_s": 0.1,
-  "step_s": 92.2,
-  "t0": 1794855514.409,
+  "step_s": 92.3,
+  "t0": 1794858965.76,
   "phases": {
-   "terminated": 0.021,
-   "others_stopped": 0.082,
-   "reset": 0.109,
-   "swept": 0.13,
-   "neutral_pre": 0.179,
-   "accuracy": 0.217,
-   "permissions": 0.217,
-   "sleep_end": 0.217,
-   "log_begun": 0.336,
-   "launch_mark": 0.355,
-   "verdict_cleared": 0.376,
-   "launch": 1.387,
-   "settle_end": 11.393,
-   "trigger": 11.426,
-   "end": 92.123,
-   "runner_joined": 92.123,
-   "capture_mark": 92.161,
-   "pusher_joined": 92.161,
-   "log_ended": 92.184,
-   "log_written": 92.184,
-   "capture_extras": 92.206,
-   "db_pulled": 92.207,
-   "run_json": 92.247,
-   "judged": 92.326,
-   "verdict_pushed": 92.351,
-   "settled": 92.858,
-   "neutral_post": 92.912,
-   "terminated_post": 92.937
+   "terminated": 0.025,
+   "others_stopped": 0.093,
+   "reset": 0.121,
+   "swept": 0.143,
+   "neutral_pre": 0.196,
+   "accuracy": 0.237,
+   "permissions": 0.237,
+   "sleep_end": 0.237,
+   "log_begun": 0.36,
+   "launch_mark": 0.377,
+   "verdict_cleared": 0.4,
+   "launch": 1.437,
+   "settle_end": 11.442,
+   "trigger": 11.472,
+   "end": 92.199,
+   "runner_joined": 92.199,
+   "capture_mark": 92.236,
+   "pusher_joined": 92.236,
+   "log_ended": 92.26,
+   "log_written": 92.26,
+   "capture_extras": 92.287,
+   "db_pulled": 92.287,
+   "run_json": 92.329,
+   "judged": 92.412,
+   "verdict_pushed": 92.437,
+   "settled": 92.944,
+   "neutral_post": 93.023,
+   "terminated_post": 93.049
   },
   "calls": {
    "_adb": {
     "n": 21,
-    "s": 0.649,
+    "s": 0.709,
     "bg_n": 2,
-    "bg_s": 0.09
+    "bg_s": 0.086
    },
    "_stop_stream": {
     "n": 2,
@@ -95,7 +95,7 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.119,
+    "s": 0.123,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -107,13 +107,13 @@
    },
    "end_log": {
     "n": 1,
-    "s": 0.023,
+    "s": 0.024,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "evict": {
     "n": 2,
-    "s": 0.04,
+    "s": 0.047,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -131,25 +131,25 @@
    },
    "job": {
     "n": 1,
-    "s": 0.041,
+    "s": 0.039,
     "bg_n": 1,
-    "bg_s": 0.041
+    "bg_s": 0.039
    },
    "launch": {
     "n": 1,
-    "s": 1.011,
+    "s": 1.037,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "location_accuracy": {
     "n": 2,
-    "s": 0.038,
+    "s": 0.041,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 4,
-    "s": 0.11,
+    "s": 0.105,
     "bg_n": 1,
     "bg_s": 0.021
    },
@@ -167,15 +167,15 @@
    },
    "neutral": {
     "n": 2,
-    "s": 0.103,
+    "s": 0.132,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "peek": {
     "n": 102,
-    "s": 0.057,
+    "s": 0.064,
     "bg_n": 102,
-    "bg_s": 0.057
+    "bg_s": 0.064
    },
    "permissions": {
     "n": 1,
@@ -185,13 +185,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.136,
+    "s": 0.133,
     "bg_n": 2,
-    "bg_s": 0.09
+    "bg_s": 0.086
    },
    "reset_app": {
     "n": 1,
-    "s": 0.027,
+    "s": 0.028,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -203,22 +203,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.687,
+    "s": 0.709,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 4,
-    "s": 0.086,
+    "s": 0.096,
     "bg_n": 0,
     "bg_s": 0.0
    }
   },
   "dialogs": [],
-  "clock_offset_s": -0.291,
-  "clock_offset_rtt_s": 0.018,
+  "clock_offset_s": -0.666,
+  "clock_offset_rtt_s": 0.017,
   "log_phases": {
-   "boot": 1.313
+   "boot": 1.369
   }
  },
  "measure_from": "launch",
@@ -253,7 +253,7 @@
    "action0": 0.001
   },
   "sent_s": {
-   "action0": 3.1
+   "action0": 3.078
   }
  },
  "network": {
@@ -319,5 +319,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-16 14:00:06"
+ "when": "2026-11-16 14:57:38"
 }

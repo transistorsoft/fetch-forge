@@ -45,9 +45,12 @@ description: >
 
   (WO-002, 2026-11-13) Flutter is listed, PREDICTED GREEN on both steps from source, then MEASURED green (sweep
   20261113-175923, Lab1): on a recreation Flutter 3.47.5's FlutterActivityAndFragmentDelegate detaches the plugin FOR
-  CONFIG CHANGES, whose handler is empty (BackgroundFetchPlugin.java:34-38), so onDetachedFromActivity's
-  setHeadless(true) (BackgroundFetchModule.java:108-114) does not run.  Each FlutterActivity owns its engine, so the
-  new one runs main() and configures again: the same reschedule as Capacitor's, jobsCancelled 999 (platform_expect).
+  CONFIG CHANGES, whose handler was empty (BackgroundFetchPlugin.java:34-38 at 11d53b8), so onDetachedFromActivity's
+  setHeadless(true) (BackgroundFetchModule.java:108-114 at 11d53b8) did not run.  Each FlutterActivity owns its
+  engine, so the new one runs main() and configures again: the same reschedule as Capacitor's, jobsCancelled 999
+  (platform_expect).  (WO-012, 2026-11-16) The config-change detach now marks the instance detached in the module's
+  record and still leaves the flag alone (WO-003): green in sweep 20261116-145336 (Lab1) and by `labkit run` on Lab1
+  and Lab2 (the committed captures are Lab2's run).
 
   (WO-002, 2026-11-15) Cordova is listed, PREDICTED GREEN on both steps from source, then MEASURED green (sweep
   20261115-183522, Lab1): CDVBackgroundFetch.onDestroy goes headless only when its Activity is not changing

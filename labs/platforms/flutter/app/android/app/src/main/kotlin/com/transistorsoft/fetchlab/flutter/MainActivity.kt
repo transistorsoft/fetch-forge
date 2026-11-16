@@ -22,9 +22,10 @@ import java.lang.ref.WeakReference
  * Each Activity has its own FlutterEngine (FlutterActivity's default), so a recreation or a restart boots the Dart
  * driver again.  The background_fetch plugin hears the destroy inside super.onDestroy()
  * (FlutterActivityAndFragmentDelegate onDetach), so onDestroy:afterSuper below is after it — but which hook depends on
- * the destroy: a FINISHING one calls onDetachedFromActivity (setActivity(null, null): headless true), a recreation
- * onDetachedFromActivityForConfigChanges, which the plugin leaves empty (BackgroundFetchPlugin.java:34-38), and the
- * engine's destroy then reaches only onDetachedFromEngine: after a recreation no plugin hook has touched the flag.
+ * the destroy: a FINISHING one calls onDetachedFromActivity, which goes headless only when no other engine's plugin
+ * instance is still attached to an Activity (WO-012; at 11d53b8 it was setActivity(null, null), always headless), a
+ * recreation onDetachedFromActivityForConfigChanges, which never touches the flag, and the engine's destroy then reaches
+ * only onDetachedFromEngine, which never does either.
  */
 class MainActivity : FlutterActivity() {
     private val handler = Handler(Looper.getMainLooper())

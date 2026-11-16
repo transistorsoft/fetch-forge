@@ -1,7 +1,7 @@
 ---
 id: WO-012
 title: On Flutter Android, when an app restarts itself the old Activity detaches after the new one has attached, and that detach makes TSBackgroundFetch headless with the new screen up and removes the new engine's fetch event channel
-status: approved
+status: in-progress
 created: 2026-11-16
 platforms: [android]
 submodules: [flutter/background_fetch]
@@ -26,6 +26,8 @@ supersedes: []
 > - **Captures:** variant `FIX`, Android 16 / API 36. Flutter's restart cells ran on Lab2 (`emulator-5582`), plugin `11d53b8`, clean.
 >   - Captures carry no sweep id (`labs/harness/sweep.py:33`). I matched each cited capture to its sweep by its `run.json` `timings.t0`, against that sweep's `board.json` in `labs/harness/.claims/` (gitignored).
 >   - `run.json` and `summary.txt` are tracked. `logcat.txt` is on disk only (`labs/.gitignore:6`); its line numbers are cited.
+>   - **Since replaced, twice:** WO-011's sweep `20261116-135555` (committed in `62a813a`, still red on both restart steps), then this order's sweep and runs (Log). So the Diagnosis' logcat line numbers can no longer be re-read; `20261113-183048`'s `run.json` and `summary.txt` are at `6b8fcbc`.
+>   - **Lab files** (scenarios, the Flutter host) are cited at fetch-forge `18e406a`, where this order was drafted: later edits move some of their lines.
 
 ## Diagnosis
 
@@ -211,7 +213,7 @@ Two changes, both in `flutter/background_fetch/android/`. There is no Dart, iOS 
     - another Activity takes over the same engine (`FlutterEngineConnectionRegistry.java:316-327` → `FlutterActivity.java:898-910`). The instance is detached, then re-attached to the new Activity;
     - an attached engine is destroyed (`FlutterEngineConnectionRegistry.java:116-126`, `:294-305`);
     - the app attaches a Service, BroadcastReceiver or ContentProvider to an engine still attached to an Activity: `attachToService`, `attachToBroadcastReceiver` and `attachToContentProvider` each call `detachFromAppComponent` (`:524`, `:586`, `:635` → `:294-305`);
-    - the app removes the plugin from an engine still attached to an Activity (`remove`, `:231-235`, also reached from `removeAll`, `:287-290`). `onDetachedFromEngine` follows (`:274`). The fix's record drops the instance there as on any real detach, so that `onDetachedFromEngine` finds it already gone.
+    - the app removes the plugin from an engine still attached to an Activity (`remove`, `:231-235`, also reached from `removeAll`, `:287-290`). `onDetachedFromEngine` follows (`:274`). The fix marks the instance detached there, as on any real detach, and `onDetachedFromEngine` then removes it (the instance stays recorded until then: D5 (b)).
   - **`onDetachedFromEngine`:** `remove` (`:274`), from an engine's destroy, after any Activity detach (`:116-126`).
 - **Engines with no Activity:**
   - `HeadlessTask`'s (`HeadlessTask.java:148`), and other plugins' background engines. 1.6.2's commit names flutter_background_geolocation's (`7933027`).
@@ -222,7 +224,7 @@ Two changes, both in `flutter/background_fetch/android/`. There is no Dart, iOS 
   - Today it is the last engine to listen. Under change 2, it is the engine attached most recently that is listening.
   - **Same answer:** in a restart, before and after the new isolate listens, and on a second screen while it is open.
   - **Different answer:** after a second screen closes. Today the fetch goes to that screen's dead sink; under the fix, to the first screen.
-  - **A fetch between a new Activity's attach and its isolate's first `configure()`** goes to the old isolate while that one is still attached. After it detaches, the fetch is lost, as it is today (INFERRED).
+  - **A fetch between a new Activity's attach and its isolate's first `configure()`** goes to the old isolate while that one is still attached. After it detaches, the fetch is lost when the old engine is destroyed with its Activity, as today; an old engine that outlives its detach still gets it under D5 (b) (INFERRED).
 - **Which isolate gets a fetch when no instance is attached, but an engine that outlived its Activity still listens** (add-to-app with a `FlutterEngineCache` engine; INFERRED, not run):
   - Its FlutterActivity finishes. The engine survives (`FlutterActivity.java:1081-1092`). The detach sets the flag, today and under D1 (a); today it also removes the channel's handler (`BackgroundFetchPlugin.java:47-50`; `BackgroundFetchModule.java:109-113`).
   - When the app later returns to the foreground on a native Activity, ProcessLifecycleOwner's ON_START clears the flag (`LifecycleManager.java:154` (399765c)), and the next fetch takes the not-headless branch (`BackgroundFetch.java:272-275` (399765c)).
@@ -270,7 +272,7 @@ Two changes, both in `flutter/background_fetch/android/`. There is no Dart, iOS 
     - `restartOrder resumed-first` in both. Without it, the step proves nothing (`:16-18`).
   - **Change 1's own evidence:** the old Activity's `point=onDestroy:afterSuper` reads `headless=false`, and `lifecycleTally` holds no `headless:true`. `lifecycleTally` is recorded, not asserted (`:93`), so it has to be read, as WO-007's D4 (a) did.
   - **Change 2 (D4):**
-    - the new step reads red on change 1 alone (INFERRED): `driverEvents -` with `headless false`, and the reported `MissingPluginException` in logcat;
+    - the new step reads red on change 1 alone: `driverEvents -` with `headless false`, and the old engine's `W/FlutterJNI: Tried to send a platform message to Flutter, but FlutterJNI was detached from native C++` on the events channel (MEASURED by the D4 (b) probe; the `MissingPluginException` report this line first predicted did not appear: Log);
     - it reads green on the fix;
     - until the step lands, the probe.
 - **Regression: the Flutter Android suite.** Expect 12/13, with `api-smoke` red only for WO-011's finding, or 13/13 if WO-011's fix is in the swept code. These must stay green, with their current values:
@@ -363,14 +365,14 @@ Two changes, both in `flutter/background_fetch/android/`. There is no Dart, iOS 
 ## Verification
 
 - [x] D1–D5 decided
-- [ ] `restart-foreground-android`, both steps green on the fix, Flutter Android, Lab1 and Lab2. The old Activity's `onDestroy:afterSuper` reads `headless=false`, and `lifecycleTally` holds no `headless:true`
-- [ ] Change 2 proven as D4 picks: red on change 1 alone, green on the fix
-- [ ] Flutter Android suite on the fix: 12/13, with `api-smoke` red only for WO-011's finding, or 13/13 if WO-011's fix is in the swept code; the Log records each sweep's plugin stamp and any other order's code in the checkout. `recreate-foreground-android`, `headless-activity-destroyed`, `headless-kill`, `stop-on-terminate` and `termination-calibration` green, with their current values
-- [ ] Anchors:
+- [x] `restart-foreground-android`, both steps green on the fix, Flutter Android, Lab1 and Lab2. The old Activity's `onDestroy:afterSuper` reads `headless=false`, and `lifecycleTally` holds no `headless:true`
+- [x] Change 2 proven as D4 picks: red on change 1 alone, green on the fix
+- [x] Flutter Android suite on the fix: 12/13, with `api-smoke` red only for WO-011's finding, or 13/13 if WO-011's fix is in the swept code; the Log records each sweep's plugin stamp and any other order's code in the checkout. `recreate-foreground-android`, `headless-activity-destroyed`, `headless-kill`, `stop-on-terminate` and `termination-calibration` green, with their current values
+- [x] Anchors:
   - `// (WO-012)` at the changed methods;
   - the CHANGELOG `## Unreleased` `[Android]` entry carries `(WO-012)`;
   - `restart-foreground-android.yaml`'s Flutter paragraph adds the green sweep beside WO-012's name (prose only)
-- [ ] Platform parity:
+- [x] Platform parity:
   - iOS change 1 N/A, as cited;
   - iOS change 2 not affected in this shape, as cited, with the subscriber-id note recorded;
   - React Native and Capacitor MEASURED green;
@@ -407,3 +409,46 @@ Two changes, both in `flutter/background_fetch/android/`. There is no Dart, iOS 
     - Test plan and Verification: the suite reads 12/13 with WO-011's red, or 13/13 if WO-011's fix is in the swept code. The Log records each sweep's plugin stamp and any other order's code in the checkout, as WO-011 does.
     - The scenario's Flutter paragraph already names WO-012 (WO-002's 2026-11-16 entry), so the anchor adds only the green sweep. The header notes that entry assigns WO-002's open item (`:1222`) here. No citation into `api-smoke-ios.yaml`; WO-002's and the scenario's line citations re-checked, unchanged.
 - 2026-11-16 — **Approved by Chris** ("approve all WO 9-12"): D1 (a) headless only when no other plugin instance is attached; D2 (a) each instance's channel from `onAttachedToEngine` to `onDetachedFromEngine`; D4 (a) the WO-002 follow-up step, with (b) the adb probe until it lands. The two decisions the draft left open, answered by Chris on 2026-11-16: **D5 (b)**, fall back to the instance attached most recently whose engine is alive and whose Dart side is listening, counting only instances that have attached to an Activity at least once; **D3: decided at release.** Status `approved`. Chris chose to take the orders one at a time: this one follows WO-011.
+- 2026-11-16 — **Implemented** on `fix/WO-012-flutter-android-restart-ordering` in `flutter/background_fetch`, from `9ccc569` (the plugin's `master`: `11d53b8` plus WO-011, merged and pushed); uncommitted, for Chris's diff review. Status `in-progress`. D3: Chris has since made `master`'s next release 2.0.0 (WO-011 Log), so this ships in 2.0.0 unless a 1.x branch carries it.
+  - **Re-verified before code:** `BackgroundFetchPlugin.java` and the module's lifecycle and event-channel code are unchanged from `11d53b8` (WO-011 touched only `stop`); the Diagnosis' source citations stand. Its capture citations do not: the cited captures have since been replaced (Citation bases).
+  - **Change 1 (D1 a).** The module keeps every engine-alive plugin instance (`mInstances`, added in `onAttachedToEngine`, removed in `onDetachedFromEngine`) with its `mAttached` flag and `mAttachSeq` order. `onAttachedToActivity` (also from `onReattachedToActivityForConfigChanges`) keeps today's `destroyBackgroundIsolate()` and `setHeadless(false)` and records the attach. `onDetachedFromActivity(plugin, terminal)` clears its attached mark (the instance stays recorded until `onDetachedFromEngine`, so D5's fallback can still reach an engine that outlives its Activity); a real detach goes headless only when no other instance is attached, else it logs "An Activity detached while another is attached: not headless". `onDetachedFromActivityForConfigChanges` clears the mark and leaves the flag alone (WO-003). `onDetachedFromEngine` never touches the flag.
+  - **Change 2 (D2 a).** Each plugin instance owns its `EventChannel` and sink from `onAttachedToEngine` to `onDetachedFromEngine`; `onCancel` clears the sink; teardown removes only its own handler. The module's `mEventChannelTask` and `FetchStreamHandler` are gone; its one SDK callback (`FetchCallback`) delivers to `deliveryTarget()`.
+  - **D5 (b), Chris's:** the target is the attached instance attached most recently whose sink is set; with no attached instance listening, the engine-alive instance attached most recently whose sink is set; never one with `mAttachSeq == 0` (never attached: `HeadlessTask`'s engine, another plugin's background engine). With none, the existing "mEventSink is null" error.
+  - **CHANGELOG** `[Android]` line (the draft's, plus the late-configure case change 2 fixes).
+  - **D4 (b), the probe, MEASURED** (Lab2, `labkit run` of `restart-foreground-android`; the Flutter driver temporarily patched to hold boot 2's `configure()` 1.5 s in `_configureWith`, so the new isolate listens after the old Activity's destroy; driver and plugin restored byte for byte afterwards). A first attempt patched the boot branch, which the scenario does not use (its configure is event-armed): no delay, so both builds passed and proved nothing.
+
+    | Build | `run` | `stop-on-terminate-false` |
+    |---|---|---|
+    | change 1 alone (a throwaway: `9ccc569` plus an attach counter for the flag, the process-wide channel kept) | FAIL: `driverEvents -`, `eventAssertions configure@0=never-fired`, `headless false`; the fetch went to the old engine's sink: `W/FlutterJNI: Tried to send a platform message to Flutter, but FlutterJNI was detached from native C++. Could not send.` | FAIL, the same |
+    | the fix | PASS: `driverEvents fetch=1`, the module's "not headless" line at the old detach | PASS |
+
+    So the Diagnosis' SUSPECTED event-channel defect is MEASURED: with the flag fixed alone, a new screen that configures after the old one is destroyed loses its fetches. WO-002's scenario step (D4 a) is still WO-002's to build.
+  - **Lab, MEASURED,** native `4.1.1-master-399765c`, plugin `9ccc569+dirty` (WO-011 merged; this order's tree):
+
+    | Sweep / run | What | Result |
+    |---|---|---|
+    | `20261116-145336` | Flutter Android, the suite, FIX | **13/13** |
+    | `labkit run`, Lab1 and Lab2 | `restart-foreground-android`, `recreate-foreground-android`, `headless-activity-destroyed` | PASS on both (the committed captures of these three are Lab2's runs) |
+
+    - **By hand:** restart, both steps: the module's "not headless" line, then `onDestroy:afterSuper … headless=false`; `lifecycleTally onCreate=1,onResume=1,onStart=1` (no `headless:true`). Recreate, both steps: `headless=false`, no `HeadlessMode? true`. `headless-activity-destroyed` and `stop-on-terminate/finish`: `HeadlessMode? true` at the finish, `headless true`; `headless-kill` `flutterHeadlessInit 1`.
+  - **Re-scored:** 208 captures, 26 not PASS, all React Native's WO-004 captures (`spec-changed`). Exactly this order's two reds turned green. selftest passes.
+  - **Lab text:** the scenario's Flutter paragraph, in the past tense with WO-012's green and the probe. Three `// (WO-012)` anchors (comments only) were added after the sweeps.
+  - **Not measured:** the cached-engine paths (D5's fallback, the re-attach) and the two-FlutterActivity back press: the lab host has one Activity class and no cached engine (Test plan).
+  - **Reviewed (four lenses, three skeptics per finding): 21 findings, 17 upheld, all applied.** No code change: comments, the CHANGELOG's wording, lab text and this record.
+    - **The probe, recorded in full.** It ran through `labkit run` with a temporarily patched driver, not a bare `adb` probe: a 1.5 s `await` in `_configureWith`'s closure, before `BackgroundFetch.configure`, for boot 2 only. The mutant (`9ccc569` with an attach counter around the detach's `setHeadless(true)`, its `setStreamHandler(null)` on the one process-wide channel kept) and the captures stayed in the session's scratchpad (`wo012/Module.mutant`, `wo012/d4b-*-captures`); they are not committed. The order, from those logcats:
+
+      | Build / step | delayed configure | old `point=onDestroy` | boot 2 `- configure` | fetch | where it went |
+      |---|---|---|---|---|---|
+      | mutant `run` | 09.640 | 09.686 | 11.166 | 13.925 | old engine: FlutterJNI "detached … Could not send" |
+      | mutant `stop-on-terminate-false` | 52.412 | 52.471 | 53.940 | 56.742 | the same |
+      | fix `run` | 40.475 | 40.524 | 41.983 | 44.840 | the page, `app=event=fetch` |
+      | fix `stop-on-terminate-false` | 23.252 | 23.319 | 24.763 | 27.558 | the page |
+
+    - **Not observed:** the `MissingPluginException` report the Test plan predicted for the new isolate's lost listen did not appear in either mutant logcat. What is MEASURED is the outcome: the module's sink stayed the destroyed engine's. The lost-listen step stays INFERRED, and so does the reason for the missing report (in a debug build Flutter's widget inspector takes over error reporting as structured errors sent to the VM service: read in source, not run). The Test plan's red signature is now the FlutterJNI warning.
+    - **Comments:** a detach marks the instance detached; only `onDetachedFromEngine` removes it (the plugin's comment and this Log said "drops"); the fallback applies whenever no attached instance is listening.
+    - **The CHANGELOG:** `stopOnTerminate: false` without `enableHeadless` was stopped too, not sent to a headless task.
+    - **Lab text left stale by the fix:** `recreate-foreground-android.yaml`'s Flutter paragraph (past tense, `at 11d53b8`, WO-012's green) and the Flutter host's class comment (`MainActivity.kt`); the restart paragraph's citations pinned to `11d53b8`, the red captures' commits named, "24-36 ms" from the committed captures, and the probe described as it ran.
+    - **The record:** the Citation bases say the cited captures were replaced twice, and pin lab-file lines to `18e406a`; two Scope-check sentences match D5 (b)'s record. Since WO-011 the plugin has a Dart `test/` suite, but it cannot reach the Java module and there is still no Android JVM harness, so "no unit test" stands for that reason.
+    - **Refuted (4),** among them: that the CHANGELOG must list every customer-visible change the Scope check records, and that the shared plugin stamp makes the probe builds indistinguishable.
+    - All of these came after the sweeps; the Java edits are comments only.
+- 2026-11-16 — **Committed** (Chris: "Commit both"): plugin `4cf0ae2` on `fix/WO-012-flutter-android-restart-ordering` (from `9ccc569`), and fetch-forge's branch of the same name (this Log, the lab text, the captures). Not merged; the `flutter/background_fetch` pointer moves when the plugin branch is merged, and the order is `done` then. It ships in 2.0.0 with WO-011 unless a 1.x branch carries it (D3).
