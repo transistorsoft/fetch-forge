@@ -48,7 +48,12 @@ description: >
   CONFIG CHANGES, whose handler is empty (BackgroundFetchPlugin.java:34-38), so onDetachedFromActivity's
   setHeadless(true) (BackgroundFetchModule.java:108-114) does not run.  Each FlutterActivity owns its engine, so the
   new one runs main() and configures again: the same reschedule as Capacitor's, jobsCancelled 999 (platform_expect).
-platforms: [react-native, capacitor, flutter]
+
+  (WO-002, 2026-11-15) Cordova is listed, PREDICTED GREEN on both steps from source, then MEASURED green (sweep
+  20261115-183522, Lab1): CDVBackgroundFetch.onDestroy goes headless only when its Activity is not changing
+  configurations (CDVBackgroundFetch.java:160-170, WO-003's guard).  The new Activity's page reloads and configures
+  again: jobsCancelled 999, as Capacitor's (platform_expect).
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   ios: "2026-11-09 — iOS has no headless mode; `job:` and the bold trigger's recreation are Android's."
 measure_from: launch
@@ -57,6 +62,7 @@ platform_expect:
   react-native: {driverTally: "fetch:react-native-background-fetch=1"}
   capacitor: {driverTally: "fetch:capacitor-background-fetch=1", jobsCancelled: "999"}
   flutter: {driverTally: "fetch:flutter_background_fetch=1", jobsCancelled: "999"}
+  cordova: {driverTally: "fetch:cordova-background-fetch=1", jobsCancelled: "999"}
 steps:
   - name: run
     settle: 10

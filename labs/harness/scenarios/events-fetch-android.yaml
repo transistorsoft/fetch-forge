@@ -29,7 +29,7 @@ description: >
     * jobIds 999: after two runs and two finishes the periodic fetch job is still the one job the app holds
       (the host's `dumpsys jobscheduler <pkg>` at the step's end).
     * headlessEvents.fetch 0: the app is in the foreground throughout.
-platforms: [react-native, capacitor, flutter]
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   ios: "2026-11-05 — `job:` is JobScheduler's (`actions:` are Android's); an iOS fetch is fired by the lab hook (WO-002
     D3), which is ios-fetch-sim's."
@@ -69,3 +69,4 @@ steps:
       react-native: {driverTally: "fetch:react-native-background-fetch=2"}
       capacitor: {driverTally: "fetch:capacitor-background-fetch=2"}
       flutter: {driverTally: "fetch:flutter_background_fetch=2"}
+      cordova: {driverTally: "fetch:cordova-background-fetch=2"}

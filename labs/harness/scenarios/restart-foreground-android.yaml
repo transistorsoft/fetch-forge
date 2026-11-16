@@ -41,7 +41,18 @@ description: >
   true); in `stop-on-terminate-false` the fetch goes to a headless FlutterEngine started in the same process beside
   the live UI (`point=headless`, its task-probe `current=` the new Activity).  The new engine configures again on
   boot 2: jobsCancelled 999, as Capacitor's (platform_expect).  A finding for its own work order, never relaxed here.
-platforms: [react-native, capacitor, flutter]
+
+  (WO-002, 2026-11-15) Cordova is listed, PREDICTED RED on both steps from source, then MEASURED red (sweep
+  20261115-183522, Lab2).  CDVBackgroundFetch.onDestroy goes headless for any destroy that is not a recreation
+  (CDVBackgroundFetch.java:160-170) — WO-007's first approved condition, the one the probe measured red — with no check
+  of which Activity is current.  That is the one cause: the new Activity resumed and its plugin instance was created
+  (on the page's first exec()) BEFORE the old Activity's destroy set the flag (MEASURED, e.g. 58.242 / 58.285 / 58.734
+  in `run`), so no onResume could have cleared it; the lazy creation matters only to a fix, which needs some record of
+  the current Activity.  The old Activity's
+  `point=onDestroy:afterSuper` reads headless=true with the new one current, its resumed+2s still does, and `run`
+  reads the regression exactly (stoppingOnTerminate 1, driverEvents `-`, jobIds `-`); `stop-on-terminate-false`
+  sends the fetch to the Java headless task with the UI on screen.  A finding for its own work order.
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   ios: "2026-11-13 — iOS has no headless mode and the Simulator host no finish trigger; `job:` actions are Android's."
 measure_from: launch
@@ -50,6 +61,7 @@ platform_expect:
   react-native: {driverTally: "fetch:react-native-background-fetch=1"}
   capacitor: {driverTally: "fetch:capacitor-background-fetch=1", jobsCancelled: "999"}
   flutter: {driverTally: "fetch:flutter_background_fetch=1", jobsCancelled: "999"}
+  cordova: {driverTally: "fetch:cordova-background-fetch=1", jobsCancelled: "999"}
 steps:
   - name: run
     settle: 10

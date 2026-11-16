@@ -20,7 +20,7 @@ description: >
       JobScheduler answers `Could not find job` (a jobId formula that drifted reads `missed(no-job)` on the first one
       instead).  PREDICTED: the one-shot job is gone after its jobFinished(false); the first board settles it.
     * jobIds 999 at the end: the fetch job stays, the task's is gone.
-platforms: [react-native, capacitor, flutter]
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   ios: "2026-11-09 — `job:` is JobScheduler's; an iOS custom task is fired by the lab hook (WO-002 D3), which is
     ios-task-sim's."

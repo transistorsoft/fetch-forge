@@ -1,0 +1,15 @@
+{
+  "name": "com.transistorsoft.fetchlab.cordova",
+  "displayName": "FetchCordovaLab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "(WO-002) The fetch lab's Cordova host. cordova-android is pinned exactly and installed from the committed lock (npm ci); the plugin under test and the lab plugin are added by build.sh with --nosave, never listed here.",
+  "license": "MIT",
+  "devDependencies": {
+    "cordova-android": "15.0.0"
+  },
+  "cordova": {
+    "platforms": [],
+    "plugins": {}
+  }
+}

@@ -38,7 +38,7 @@ description: >
   was relaxed for it.  MEASURED red in sweep 20261112-113743, exactly so; WO-007 (handleOnDestroy/handleOnResume in
   the plugin) turned `finish` green from sweep 20261113-094121.  status#0 is only the kill's anchor, so it asserts
   `outcome: resolved`: what status() returns is api-smoke's to score.
-platforms: [react-native, capacitor, flutter]
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   ios: "2026-11-09 — iOS has no headless mode and stopOnTerminate is a no-op there (TSBackgroundFetch.m:388-393);
     `actions:` are Android's."

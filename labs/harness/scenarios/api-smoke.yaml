@@ -51,6 +51,16 @@ description: >
       scheduled tasks are cancelled").  React Native and Capacitor map null to their own fetch taskId, which is the
       divergence from the types.  This step cannot tell the two apart (stop#5 has already stopped the smoke task before
       stop#7), so it pins neither: a finding to measure in its own scenario.
+    * (WO-002, 2026-11-15) Cordova's JS is CALLBACK style but for configure() (www/index.js at 368eb85): start, stop,
+      status, scheduleTask and finish take success/failure callbacks and return nothing.  Called as a customer calls
+      them, status#2, start#3, scheduleTask#4, stop#5 and stop#7 read `want-…-got-undefined` — PREDICTED from source,
+      MEASURED (sweep 20261115-183522); configure#0 is a function, registerHeadlessTask#1 is `absent` (absent_on:
+      cordova, headless is Java), finish#6 passes (`undefined`).  A finding for its own work order (Chris, 2026-11-15),
+      as Capacitor's void returns were (WO-006); the scenarios that anchor on status() assert `outcome: resolved`.
+      And stop(taskId), the types' form, is not Cordova's: its stop(success, failure) takes the id as the success
+      callback and sends the native side no taskId, so stop#5 cancels EVERY task (CDVBackgroundFetch.java:81-88 →
+      BackgroundFetch.java stop(null)), then cordova.js throws `TypeError: callback.success.apply is not a function`
+      calling the string (MEASURED, the same sweep's logcat).  jobIds `-` cannot tell that from stopping one task.
 
   WHAT ELSE IT READS (WO-002 review: the hooks alone pass with a broken SDK — status/start answer 2 on Android
   whatever happens, and stop() answers true):
@@ -66,7 +76,7 @@ description: >
       20261105-134121 (Lab1 emulator-5580, Android 16; native 4.1.1-master-5de5242, plugin 2acdc21).
     * bootBroadcasts: recorded (a launch after run.py's pre-step force-stop delivers BOOT_COMPLETED on Android 16).
   jobIds is read at the step's end, so the step keeps its full window rather than ending on its evidence.
-platforms: [react-native, capacitor, flutter]
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   ios: "2026-11-11 — iOS has its own scenario, api-smoke-ios: there scheduleTask rejects on the Simulator, and what
     else is read is BGTaskScheduler's requests, not JobScheduler's jobs (one scenario per OS, as bg-forge's
@@ -84,6 +94,8 @@ hooks:
     absent_on:
       capacitor: "2026-11-12 — headless is Java only on Capacitor (the app's BackgroundFetchHeadlessTask), and
         src/index.ts's BackgroundFetch declares no registerHeadlessTask (WO-002)."
+      cordova: "2026-11-15 — headless is Java only on Cordova (the app's BackgroundFetchHeadlessTask, at the class name
+        CDVBackgroundFetch hands the SDK), and src/typescript/index.ts declares no registerHeadlessTask (WO-002)."
   - api: status
     returns: {$: {type: number, in: [0, 1, 2]}}
   - api: start

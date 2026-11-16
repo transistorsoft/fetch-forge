@@ -1,0 +1,9 @@
+# (WO-002) Generated Cordova project state: `cordova platform add` / `cordova plugin add` recreate both on every
+# build.sh run (run.py's source stamp skips both directories).
+/platforms/
+/plugins/
+
+# Installed from the committed package-lock.json (npm ci); the plugin under test never comes from here.
+node_modules/
+
+.DS_Store

@@ -38,6 +38,8 @@ description: >
 platforms: [react-native, capacitor, flutter]
 not_applicable:
   android: "2026-11-11 — api-smoke is Android's: its scheduleTask resolves, and it reads JobScheduler's jobs."
+  cordova: "2026-11-15 — the Cordova host is Android-only until its iOS slice (WO-002: Cordova Android, then
+    iOS); un-excuse it with the iOS host."
 measure_from: launch
 settle: 10
 after: 30
