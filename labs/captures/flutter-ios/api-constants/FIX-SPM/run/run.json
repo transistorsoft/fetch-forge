@@ -23,7 +23,7 @@
  "plugin_source": {
   "checkout": "flutter/background_fetch",
   "commit": "11d53b8dd8194cd0c8335415976599d3dc8272cd",
-  "dirty": "no"
+  "dirty": "yes"
  },
  "device": {
   "model": "Lab2",
@@ -36,7 +36,7 @@
  "end": {
   "policy": "evidence",
   "ended": "evidence",
-  "evidence_s": 2.0,
+  "evidence_s": 2.1,
   "end_s": 4.6,
   "grace": {
    "rule": "fixed",
@@ -46,65 +46,65 @@
    "floor_s": 0.0
   },
   "poll_s": 0.25,
-  "parse_ms": 1.1,
-  "parse_ms_max": 1.9
+  "parse_ms": 1.0,
+  "parse_ms_max": 2.0
  },
  "timings": {
-  "step_s": 6.7,
-  "t0": 1794677987.128,
+  "step_s": 6.8,
+  "t0": 1794856078.393,
   "phases": {
    "terminated": 0.089,
-   "others_stopped": 0.187,
-   "reset": 0.695,
-   "swept": 0.904,
-   "neutral_pre": 0.904,
-   "permissions": 0.904,
-   "sleep_end": 0.904,
-   "log_begun": 1.21,
-   "launch_mark": 1.313,
-   "verdict_cleared": 1.444,
-   "launch": 1.56,
-   "evidence": 3.61,
-   "grace_end": 5.658,
-   "alive": 6.174,
-   "trigger": 6.307,
-   "end": 6.307,
-   "capture_mark": 6.409,
-   "pusher_joined": 6.409,
-   "log_ended": 6.643,
-   "log_written": 6.644,
-   "capture_extras": 6.644,
-   "db_pulled": 6.645,
-   "run_json": 6.697,
-   "judged": 6.729,
-   "verdict_pushed": 6.73,
-   "settled": 7.235,
-   "snapshot": 7.603,
-   "neutral_post": 7.603,
-   "terminated_post": 7.705
+   "others_stopped": 0.186,
+   "reset": 0.716,
+   "swept": 0.931,
+   "neutral_pre": 0.931,
+   "permissions": 0.931,
+   "sleep_end": 0.931,
+   "log_begun": 1.338,
+   "launch_mark": 1.456,
+   "verdict_cleared": 1.562,
+   "launch": 1.698,
+   "evidence": 3.755,
+   "grace_end": 5.813,
+   "alive": 6.318,
+   "trigger": 6.458,
+   "end": 6.458,
+   "capture_mark": 6.565,
+   "pusher_joined": 6.565,
+   "log_ended": 6.792,
+   "log_written": 6.792,
+   "capture_extras": 6.792,
+   "db_pulled": 6.793,
+   "run_json": 6.845,
+   "judged": 6.885,
+   "verdict_pushed": 6.885,
+   "settled": 7.386,
+   "snapshot": 7.78,
+   "neutral_post": 7.78,
+   "terminated_post": 7.902
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.229,
+    "s": 0.222,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.053,
+    "s": 2.134,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_tap_text": {
     "n": 25,
-    "s": 0.004,
+    "s": 0.005,
     "bg_n": 4,
     "bg_s": 0.001
    },
    "begin_log": {
     "n": 1,
-    "s": 0.307,
+    "s": 0.407,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -116,19 +116,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.24,
+    "s": 0.237,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.208,
+    "s": 0.215,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.234,
+    "s": 0.227,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -140,25 +140,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.098,
+    "s": 0.097,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.116,
+    "s": 0.136,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.338,
+    "s": 0.364,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.119,
+    "s": 0.142,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -170,7 +170,7 @@
    },
    "peek": {
     "n": 23,
-    "s": 0.02,
+    "s": 0.019,
     "bg_n": 4,
     "bg_s": 0.004
    },
@@ -182,13 +182,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.133,
+    "s": 0.108,
     "bg_n": 2,
-    "bg_s": 0.001
+    "bg_s": 0.002
    },
    "reset_app": {
     "n": 1,
-    "s": 0.393,
+    "s": 0.394,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -200,13 +200,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.368,
+    "s": 0.394,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.191,
+    "s": 0.209,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -215,9 +215,9 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.484,
-   "evidence": 3.488,
-   "beat": 5.987
+   "boot": 3.632,
+   "evidence": 3.636,
+   "beat": 6.136
   }
  },
  "measure_from": "trigger",
@@ -335,5 +335,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-14 12:39:53"
+ "when": "2026-11-16 14:08:05"
 }

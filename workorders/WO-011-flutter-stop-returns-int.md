@@ -1,7 +1,7 @@
 ---
 id: WO-011
 title: Flutter's stop() is Future<int> and resolves the background-fetch status, where the shared types declare Promise<boolean> and React Native and Capacitor resolve true
-status: approved
+status: in-progress
 created: 2026-11-16
 platforms: [android, ios]
 submodules: [flutter/background_fetch]
@@ -230,17 +230,17 @@ The choice decides what else can ship in a 1.x: WO-001's iOS 15 change, already 
 ## Verification
 
 - [x] D1–D4 decided
-- [ ] (D4 a) both `(WO-011)` test files red at `11d53b8` (the mock test's TypeError and the guard's compile error, each recorded), green on the fix; `flutter test` passes; `flutter analyze` adds no issue to the baseline recorded at `11d53b8`
-- [ ] Flutter Android `api-smoke` green on the fix: `stop#5` and `stop#7` read boolean `true`; `jobsRegistered` and `jobIds` unchanged; the suite otherwise 12/13 (restart-foreground-android is WO-012's), or 13/13 if WO-012's fix is in the swept tree; the Log records the plugin stamp and any other order's tree under each sweep
-- [ ] Flutter iOS `api-smoke-ios` green on FIX and FIX-SPM; `stop#5` and `stop#7` read `true`; the BGTaskScheduler rows unchanged
-- [ ] Flutter iOS `ios-stop-start` green on FIX and FIX-SPM: `stop#1` reads `true` in `stopped` and `restarted`; every metric unchanged
-- [ ] Platform parity: both OSes changed in one commit (D2) and both measured green; React Native and Capacitor untouched
-- [ ] Customer patterns from the Scope check compiled against the fix, with the `Future<dynamic>` / `Future<Object>` checks and (D2 b) the int-answering channel mock run; results recorded in the Log
-- [ ] `example/example.md:99` and `example/lib/main.dart:177` read a `bool`
+- [x] (D4 a) both `(WO-011)` test files red at `11d53b8` (the mock test's TypeError and the guard's compile error, each recorded), green on the fix; `flutter test` passes; `flutter analyze` adds no issue to the baseline recorded at `11d53b8`
+- [x] Flutter Android `api-smoke` green on the fix: `stop#5` and `stop#7` read boolean `true`; `jobsRegistered` and `jobIds` unchanged; the suite otherwise 12/13 (restart-foreground-android is WO-012's), or 13/13 if WO-012's fix is in the swept tree; the Log records the plugin stamp and any other order's tree under each sweep
+- [x] Flutter iOS `api-smoke-ios` green on FIX and FIX-SPM; `stop#5` and `stop#7` read `true`; the BGTaskScheduler rows unchanged
+- [x] Flutter iOS `ios-stop-start` green on FIX and FIX-SPM: `stop#1` reads `true` in `stopped` and `restarted`; every metric unchanged
+- [x] Platform parity: both OSes changed in one commit (D2) and both measured green; React Native and Capacitor untouched
+- [x] Customer patterns from the Scope check compiled against the fix, with the `Future<dynamic>` / `Future<Object>` checks and (D2 b) the int-answering channel mock run; results recorded in the Log
+- [x] `example/example.md:99` and `example/lib/main.dart:177` read a `bool`
 - [ ] docforge `BackgroundFetch.stop.yaml:42` updated when the D3 release is published
-- [ ] Lab text names WO-011, with the red and green sweeps: `api-smoke.yaml:42-47`, `lab.yaml:61`, `main.dart:930-932` and `:940`, and dated Flutter lines in `api-smoke-ios.yaml` and `ios-stop-start.yaml`
+- [x] Lab text names WO-011, with the red and green sweeps: `api-smoke.yaml:42-47`, `lab.yaml:61`, `main.dart:930-932` and `:940`, and dated Flutter lines in `api-smoke-ios.yaml` and `ios-stop-start.yaml`
 - [ ] CHANGELOG entry carries `(WO-011)`, in the release D3 picks; under D3 (a), the branch merged only as Chris decided (where the code waits)
-- [ ] Under D1 (b) instead: doc comment, docforge `platform_description` (the shared description in full, with `@example example-1`, plus the status sentence) and a `[Docs] (WO-011)` line; status `wont-fix` with Chris's reason in the Log; the reds left in place, with their descriptions naming WO-011
+- [x] N/A: D1 is (a). Under D1 (b) instead: doc comment, docforge `platform_description` (the shared description in full, with `@example example-1`, plus the status sentence) and a `[Docs] (WO-011)` line; status `wont-fix` with Chris's reason in the Log; the reds left in place, with their descriptions naming WO-011
 
 ## Log
 
@@ -274,3 +274,36 @@ The choice decides what else can ship in a 1.x: WO-001's iOS 15 change, already 
     - Sibling citations name the section, not a line (those orders are being edited). The release-branch flow rests on the merges `39ec643` and `a998627`; the plugin's `CLAUDE.md:72-76` is only the checklist and is no longer cited.
     - `api-smoke-ios.yaml`'s scheduleTask hook is now `:78-80` (one comment line added above it). No step here pointed WO-002's open items at this order or corrected its sweep citations: WO-002's 2026-11-16 entry does that.
 - 2026-11-16 — **Approved by Chris** ("approve all WO 9-12"), with the recommended decisions: D1 (a) `Future<bool>` resolving `true`; D2 (b) both natives answer `true` and Dart forwards it; D3 (a) 2.0.0, with a Breaking section; D4 (a) the plugin's first Dart unit tests. Status `approved`. Chris chose to take the orders one at a time: this one follows WO-010.
+- 2026-11-16 — **Implemented** on `fix/WO-011-flutter-stop-returns-int` in `flutter/background_fetch`, from `11d53b8` (= origin/master, as when this order was drafted: the Diagnosis' citations stand); uncommitted, for Chris's diff review. Status `in-progress`.
+  - **Dart** (`lib/background_fetch.dart`): `static Future<bool> stop([String? taskId])` returns the channel's value, as `scheduleTask` does. The doc comment says it resolves `true` once the stop is made, not whether a task was stopped, and points to `status` (its open ```` ```dart ```` fence is now closed).
+  - **Android** (`BackgroundFetchModule.java` `stop`): `result.success(true)`. **iOS** (`BackgroundFetchPlugin.m` `stop:result:`): `result(@(YES))`; the status round trip is gone. Both with `// (WO-011)`. Nothing about what stop() stops changed (WO-013).
+  - **Examples:** `example/example.md` and `example/lib/main.dart` read `(bool stopped)`. **CHANGELOG:** the `[Changed] **Breaking:**` line with an OLD/NEW block, under `## Unreleased` (D3 a: 2.0.0; where it waits is Chris's call at merge time).
+  - **D4 (a), MEASURED.** `pubspec.yaml` gains `dev_dependencies: flutter_test`. Two files, each with a group `WO-011 stop()`:
+    - **red at `11d53b8`:** `test/stop_signature_test.dart` fails to compile ("A value of type 'Future<int> Function([String?])' can't be assigned to a variable of type 'Future<bool> Function([String?])'"); `test/background_fetch_test.dart`'s two tests fail with "type 'bool' is not a subtype of type 'int'";
+    - **green on the fix:** `flutter test`, 3 tests passed.
+  - **`flutter analyze`:** baseline at `11d53b8` 13 issues (the missing `package:lints` include, and 12 errors in the example's stale template tests); the same 13 on the fix. **Flutter 3.47.5's `flutter analyze` rewrites `analysis_options.yaml`** (it adds an `analyzer: exclude:` block) on every run: restored each time, and not part of this change.
+  - **Customer patterns, MEASURED** (Flutter 3.47.5, a scratch package depending on the fix by path, `lints/recommended`):
+    - **Fail to compile:** `int s = await stop()`, `.then((int s) …)`, an `int` field, `Future<int> f = stop()`, the tear-off to `Future<int> Function([String?])`.
+    - **Compiles, always false:** `var s = await stop(); s == BackgroundFetch.STATUS_AVAILABLE`, flagged `unrelated_type_equality_checks` (in `lints/core`).
+    - **Unaffected:** a bare `await`, a fire-and-forget call, an untyped `.then`.
+    - **The shortcut's declarations:** under `Future<dynamic>` only `int s = await stop()` compiles, and with `true` it throws "type 'bool' is not a subtype of type 'int'" at run time; the other three fail to compile. Under `Future<Object>` all four fail to compile. As the shortcut bullet predicted.
+    - **D2 (b)'s cost:** a channel mock answering `'stop'` with an int now throws "type 'int' is not a subtype of type 'FutureOr<bool>'".
+  - **Lab, MEASURED,** native `4.1.1-master-399765c`, plugin `11d53b8+dirty` (this order's tree; no other order's code):
+
+    | Sweep | What | Result |
+    |---|---|---|
+    | `20261116-135555` | Flutter Android, the suite, FIX | 12/13: api-smoke green; restart-foreground-android red (WO-012) |
+    | `20261116-140304` / `-140744` | Flutter iOS, the board, FIX / FIX-SPM | 7/7 each |
+
+    - **By hand:** Android api-smoke status#2 and start#3 `number 2`, scheduleTask#4, stop#5 and stop#7 `boolean true`; `jobsRegistered -592898938,999`, `jobIds -`. iOS api-smoke-ios (both channels) stop#5 and stop#7 `boolean true`, scheduleTask#4 `outcome=rejected`; `bgCancels com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1`, `sdkTasks -`, `sdkSubscribers -`. ios-stop-start (both channels) stop#1 `boolean true` in both steps, start#2 `number 2` in `restarted`, every metric green.
+  - **Re-scored:** 208 captures, 28 not PASS. Exactly this order's seven reds turned green. selftest passes.
+  - **Lab text:** api-smoke.yaml's Flutter bullet names WO-011 and the green sweep; lab.yaml's note; the driver's stop and finish comments (edited before the sweeps); dated Flutter lines in api-smoke-ios.yaml and ios-stop-start.yaml with the red and green sweeps. No assertion changed.
+  - **Left for the release:** docforge's `BackgroundFetch.stop.yaml:42` (published with 2.0.0, not before), and the merge itself (D3 a: Chris decides whether the branch waits unmerged or `master`'s next release is 2.0.0).
+  - **Reviewed (four lenses, three skeptics per finding): 19 findings, 10 upheld (several the same), all applied.** No code change.
+    - **The CHANGELOG** now names the two breaks the compiler does not catch, both MEASURED above: a `STATUS_*` comparison that is now always `false`, and a test's channel mock answering `'stop'` with an int, which now throws.
+    - **The plugin's `CLAUDE.md`** said the repo had no automated tests: it now names `test/` and `flutter test`, and that Flutter 3.47's `flutter test` rewrites `analysis_options.yaml` too, as `flutter analyze` does (MEASURED).
+    - **The mock test's header** claimed more than the mock pins: it answers only `true`, so it cannot tell D2 (b)'s forwarding from a constant (as the Test plan says, the lab checks the natives).
+    - **The record:** lab.yaml names the red and green sweeps (the driver's comments name WO-011 only: the driver is part of the app the sweeps built, edited before them); the Platform parity box ("in one commit") waits for the commit; one by-hand wording.
+    - **Refuted (9),** among them: that a `[Changed]` bullet under `## Unreleased` departs from D3 (a) (the version heading is set at release), and that the CHANGELOG's "as … the Capacitor plugin does" must change now.
+    - These edits came after the sweeps and change no code: the CHANGELOG, `CLAUDE.md` and a test comment in the plugin; text in fetch-forge. `flutter test` passes again.
+- 2026-11-16 — **Committed** (Chris: "Commit both"): plugin `f07857e` on `fix/WO-011-flutter-stop-returns-int` (from `11d53b8`): Dart, Java and Objective-C in the one commit (the Platform parity box), and fetch-forge's branch of the same name (this Log, the lab text, the captures). **Not merged:** under D3 (a) the branch waits until Chris decides where it goes (Proposed fix, "Under D3 (a), where the code waits"). The docforge signature waits for the 2.0.0 release.

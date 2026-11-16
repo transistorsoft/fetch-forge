@@ -36,6 +36,10 @@ description: >
   metric holds, the SDK's own record of the stop and the restart (sweeps 20261115-223641 FIX, -224122 FIX-SPM; WO-009).
   (WO-009, 2026-11-16) Green on WO-009's fix: stop#1 reads true and start#2 the status, three sweeps per channel
   (20261116-123205, -124114, -124433 FIX; -123640, -124254, -124612 FIX-SPM).
+
+  (WO-011, 2026-11-16) Flutter: stop#1 read `want-boolean-got-number` in both steps until WO-011 (sweeps
+  20261115-195448 FIX, -200600 FIX-SPM), every metric green.  Green on its fix, `type=boolean value=true` (sweeps
+  20261116-140304 FIX, -140744 FIX-SPM).
 platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-11 — `fire:` is the Simulator's (a SpringBoard background fetch); Android's stop()/start() is

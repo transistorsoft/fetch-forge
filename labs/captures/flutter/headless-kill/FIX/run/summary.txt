@@ -12,7 +12,7 @@
    rnHeadlessErrors                 0                      expected 0            ok
    flutterHeadlessInit              1                      expected 1            ok
    headlessNoTask                   0                      expected 0            ok
-   headlessLatencyMs                170                    expected <400         ok
+   headlessLatencyMs                163                    expected <400         ok
    appProcesses                     2                      expected 2            ok
    headless                         true                   expected True         ok
    duplicateJobs                    0                      expected 0            ok

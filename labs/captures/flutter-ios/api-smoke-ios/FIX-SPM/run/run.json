@@ -23,7 +23,7 @@
  "plugin_source": {
   "checkout": "flutter/background_fetch",
   "commit": "11d53b8dd8194cd0c8335415976599d3dc8272cd",
-  "dirty": "no"
+  "dirty": "yes"
  },
  "device": {
   "model": "Lab2",
@@ -39,57 +39,57 @@
  },
  "timings": {
   "step_s": 42.5,
-  "t0": 1794678145.193,
+  "t0": 1794856236.885,
   "phases": {
-   "terminated": 0.083,
-   "others_stopped": 0.176,
-   "reset": 0.633,
-   "swept": 0.802,
-   "neutral_pre": 0.802,
-   "permissions": 0.802,
-   "sleep_end": 0.802,
-   "log_begun": 1.203,
-   "launch_mark": 1.32,
-   "verdict_cleared": 1.432,
-   "launch": 1.55,
-   "settle_end": 11.558,
-   "trigger": 11.695,
-   "end": 42.108,
-   "capture_mark": 42.246,
-   "pusher_joined": 42.246,
-   "log_ended": 42.478,
-   "log_written": 42.478,
-   "capture_extras": 42.478,
-   "db_pulled": 42.479,
-   "run_json": 42.537,
-   "judged": 42.563,
-   "verdict_pushed": 42.563,
-   "settled": 43.065,
-   "neutral_post": 43.065,
-   "terminated_post": 43.193
+   "terminated": 0.086,
+   "others_stopped": 0.183,
+   "reset": 0.651,
+   "swept": 0.821,
+   "neutral_pre": 0.822,
+   "permissions": 0.822,
+   "sleep_end": 0.822,
+   "log_begun": 1.224,
+   "launch_mark": 1.339,
+   "verdict_cleared": 1.452,
+   "launch": 1.568,
+   "settle_end": 11.572,
+   "trigger": 11.697,
+   "end": 42.091,
+   "capture_mark": 42.224,
+   "pusher_joined": 42.224,
+   "log_ended": 42.458,
+   "log_written": 42.458,
+   "capture_extras": 42.458,
+   "db_pulled": 42.459,
+   "run_json": 42.514,
+   "judged": 42.545,
+   "verdict_pushed": 42.545,
+   "settled": 43.049,
+   "neutral_post": 43.05,
+   "terminated_post": 43.184
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.226,
+    "s": 0.228,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.087,
+    "s": 2.071,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_tap_text": {
     "n": 42,
-    "s": 0.019,
+    "s": 0.017,
     "bg_n": 40,
-    "bg_s": 0.018
+    "bg_s": 0.016
    },
    "begin_log": {
     "n": 1,
-    "s": 0.401,
+    "s": 0.403,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -101,19 +101,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.215,
+    "s": 0.216,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.169,
+    "s": 0.171,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.232,
+    "s": 0.234,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -125,25 +125,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.093,
+    "s": 0.097,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.118,
+    "s": 0.116,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.391,
+    "s": 0.371,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.117,
+    "s": 0.114,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,9 +155,9 @@
    },
    "peek": {
     "n": 40,
-    "s": 0.087,
+    "s": 0.082,
     "bg_n": 40,
-    "bg_s": 0.087
+    "bg_s": 0.082
    },
    "permissions": {
     "n": 1,
@@ -169,11 +169,11 @@
     "n": 4,
     "s": 0.114,
     "bg_n": 2,
-    "bg_s": 0.002
+    "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.35,
+    "s": 0.359,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -185,13 +185,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.406,
+    "s": 0.389,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.211,
+    "s": 0.218,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -200,7 +200,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.319
+   "boot": 3.371
   }
  },
  "measure_from": "launch",
@@ -254,7 +254,8 @@
     }
    },
    "absent_on": {
-    "capacitor": "2026-11-13 \u2014 iOS has no headless mode, and src/index.ts's BackgroundFetch declares no registerHeadlessTask (as api-smoke.yaml, WO-002)."
+    "capacitor": "2026-11-13 \u2014 iOS has no headless mode, and src/index.ts's BackgroundFetch declares no registerHeadlessTask (as api-smoke.yaml, WO-002).",
+    "cordova": "2026-11-15 \u2014 iOS has no headless mode, and src/typescript/index.ts declares no registerHeadlessTask (as api-smoke.yaml, WO-002)."
    }
   },
   {
@@ -322,5 +323,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-14 12:43:07"
+ "when": "2026-11-16 14:11:19"
 }
