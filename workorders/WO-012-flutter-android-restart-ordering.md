@@ -1,7 +1,7 @@
 ---
 id: WO-012
 title: On Flutter Android, when an app restarts itself the old Activity detaches after the new one has attached, and that detach makes TSBackgroundFetch headless with the new screen up and removes the new engine's fetch event channel
-status: draft
+status: approved
 created: 2026-11-16
 platforms: [android]
 submodules: [flutter/background_fetch]
@@ -362,7 +362,7 @@ Two changes, both in `flutter/background_fetch/android/`. There is no Dart, iOS 
 
 ## Verification
 
-- [ ] D1–D5 decided
+- [x] D1–D5 decided
 - [ ] `restart-foreground-android`, both steps green on the fix, Flutter Android, Lab1 and Lab2. The old Activity's `onDestroy:afterSuper` reads `headless=false`, and `lifecycleTally` holds no `headless:true`
 - [ ] Change 2 proven as D4 picks: red on change 1 alone, green on the fix
 - [ ] Flutter Android suite on the fix: 12/13, with `api-smoke` red only for WO-011's finding, or 13/13 if WO-011's fix is in the swept code; the Log records each sweep's plugin stamp and any other order's code in the checkout. `recreate-foreground-android`, `headless-activity-destroyed`, `headless-kill`, `stop-on-terminate` and `termination-calibration` green, with their current values
@@ -406,3 +406,4 @@ Two changes, both in `flutter/background_fetch/android/`. There is no Dart, iOS 
     - Out of scope: WO-009's start ordering is iOS only, as its title says (Cordova Android's is ordered, MEASURED). WO-013's split is Android only, with Cordova beside Flutter; on iOS all four bridges cancel every task.
     - Test plan and Verification: the suite reads 12/13 with WO-011's red, or 13/13 if WO-011's fix is in the swept code. The Log records each sweep's plugin stamp and any other order's code in the checkout, as WO-011 does.
     - The scenario's Flutter paragraph already names WO-012 (WO-002's 2026-11-16 entry), so the anchor adds only the green sweep. The header notes that entry assigns WO-002's open item (`:1222`) here. No citation into `api-smoke-ios.yaml`; WO-002's and the scenario's line citations re-checked, unchanged.
+- 2026-11-16 — **Approved by Chris** ("approve all WO 9-12"): D1 (a) headless only when no other plugin instance is attached; D2 (a) each instance's channel from `onAttachedToEngine` to `onDetachedFromEngine`; D4 (a) the WO-002 follow-up step, with (b) the adb probe until it lands. The two decisions the draft left open, answered by Chris on 2026-11-16: **D5 (b)**, fall back to the instance attached most recently whose engine is alive and whose Dart side is listening, counting only instances that have attached to an Activity at least once; **D3: decided at release.** Status `approved`. Chris chose to take the orders one at a time: this one follows WO-011.

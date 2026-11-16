@@ -1,7 +1,7 @@
 ---
 id: WO-009
 title: Cordova's start(), stop(), status() and scheduleTask() return nothing where the shared types declare Promises; stop(taskId) throws on iOS and cancels every task on Android; on iOS start's native half is unordered against a later stop
-status: draft
+status: in-progress
 created: 2026-11-16
 platforms: [android, ios]
 submodules: [cordova/background-fetch]
@@ -21,7 +21,7 @@ supersedes: []
 > - **Cordova runtimes:** cordova-android 15.0.0 and cordova-ios 8.1.1, the lab host's copies under `labs/platforms/cordova/app/node_modules/` (installed by `npm ci` from the committed lock, `labs/platforms/cordova/app/package-lock.json:180-182, :223-225`; not tracked).
 > - **Captures:** Android sweep `20261115-215127` (Lab2 `emulator-5582`, Android 16). iOS sweeps `20261115-223641` (FIX) and `20261115-224122` (FIX-SPM), Simulator iOS 27.2, cordova-ios 8.1.1, Swift Package Manager on both (WO-002 Log `:1277`). These are the captures committed at `0c596d2`.
 >   - `run.json` carries no sweep id. Each capture's sweep is the one whose record has its `RESULT` line (`labs/harness/.claims/sweep-<id>/stdout.log`), and its `when` stamp falls inside that sweep.
->   - Git keeps only `run.json` and `summary.txt` (`labs/.gitignore:6-10`). `logcat.txt` line numbers are the on-disk files. The sweep records are gitignored too (`:14`) and on disk in this worktree.
+>   - Git keeps only `run.json` and `summary.txt` (`labs/.gitignore:6-10`). `logcat.txt` line numbers were the on-disk files until WO-009's own sweeps overwrote them on 2026-11-16 (Log): those logcats survive nowhere. The sweep records are gitignored too (`:14`) and on disk in this worktree.
 
 ## Diagnosis
 
@@ -63,7 +63,7 @@ supersedes: []
   - **Corrected in WO-002's 2026-11-16 entry** (`:1347`): it calls bgSubmits and sdkSubscribers a race and gives the `.647`/`.648` to `-220040`. The scenario now cites `-223641`/`-224122` and quotes the committed times (`api-smoke-ios.yaml:43, :52-54`).
 - **ios-stop-start** (`labs/captures/cordova-ios/ios-stop-start/{FIX,FIX-SPM}/{stopped,restarted}`): `stopped` reads `stop#1.$=want-boolean-got-undefined`; `restarted` reads that and `start#2.$=want-number-got-undefined`. Every other row passes, bgSubmits `appRefresh=3` and sdkSubscribers included.
   - The call returns before native has started: `restarted/logcat.txt:30`, `ret id=start#2 … type=undefined` at .457; `:33`, `[TSBackgroundFetch start]` at .458 (FIX).
-  - The fetch fires 3 s after start#2 (`ios-stop-start.yaml:76`), so the race cannot show in this scenario.
+  - The fetch fires 3 s after start#2 (`ios-stop-start.yaml:76` at `0c596d2`), so the race cannot show in this scenario.
 
 **PROVEN: the JavaScript, which both OSes share.**
 - **What ships.** `src/typescript/index.ts` is the source. Cordova loads `www/index.js` (`plugin.xml:20-22`; `package.json:5`), and TypeScript reads `src/typescript/index.d.ts` (`package.json:9`). Both are compiled from `index.ts` and committed (`src/typescript/tsconfig.json:4-5, :11`). preflight refuses a release where either differs from a fresh compile (`scripts/preflight.sh:49-55`, run by `.github/workflows/release.yml:55`). Read side by side, every method body in `www/index.js:12-65` is `index.ts:44-106`'s. That the files are byte-equal to a compile is INFERRED: preflight was not run.
@@ -303,17 +303,17 @@ The anchor `// (WO-009)` goes at each change in `index.ts` and at `CDVBackground
 
 ## Verification
 
-- [ ] D1–D6 decided
-- [ ] preflight's `(WO-009)` assertions red at `368eb85` and green on the fix; `npm run build` clean; the committed `www/index.js` and `index.d.ts` pass preflight step 2
-- [ ] Cordova Android `api-smoke` green on the fix's label: status#2 and start#3 read a number, the other three hooks `true`; the job rows unchanged (sweep id recorded here)
-- [ ] In that capture's `logcat.txt`: stop#5 cancels only the smoke task; no TypeError; no "second callback" warning
-- [ ] Cordova Android events-duplicate and events-task-android green; the board 12/13, the one red being WO-010's, or 13/13 if WO-010's fix is in the swept code
-- [ ] Cordova iOS `api-smoke-ios` and `ios-stop-start` green on FIX and FIX-SPM, three sweeps per channel; the board 7/7 (sweep ids recorded here)
-- [ ] In the iOS captures: `[TSBackgroundFetch start]` before `ret id=start#3`; `[TSBackgroundFetch stop] com.transistorsoft.fetchlab.task` between `ret id=scheduleTask#4` and `app=api id=stop#5 outcome=ok`
-- [ ] README Methods table and examples updated; the CHANGELOG lines and every `// (WO-009)` anchor in place
-- [ ] Lab text updated as the Test plan lists (`api-smoke-ios.yaml:38-39`, `lab.yaml:76` and `index.html:274-276` included), with no assertion changed
-- [ ] For every lab sweep above, Android and iOS, the Log records the plugin stamp (`run.json`'s `plugin_source`) and any other order's code in the `cordova/background-fetch` checkout
-- [ ] Platform parity: both OSes fixed through the one JavaScript file, and Android's `execute()` line in the same commit; iOS has no counterpart (`CDVCommandQueue.m:186-193`); React Native and Capacitor untouched
+- [x] D1–D6 decided
+- [x] preflight's `(WO-009)` assertions red at `368eb85` and green on the fix; `npm run build` clean; the committed `www/index.js` and `index.d.ts` pass preflight step 2
+- [x] Cordova Android `api-smoke` green on the fix's label: status#2 and start#3 read a number, the other three hooks `true`; the job rows unchanged (sweep id recorded here)
+- [x] In that capture's `logcat.txt`: stop#5 cancels only the smoke task; no TypeError; no "second callback" warning
+- [x] Cordova Android events-duplicate and events-task-android green; the board 12/13, the one red being WO-010's, or 13/13 if WO-010's fix is in the swept code
+- [x] Cordova iOS `api-smoke-ios` and `ios-stop-start` green on FIX and FIX-SPM, three sweeps per channel; the board 7/7 (sweep ids recorded here)
+- [x] In the iOS captures: `[TSBackgroundFetch start]` before `ret id=start#3`; `[TSBackgroundFetch stop] com.transistorsoft.fetchlab.task` between `ret id=scheduleTask#4` and `app=api id=stop#5 outcome=ok`
+- [x] README Methods table and examples updated; the CHANGELOG lines and every `// (WO-009)` anchor in place
+- [x] Lab text updated as the Test plan lists (`api-smoke-ios.yaml:38-39`, `lab.yaml:76` and `index.html:274-276` included), with no assertion changed
+- [x] For every lab sweep above, Android and iOS, the Log records the plugin stamp (`run.json`'s `plugin_source`) and any other order's code in the `cordova/background-fetch` checkout
+- [x] Platform parity: both OSes fixed through the one JavaScript file, and Android's `execute()` line in the same commit; iOS has no counterpart (`CDVCommandQueue.m:186-193`); React Native and Capacitor untouched
 
 ## Log
 
@@ -346,3 +346,43 @@ The anchor `// (WO-009)` goes at each change in `index.ts` and at `CDVBackground
     - WO-002's 2026-11-16 entry now points its open items here and records the corrections: the Verification box for the open items, and the Test plan's sweep-citation correction, removed; the Diagnosis and this Log say where each was corrected.
     - `api-smoke-ios.yaml` gained a line: the Cordova paragraph is `:43-55`; the `.647`/`.648` citations are to `0c596d2`'s text.
     - Lab text: the two iOS passages already name WO-009 and add only the green sweeps; api-smoke's names WO-009 and its green sweeps.
+- 2026-11-16 — **Approved by Chris** ("approve all WO 9-12"), with the recommended decisions: D1 (a) a Promise and the callbacks both, with a no-op rejection handler when a callback is passed; D2 (a) a string first argument is the taskId; D3 (a) stopTask kept, returning stop(taskId)'s Promise, `@deprecated`; D4 (a) a rejection carries what native sends; D5 (a) preflight's `Pick` guard, the typed reads and the runtime checks; D6 (a) the next release. Status `in-progress`. Chris then chose to take the four orders one at a time, this one first ("maybe we should work through the WO one-by-one?").
+  - **Re-verified before code.** `cordova/background-fetch` is at `368eb85`, its origin/master, as when this order was drafted: the Diagnosis' citations stand.
+  - **Branch** `fix/WO-009-cordova-callback-api` in `cordova/background-fetch`, from `368eb85`: the checkout the lab stages. The lab text and these work-order edits are on fetch-forge's branch of the same name, which also records WO-010, WO-011 and WO-012's approvals.
+- 2026-11-16 — **Implemented** on `fix/WO-009-cordova-callback-api` in `cordova/background-fetch`, from `368eb85`; uncommitted, for Chris's diff review.
+  - **`src/typescript/index.ts`:** one helper, `call()`, makes the native call and returns a Promise settled by its reply. It resolves `asIs` (start, status) or `alwaysTrue` (stop, stopTask, scheduleTask), rejects with what native sends (D4 a), calls the caller's callbacks with what they got before, and gives the Promise a no-op `catch` when a callback is passed (D1 a). `stop` tells its first argument apart by type: a string is the taskId, a function the old success callback, `undefined`/`null` is `stop()` with the callbacks after it, anything else throws, as stopTask's check does (D2 a). stopTask is `@deprecated` (D3 a); status's callback is optional. Rebuilt with `npm run build` (tsc 4.1.6): `www/index.js` and `index.d.ts` are the compile's.
+  - **`CDVBackgroundFetch.java`:** `result = true` for scheduleTask, with the `(WO-009)` comment.
+  - **preflight `(WO-009)`** (D5 a): the `Pick` over the types' class; typed reads of start, status, scheduleTask, stop(taskId), stop(), stopTask; the callback forms. The fake `cordova.exec` records each call and answers later, as Android does (the status; `"OK"`), or fails; `check.js` asserts the Test plan's list, and that no exec call is left over.
+    - **Red at `368eb85`, MEASURED** (the new preflight over the old code, in a scratch worktree): TS2322 on the `Pick` (stop's signature) and on every typed read, TS2554 on `status()`, TS2345 on `stop(taskId)` and on start's status callback, TS2554 on `stop(taskId, success, failure)`. With the compile let through, the runtime checks fail at the first (`stop(taskId) resolves true`: undefined).
+    - **Green on the fix:** preflight passes all four steps. D5's NOT CHECKED is now MEASURED: stop's two overloads and configure's required `onTimeout` pass the `Pick`.
+  - **The Scope check's TypeScript 5 question, MEASURED** (5.9.3, the packed fix, `node16`, scratch files). These fail with or without `strict`: a `void` annotation on a result (TS2322); a double that returns nothing, `() => {}` (TS2322); a double resolving `Promise.resolve()` (TS2322); `.then((v: void) => …)` (TS2345). A double resolving an explicit `undefined` fails under `strict` only. A bare `await`, a fire-and-forget call and a truthiness test compile. As WO-006 measured for Capacitor.
+  - **README** (the Methods table, the three scheduleTask examples) and the two CHANGELOG lines.
+  - **Lab, MEASURED,** native `4.1.1-master-399765c`, plugin `368eb85+dirty`: the WO-009 working tree, with no other order's code in the checkout.
+
+    | Sweep | What | Result |
+    |---|---|---|
+    | `20261116-114446` | Cordova Android, the suite, FIX | 12/13: api-smoke, events-duplicate and events-task-android green; restart-foreground-android red (WO-010) |
+    | `20261116-115144` / `-115624` | Cordova iOS, the board, FIX / FIX-SPM | 7/7 each |
+    | `-120058`, `-120418` / `-120239`, `-120557` | api-smoke-ios and ios-stop-start, FIX / FIX-SPM | 2/2 each |
+
+    - **By hand, Android api-smoke:** status#2 and start#3 read `type=number value=2`, scheduleTask#4, stop#5 and stop#7 `type=boolean value=true`; stop#5 logs `- stop: com.transistorsoft.fetchlab.smoke` and cancels job `-592898938` alone, stop#7 job 999; no TypeError, no "second callback", no "Invalid action".
+    - **By hand, iOS (the captures of `-120418` FIX and `-120557` FIX-SPM, since replaced by the re-sweep below):** `[TSBackgroundFetch start]` before `ret id=start#3`; `[TSBackgroundFetch stop] com.transistorsoft.fetchlab.task` between `ret id=scheduleTask#4` (rejected with the error's message, "BGTaskScheduler is not available on this…": D4 a) and `app=api id=stop#5 outcome=ok`. bgSubmits `appRefresh=1` and sdkSubscribers `-` in all six api-smoke-ios runs (each a PASS).
+  - **Re-scored:** 208 captures, 37 not PASS. Exactly this order's seven reds turned green, and no other verdict changed. selftest passes (204 checks); vendor_check passes.
+  - **Lab text,** as the Test plan lists: api-smoke.yaml, api-smoke-ios.yaml (the stop#5 sentence and the Cordova paragraph), ios-stop-start.yaml, lab.yaml (the callback-style and the 5/7 notes), index.html's tick comment, and the 14 anchor comments ("Cordova's resolved nothing until WO-009"). No assertion changed. The index.html comment was edited after these sweeps; the re-sweep below built with it.
+  - **Reviewed (four lenses, three skeptics per finding): 15 findings, 9 upheld, all applied.**
+    - **`stop(null, fn)` and `stop(undefined, fn)`,** the 7.x form with an empty success slot, read `fn` as the success callback, so an app's failure handler ran on every successful stop (MEASURED by the review on a fake exec: `fn("OK")` on Android, `fn(null)` on iOS), against D1 and D6. Now it keeps the 7.x meaning: `fn` is the failure callback, unless a third argument names the failure. `index.d.ts` declares three overloads: `stop(taskId?: string | null)`, `stop(taskId: string, success?, failure?)` and `stop(success?: (() => void) | null, failure?)`. The README's stop row says so.
+    - **`call()` ran `exec` inside the Promise's executor,** so a synchronous throw from exec became a rejection, which the no-op handler swallowed for a callback caller. exec now runs outside it, and its throw reaches the caller as before.
+    - **check.js:** a call that never settled ended the script quietly before its last check; a `beforeExit` guard now fails it. The fake also answers other statuses (1, 0) and iOS's null. New checks: `stop(taskId, fn)`, `stop(null)`, `stop(null, fn)` on a success and on a failure, `stopTask(taskId, fn)`, scheduleTask on a null answer, and a success-only caller's failure (no unhandled rejection). The compile block adds `stop(null, failure)`. **Six mutants** of `www/index.js` each fail check.js: `stop(null, fn)` read as success, a constant status, native's `"OK"` passed through, a call that never settles, no no-op handler, `stop(taskId)` sending `[]`. preflight passes on the fix.
+    - **The record:** this order's own sweeps overwrote the 2026-11-15 captures whose logcats the Diagnosis cites (Citation bases now says so); api-smoke-ios.yaml's stop#5 sentence; the `ios-stop-start.yaml:76` citation pinned to `0c596d2`.
+    - **Refuted (6),** among them: the order of stop's overloads for `Parameters<>`-style typings, and the strict-mode stop forms beyond the CHANGELOG's two.
+  - **Re-swept on the reviewed code,** native `4.1.1-master-399765c`, plugin `368eb85+dirty` (the WO-009 tree alone). These are the captures to commit.
+
+    | Sweep | What | Result |
+    |---|---|---|
+    | `20261116-122513` | Cordova Android, the suite, FIX | 12/13: restart-foreground-android red (WO-010) |
+    | `20261116-123205` / `-123640` | Cordova iOS, the board, FIX / FIX-SPM | 7/7 each |
+    | `-124114`, `-124433` / `-124254`, `-124612` | api-smoke-ios and ios-stop-start, FIX / FIX-SPM | 2/2 each |
+
+    - **By hand, on the final captures** (`-122513`; `-124433` FIX, `-124612` FIX-SPM): the same lines as above, with `cancelTaskRequestWithIdentifier: com.transistorsoft.fetchlab.task` right after stop#5's native stop.
+    - **Re-scored:** 208 captures, 37 not PASS, the same verdicts as after the first sweeps. selftest passes.
+- 2026-11-16 — **Committed** (Chris: "Commit both"): plugin `f905ec4` on `fix/WO-009-cordova-callback-api` (from `368eb85`), and fetch-forge's branch of the same name (this Log, the lab text, the captures). Not merged; the `cordova/background-fetch` pointer moves when the plugin branch is merged, and the order is `done` then.

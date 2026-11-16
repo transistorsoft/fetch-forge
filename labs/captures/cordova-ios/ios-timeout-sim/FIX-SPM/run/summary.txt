@@ -4,8 +4,8 @@
    driverFinishes                   fetch:withheld=1,timeout:ok=1 expected fetch:withheld=1,timeout:ok=1 ok
    fetchFinished                    1                      expected 1            ok
    legacyFetchStates                background=1           expected background=1 ok
-   legacyTimeoutAfterMs             25988                  expected <28000       ok
-   bgSilenceMs                      6861                   expected >=2000       ok
+   legacyTimeoutAfterMs             25996                  expected <28000       ok
+   bgSilenceMs                      6361                   expected >=2000       ok
    legacyResults                    newData=1              expected newData=1    ok
    springboardResults               RetrievedNewData=1     expected RetrievedNewData=1 ok
    driverTally                      fetch:cordova-background-fetch=1,timeout:cordova-background-fetch=1 expected fetch:cordova-background-fetch=1,timeout:cordova-background-fetch=1 ok

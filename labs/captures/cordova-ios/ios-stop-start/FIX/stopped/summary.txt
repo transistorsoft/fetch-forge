@@ -6,6 +6,6 @@
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok
-   apiAssertions                    stop#1.$=want-boolean-got-undefined expected ok           MISMATCH
+   apiAssertions                    ok                     expected ok           ok
    actionsDone                      ok                     expected ok           ok
-   => FAIL
+   => PASS

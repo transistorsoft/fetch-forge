@@ -25,14 +25,14 @@
  "plugin_source": {
   "checkout": "cordova/background-fetch",
   "commit": "368eb853a4ef021b9e1558b0a80bc8b2cdc6e88e",
-  "dirty": "no"
+  "dirty": "yes"
  },
  "device": {
   "avd": "Lab2",
   "model": "sdk_gphone64_arm64",
   "os": "Android 16",
   "sdk": "36",
-  "data_free_mb": 2661,
+  "data_free_mb": 2659,
   "display": "awake",
   "fgs_timeout_ms": null,
   "play_services": 263635035
@@ -47,59 +47,59 @@
  },
  "timings": {
   "install_s": 0.2,
-  "step_s": 41.8,
-  "t0": 1794797498.166,
+  "step_s": 41.9,
+  "t0": 1794849920.257,
   "phases": {
-   "terminated": 0.027,
-   "others_stopped": 0.103,
-   "reset": 0.138,
-   "swept": 0.175,
-   "neutral_pre": 0.236,
-   "accuracy": 0.276,
-   "permissions": 0.276,
-   "sleep_end": 0.276,
-   "log_begun": 0.393,
-   "launch_mark": 0.409,
-   "verdict_cleared": 0.436,
-   "launch": 0.994,
-   "settle_end": 11.001,
-   "trigger": 11.025,
-   "end": 41.722,
-   "capture_mark": 41.753,
-   "pusher_joined": 41.753,
-   "log_ended": 41.776,
-   "log_written": 41.776,
-   "capture_extras": 41.797,
-   "db_pulled": 41.798,
-   "run_json": 41.837,
-   "judged": 41.868,
-   "verdict_pushed": 41.891,
-   "settled": 42.396,
-   "neutral_post": 42.466,
-   "terminated_post": 42.495
+   "terminated": 0.044,
+   "others_stopped": 0.11,
+   "reset": 0.143,
+   "swept": 0.176,
+   "neutral_pre": 0.244,
+   "accuracy": 0.289,
+   "permissions": 0.289,
+   "sleep_end": 0.289,
+   "log_begun": 0.412,
+   "launch_mark": 0.434,
+   "verdict_cleared": 0.459,
+   "launch": 0.995,
+   "settle_end": 11.0,
+   "trigger": 11.037,
+   "end": 41.754,
+   "capture_mark": 41.793,
+   "pusher_joined": 41.793,
+   "log_ended": 41.815,
+   "log_written": 41.816,
+   "capture_extras": 41.838,
+   "db_pulled": 41.839,
+   "run_json": 41.886,
+   "judged": 41.92,
+   "verdict_pushed": 41.945,
+   "settled": 42.45,
+   "neutral_post": 42.526,
+   "terminated_post": 42.555
   },
   "calls": {
    "_adb": {
     "n": 19,
-    "s": 0.663,
+    "s": 0.712,
     "bg_n": 1,
-    "bg_s": 0.034
+    "bg_s": 0.037
    },
    "_stop_stream": {
     "n": 2,
-    "s": 0.002,
+    "s": 0.001,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "begin_log": {
     "n": 1,
-    "s": 0.117,
+    "s": 0.123,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.037,
+    "s": 0.033,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -111,7 +111,7 @@
    },
    "evict": {
     "n": 1,
-    "s": 0.041,
+    "s": 0.032,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -123,25 +123,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.035,
+    "s": 0.033,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.558,
+    "s": 0.536,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "location_accuracy": {
     "n": 2,
-    "s": 0.04,
+    "s": 0.045,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.071,
+    "s": 0.097,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -159,15 +159,15 @@
    },
    "neutral": {
     "n": 2,
-    "s": 0.131,
+    "s": 0.143,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "peek": {
     "n": 40,
-    "s": 0.025,
+    "s": 0.021,
     "bg_n": 40,
-    "bg_s": 0.025
+    "bg_s": 0.021
    },
    "permissions": {
     "n": 1,
@@ -177,13 +177,13 @@
    },
    "push_verdict": {
     "n": 3,
-    "s": 0.084,
+    "s": 0.088,
     "bg_n": 1,
-    "bg_s": 0.034
+    "bg_s": 0.037
    },
    "reset_app": {
     "n": 1,
-    "s": 0.035,
+    "s": 0.033,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -195,22 +195,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.684,
+    "s": 0.708,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.097,
+    "s": 0.104,
     "bg_n": 0,
     "bg_s": 0.0
    }
   },
   "dialogs": [],
-  "clock_offset_s": -31.596,
-  "clock_offset_rtt_s": 0.016,
+  "clock_offset_s": -0.392,
+  "clock_offset_rtt_s": 0.021,
   "log_phases": {
-   "boot": 0.917
+   "boot": 0.923
   }
  },
  "measure_from": "launch",
@@ -355,5 +355,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-15 21:52:20"
+ "when": "2026-11-16 12:26:02"
 }

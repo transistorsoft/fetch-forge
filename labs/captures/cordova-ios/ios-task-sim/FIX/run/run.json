@@ -23,7 +23,7 @@
  "plugin_source": {
   "checkout": "cordova/background-fetch",
   "commit": "368eb853a4ef021b9e1558b0a80bc8b2cdc6e88e",
-  "dirty": "no"
+  "dirty": "yes"
  },
  "device": {
   "model": "Lab2",
@@ -39,48 +39,48 @@
  },
  "timings": {
   "step_s": 42.5,
-  "t0": 1794800290.024,
+  "t0": 1794850407.832,
   "phases": {
-   "terminated": 0.083,
-   "others_stopped": 0.177,
-   "reset": 0.631,
-   "swept": 0.811,
-   "neutral_pre": 0.811,
-   "permissions": 0.811,
-   "sleep_end": 0.811,
-   "log_begun": 1.215,
-   "launch_mark": 1.342,
-   "verdict_cleared": 1.454,
-   "launch": 1.567,
-   "settle_end": 11.573,
-   "trigger": 11.675,
-   "end": 42.041,
-   "runner_joined": 42.041,
-   "capture_mark": 42.177,
-   "pusher_joined": 42.178,
-   "log_ended": 42.409,
-   "log_written": 42.41,
-   "capture_extras": 42.41,
-   "db_pulled": 42.41,
-   "run_json": 42.454,
-   "judged": 42.535,
-   "verdict_pushed": 42.535,
-   "settled": 43.043,
-   "neutral_post": 43.043,
-   "terminated_post": 43.177
+   "terminated": 0.082,
+   "others_stopped": 0.179,
+   "reset": 0.641,
+   "swept": 0.82,
+   "neutral_pre": 0.82,
+   "permissions": 0.82,
+   "sleep_end": 0.82,
+   "log_begun": 1.219,
+   "launch_mark": 1.336,
+   "verdict_cleared": 1.45,
+   "launch": 1.573,
+   "settle_end": 11.575,
+   "trigger": 11.699,
+   "end": 42.067,
+   "runner_joined": 42.067,
+   "capture_mark": 42.207,
+   "pusher_joined": 42.207,
+   "log_ended": 42.446,
+   "log_written": 42.446,
+   "capture_extras": 42.446,
+   "db_pulled": 42.446,
+   "run_json": 42.502,
+   "judged": 42.582,
+   "verdict_pushed": 42.582,
+   "settled": 43.087,
+   "neutral_post": 43.087,
+   "terminated_post": 43.196
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.226,
+    "s": 0.232,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 16,
-    "s": 2.247,
+    "s": 2.262,
     "bg_n": 2,
-    "bg_s": 0.24
+    "bg_s": 0.228
    },
    "_tap_text": {
     "n": 79,
@@ -90,7 +90,7 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.403,
+    "s": 0.399,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -102,19 +102,19 @@
    },
    "container": {
     "n": 7,
-    "s": 0.216,
+    "s": 0.221,
     "bg_n": 3,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.18,
+    "s": 0.179,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.232,
+    "s": 0.238,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -126,31 +126,31 @@
    },
    "fire_task": {
     "n": 2,
-    "s": 0.489,
+    "s": 0.49,
     "bg_n": 2,
-    "bg_s": 0.489
+    "bg_s": 0.49
    },
    "installed": {
     "n": 1,
-    "s": 0.094,
+    "s": 0.097,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.113,
+    "s": 0.123,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.605,
+    "s": 0.609,
     "bg_n": 2,
-    "bg_s": 0.24
+    "bg_s": 0.228
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.113,
+    "s": 0.116,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -162,9 +162,9 @@
    },
    "peek": {
     "n": 77,
-    "s": 0.12,
+    "s": 0.107,
     "bg_n": 77,
-    "bg_s": 0.12
+    "bg_s": 0.107
    },
    "permissions": {
     "n": 1,
@@ -174,13 +174,13 @@
    },
    "push_verdict": {
     "n": 5,
-    "s": 0.114,
+    "s": 0.116,
     "bg_n": 3,
     "bg_s": 0.002
    },
    "reset_app": {
     "n": 1,
-    "s": 0.346,
+    "s": 0.351,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -192,13 +192,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.355,
+    "s": 0.361,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.216,
+    "s": 0.191,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -207,7 +207,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 4.162
+   "boot": 4.199
   }
  },
  "measure_from": "launch",
@@ -250,12 +250,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 2.822,
-   "action1": 6.525
+   "action0": 2.797,
+   "action1": 6.459
   },
   "sent_s": {
-   "action0": 5.896,
-   "action1": 9.63
+   "action0": 5.844,
+   "action1": 9.512
   }
  },
  "network": null,
@@ -307,5 +307,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-15 22:38:52"
+ "when": "2026-11-16 12:34:10"
 }
