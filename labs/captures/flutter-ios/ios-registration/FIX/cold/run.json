@@ -6,7 +6,7 @@
  "scenario": "ios-registration",
  "variant": "FIX",
  "step": "cold",
- "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
  "evicted": null,
  "foreignTransistorApps": null,
  "native": "4.1.1-master-399765c",
@@ -23,10 +23,10 @@
  "plugin_source": {
   "checkout": "flutter/background_fetch",
   "commit": "11d53b8dd8194cd0c8335415976599d3dc8272cd",
-  "dirty": "no"
+  "dirty": "yes"
  },
  "device": {
-  "model": "Lab2",
+  "model": "Lab1",
   "os": "iOS 27.2"
  },
  "activity": "",
@@ -38,47 +38,47 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 32.1,
-  "t0": 1794791040.755,
+  "step_s": 31.9,
+  "t0": 1794855939.376,
   "phases": {
-   "terminated": 0.095,
-   "swept": 0.276,
-   "neutral_pre": 0.276,
-   "permissions": 0.276,
-   "sleep_end": 0.276,
-   "log_begun": 0.689,
-   "launch_mark": 0.825,
-   "verdict_cleared": 0.825,
-   "launch": 0.952,
-   "settle_end": 10.961,
-   "trigger": 11.102,
-   "end": 31.617,
-   "runner_joined": 31.617,
-   "capture_mark": 31.759,
-   "pusher_joined": 31.759,
-   "log_ended": 31.998,
-   "log_written": 31.999,
-   "capture_extras": 31.999,
-   "db_pulled": 31.999,
-   "run_json": 32.058,
-   "judged": 32.102,
-   "verdict_pushed": 32.102,
-   "settled": 32.605,
-   "neutral_post": 32.605,
-   "terminated_post": 32.737
+   "terminated": 0.094,
+   "swept": 0.273,
+   "neutral_pre": 0.273,
+   "permissions": 0.273,
+   "sleep_end": 0.273,
+   "log_begun": 0.68,
+   "launch_mark": 0.796,
+   "verdict_cleared": 0.796,
+   "launch": 0.905,
+   "settle_end": 10.915,
+   "trigger": 11.046,
+   "end": 31.492,
+   "runner_joined": 31.492,
+   "capture_mark": 31.597,
+   "pusher_joined": 31.597,
+   "log_ended": 31.822,
+   "log_written": 31.823,
+   "capture_extras": 31.823,
+   "db_pulled": 31.823,
+   "run_json": 31.876,
+   "judged": 31.93,
+   "verdict_pushed": 31.93,
+   "settled": 32.437,
+   "neutral_post": 32.437,
+   "terminated_post": 32.563
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.233,
+    "s": 0.22,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 12,
-    "s": 1.936,
+    "s": 1.769,
     "bg_n": 3,
-    "bg_s": 0.35
+    "bg_s": 0.344
    },
    "_tap_text": {
     "n": 59,
@@ -88,7 +88,7 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.412,
+    "s": 0.406,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.181,
+    "s": 0.179,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.239,
+    "s": 0.225,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,19 +124,19 @@
    },
    "launch": {
     "n": 1,
-    "s": 0.127,
+    "s": 0.109,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.632,
+    "s": 0.562,
     "bg_n": 2,
-    "bg_s": 0.212
+    "bg_s": 0.211
    },
    "native_resolved": {
     "n": 1,
-    "s": 0.006,
+    "s": 0.005,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -148,9 +148,9 @@
    },
    "peek": {
     "n": 57,
-    "s": 0.061,
+    "s": 0.065,
     "bg_n": 57,
-    "bg_s": 0.061
+    "bg_s": 0.065
    },
    "permissions": {
     "n": 1,
@@ -160,9 +160,9 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.143,
+    "s": 0.142,
     "bg_n": 1,
-    "bg_s": 0.143
+    "bg_s": 0.142
    },
    "push_verdict": {
     "n": 4,
@@ -178,22 +178,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.495,
+    "s": 0.437,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.364,
+    "s": 0.354,
     "bg_n": 1,
-    "bg_s": 0.138
+    "bg_s": 0.133
    }
   },
   "dialogs": [],
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 2.601
+   "boot": 2.552
   }
  },
  "measure_from": "launch",
@@ -234,12 +234,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.808,
-   "action1": 1.808
+   "action0": 1.792,
+   "action1": 1.792
   },
   "sent_s": {
-   "action0": 3.875,
-   "action1": 6.955
+   "action0": 3.838,
+   "action1": 6.925
   }
  },
  "network": null,
@@ -266,5 +266,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-15 20:04:32"
+ "when": "2026-11-16 14:06:11"
 }

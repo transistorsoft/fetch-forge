@@ -61,6 +61,10 @@ description: >
   -123640, -124254, -124612 FIX-SPM): every return as the types declare, scheduleTask#4 rejected with iOS's message,
   stop#5 reaching native (`[TSBackgroundFetch stop] com.transistorsoft.fetchlab.task`) before it settles, and start's
   native half before start#3 returns, so bgSubmits `appRefresh=1` and sdkSubscribers `-` each time.
+
+  (WO-011, 2026-11-16) Flutter: stop#5 and stop#7 read `want-boolean-got-number` until WO-011 (sweeps 20261114-123454
+  FIX, -123933 FIX-SPM): the plugin's Dart stop() was `Future<int>` and resolved the status.  Green on its fix, both
+  `type=boolean value=true` (sweeps 20261116-140304 FIX, -140744 FIX-SPM); every other row as before.
 platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-11 — api-smoke is Android's: its scheduleTask resolves, and it reads JobScheduler's jobs."

@@ -43,8 +43,10 @@ description: >
       fetch status, not the boolean the types declare, so stop#5 and stop#7 are red there, PREDICTED from source and
       MEASURED (`want-boolean-got-number`, sweep 20261113-175923; every other hook green, finish reading null).  A
       finding for its own work order, left red (Chris, 2026-11-13), as Capacitor's
-      `undefined` was: never relaxed here.  Its NETWORK_TYPE_* are enum values, aliased by the driver to
-      `NetworkType.<X>.index` (api-constants).
+      `undefined` was: never relaxed here (WO-011; red again in sweep 20261113-183048).  Its NETWORK_TYPE_* are enum
+      values, aliased by the driver to `NetworkType.<X>.index` (api-constants).
+    * (WO-011, 2026-11-16) Fixed: Flutter's stop() is `Future<bool>`, and both natives answer `true`.  stop#5 and stop#7
+      read `type=boolean value=true` (sweep 20261116-135555); jobsRegistered and jobIds unchanged.
     * (WO-002, 2026-11-13) Flutter's stop() with no argument does NOT stop the fetch task alone, as the bullet above says
       of the other two: it hands null to the SDK unmapped (BackgroundFetchModule.java:166-170 at 11d53b8), which cancels
       EVERY task (native BackgroundFetch.java:147-159 at 399765c), as the types' doc says ("*all* background-fetch and

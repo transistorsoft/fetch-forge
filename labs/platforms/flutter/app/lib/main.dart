@@ -927,9 +927,9 @@ final Map<String, Function> _api = {
   'registerHeadlessTask': (args) =>
       throw _Unexpressible('registerHeadlessTask takes a callback, which a hook cannot pass'),
   'start': () => BackgroundFetch.start(),
-  // Future<int> where the types declare Promise<boolean>: both natives answer stop with the status
-  // (BackgroundFetchModule.java:166-170, BackgroundFetchPlugin.m:131-140).  Reported as delivered, so the divergence is
-  // what shows (api-smoke reads it red on purpose).  No argument stops every task; a null one is the same call.
+  // Future<bool>, as the types declare Promise<boolean>: both natives answer stop with `true` (WO-011; until it, the
+  // plugin's Future<int> resolved the status, and api-smoke read it red).  Reported as delivered, so a divergence would
+  // show.  No argument stops every task; a null one is the same call.
   'stop': ([args]) => BackgroundFetch.stop(_as<String?>(args, 'taskId')),
   // A GETTER in Dart (background_fetch.dart:534), not a method: read, not called, and it takes no callback.
   'status': () => BackgroundFetch.status,
@@ -937,7 +937,7 @@ final Map<String, Function> _api = {
   // Future<void> in Dart, but the Future completes with the channel's `true` (`return await invokeMethod`), and this
   // driver awaits through `dynamic`.  A typed Dart caller is handed nothing, so the row reports what the DECLARED type
   // hands one (_declared): null today, the nearest Dart has to the types' `void`.  Were finish() to declare a value,
-  // that value would be reported, and api-smoke would read it red, as it reads stop()'s int.
+  // that value would be reported, and api-smoke would read it red, as it read stop()'s int until WO-011.
   'finish': (args) => _declared(BackgroundFetch.finish(_as<String>(args, 'taskId'))),
 };
 
