@@ -33,8 +33,8 @@ import java.util.Set;
  *
  * A recreation builds a new Activity, a new WebView and new plugin instances: the page reloads and the driver boots
  * again.  CordovaActivity.onDestroy hands the destroy to every instantiated plugin (CDVBackgroundFetch.onDestroy among
- * them), so onDestroy:afterSuper below is after the plugin's hook.  The plugin is created on its first exec(), not at
- * startup (no onload in its plugin.xml).
+ * them), so onDestroy:afterSuper below is after the plugin's hook.  The plugin is onload (WO-010): created with the
+ * page, inside loadUrl() in onCreate, before this Activity's first onResume.
  *
  * TAG, probe() and knobs() are public: the headless task lives in the PLUGIN's package
  * (com.transistorsoft.cordova.backgroundfetch, the class name CDVBackgroundFetch hands the SDK).

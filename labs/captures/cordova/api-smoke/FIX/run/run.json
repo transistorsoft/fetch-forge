@@ -24,7 +24,7 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "cordova/background-fetch",
-  "commit": "368eb853a4ef021b9e1558b0a80bc8b2cdc6e88e",
+  "commit": "5e3602da8013ab9330a9ff88c31057e97ad734d8",
   "dirty": "yes"
  },
  "device": {
@@ -32,7 +32,7 @@
   "model": "sdk_gphone64_arm64",
   "os": "Android 16",
   "sdk": "36",
-  "data_free_mb": 2659,
+  "data_free_mb": 2652,
   "display": "awake",
   "fgs_timeout_ms": null,
   "play_services": 263635035
@@ -47,43 +47,43 @@
  },
  "timings": {
   "install_s": 0.2,
-  "step_s": 41.9,
-  "t0": 1794849920.257,
+  "step_s": 41.8,
+  "t0": 1794854161.868,
   "phases": {
-   "terminated": 0.044,
-   "others_stopped": 0.11,
-   "reset": 0.143,
-   "swept": 0.176,
-   "neutral_pre": 0.244,
-   "accuracy": 0.289,
-   "permissions": 0.289,
-   "sleep_end": 0.289,
-   "log_begun": 0.412,
-   "launch_mark": 0.434,
-   "verdict_cleared": 0.459,
-   "launch": 0.995,
-   "settle_end": 11.0,
-   "trigger": 11.037,
-   "end": 41.754,
-   "capture_mark": 41.793,
-   "pusher_joined": 41.793,
-   "log_ended": 41.815,
-   "log_written": 41.816,
-   "capture_extras": 41.838,
-   "db_pulled": 41.839,
-   "run_json": 41.886,
-   "judged": 41.92,
-   "verdict_pushed": 41.945,
-   "settled": 42.45,
-   "neutral_post": 42.526,
-   "terminated_post": 42.555
+   "terminated": 0.025,
+   "others_stopped": 0.074,
+   "reset": 0.103,
+   "swept": 0.145,
+   "neutral_pre": 0.214,
+   "accuracy": 0.255,
+   "permissions": 0.255,
+   "sleep_end": 0.255,
+   "log_begun": 0.372,
+   "launch_mark": 0.389,
+   "verdict_cleared": 0.413,
+   "launch": 0.993,
+   "settle_end": 10.996,
+   "trigger": 11.014,
+   "end": 41.707,
+   "capture_mark": 41.736,
+   "pusher_joined": 41.736,
+   "log_ended": 41.758,
+   "log_written": 41.758,
+   "capture_extras": 41.779,
+   "db_pulled": 41.78,
+   "run_json": 41.819,
+   "judged": 41.853,
+   "verdict_pushed": 41.877,
+   "settled": 42.382,
+   "neutral_post": 42.442,
+   "terminated_post": 42.478
   },
   "calls": {
    "_adb": {
     "n": 19,
-    "s": 0.712,
+    "s": 0.631,
     "bg_n": 1,
-    "bg_s": 0.037
+    "bg_s": 0.028
    },
    "_stop_stream": {
     "n": 2,
@@ -93,25 +93,25 @@
    },
    "begin_log": {
     "n": 1,
-    "s": 0.123,
+    "s": 0.117,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.033,
+    "s": 0.042,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.023,
+    "s": 0.022,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "evict": {
     "n": 1,
-    "s": 0.032,
+    "s": 0.024,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -123,25 +123,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.033,
+    "s": 0.025,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.536,
+    "s": 0.58,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "location_accuracy": {
     "n": 2,
-    "s": 0.045,
+    "s": 0.041,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.097,
+    "s": 0.064,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -153,21 +153,21 @@
    },
    "network_default": {
     "n": 2,
-    "s": 0.0,
+    "s": 0.001,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "neutral": {
     "n": 2,
-    "s": 0.143,
+    "s": 0.13,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "peek": {
     "n": 40,
-    "s": 0.021,
+    "s": 0.017,
     "bg_n": 40,
-    "bg_s": 0.021
+    "bg_s": 0.017
    },
    "permissions": {
     "n": 1,
@@ -177,13 +177,13 @@
    },
    "push_verdict": {
     "n": 3,
-    "s": 0.088,
+    "s": 0.075,
     "bg_n": 1,
-    "bg_s": 0.037
+    "bg_s": 0.028
    },
    "reset_app": {
     "n": 1,
-    "s": 0.033,
+    "s": 0.029,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -195,22 +195,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.708,
+    "s": 0.687,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.104,
+    "s": 0.085,
     "bg_n": 0,
     "bg_s": 0.0
    }
   },
   "dialogs": [],
-  "clock_offset_s": -0.392,
-  "clock_offset_rtt_s": 0.021,
+  "clock_offset_s": -0.413,
+  "clock_offset_rtt_s": 0.017,
   "log_phases": {
-   "boot": 0.923
+   "boot": 0.902
   }
  },
  "measure_from": "launch",
@@ -355,5 +355,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-16 12:26:02"
+ "when": "2026-11-16 13:36:43"
 }

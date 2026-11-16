@@ -1,24 +1,24 @@
    crashes                          0                      expected 0            ok
    restartOrder                     resumed-first          expected resumed-first ok
    appProcesses                     1                      expected 1            ok
-   driverEvents                     -                      expected fetch=1      MISMATCH
+   driverEvents                     fetch=1                expected fetch=1      ok
    fetchReceived                    1                      expected 1            ok
    fetchFinished                    1                      expected 1            ok
    jobFinished                      1                      expected 1            ok
-   headlessEvents.fetch             1                      expected 0            MISMATCH
+   headlessEvents.fetch             0                      expected 0            ok
    rnHeadlessStarts                 0                      expected 0            ok
    rnHeadlessErrors                 0                      expected 0            ok
    stoppingOnTerminate              0                      expected 0            ok
    fetchTimeouts                    0                      expected 0            ok
    jobsCancelled                    999                    expected 999          ok
-   headless                         true                   expected False        MISMATCH
+   headless                         false                  expected False        ok
    jobIds                           999                    expected 999          ok
-   lifecycleTally                   headless:true=1,onCreate=1,onResume=1,onStart=1 expected any          ok
+   lifecycleTally                   onCreate=1,onResume=1,onStart=1 expected any          ok
    bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
-   driverTally                      -                      expected fetch:cordova-background-fetch=1 MISMATCH
+   driverTally                      fetch:cordova-background-fetch=1 expected fetch:cordova-background-fetch=1 ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok
-   eventAssertions                  configure@0=never-fired expected ok           MISMATCH
+   eventAssertions                  ok                     expected ok           ok
    actionsDone                      ok                     expected ok           ok
-   => FAIL
+   => PASS
