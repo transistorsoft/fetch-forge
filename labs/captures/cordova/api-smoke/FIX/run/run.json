@@ -1,0 +1,359 @@
+{
+ "label": "cordova.api-smoke.FIX.run",
+ "platform": "cordova",
+ "os": "android",
+ "package": "com.transistorsoft.fetchlab.cordova",
+ "scenario": "api-smoke",
+ "variant": "FIX",
+ "step": "run",
+ "serial": "emulator-5582",
+ "evicted": [
+  "com.transistorsoft.backgroundgeolocation.react"
+ ],
+ "foreignTransistorApps": [
+  "com.transistorsoft.backgroundgeolocation.react"
+ ],
+ "native": "4.1.1-master-399765c",
+ "native_source": {
+  "branch": "",
+  "commit": "399765cc89f03ccaec19464ea87f47c3f3d66f4d",
+  "dirty": "no"
+ },
+ "channel": null,
+ "native_resolved": null,
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "cordova/background-fetch",
+  "commit": "368eb853a4ef021b9e1558b0a80bc8b2cdc6e88e",
+  "dirty": "no"
+ },
+ "device": {
+  "avd": "Lab2",
+  "model": "sdk_gphone64_arm64",
+  "os": "Android 16",
+  "sdk": "36",
+  "data_free_mb": 2661,
+  "display": "awake",
+  "fgs_timeout_ms": null,
+  "play_services": 263635035
+ },
+ "activity": ".MainActivity",
+ "process": null,
+ "settle": 10,
+ "after": 30,
+ "end": {
+  "policy": "window",
+  "ended": "window"
+ },
+ "timings": {
+  "install_s": 0.2,
+  "step_s": 41.8,
+  "t0": 1794787796.474,
+  "phases": {
+   "terminated": 0.031,
+   "others_stopped": 0.093,
+   "reset": 0.121,
+   "swept": 0.16,
+   "neutral_pre": 0.229,
+   "accuracy": 0.273,
+   "permissions": 0.273,
+   "sleep_end": 0.273,
+   "log_begun": 0.391,
+   "launch_mark": 0.409,
+   "verdict_cleared": 0.431,
+   "launch": 0.955,
+   "settle_end": 10.965,
+   "trigger": 10.992,
+   "end": 41.703,
+   "capture_mark": 41.739,
+   "pusher_joined": 41.739,
+   "log_ended": 41.763,
+   "log_written": 41.763,
+   "capture_extras": 41.785,
+   "db_pulled": 41.785,
+   "run_json": 41.823,
+   "judged": 41.853,
+   "verdict_pushed": 41.876,
+   "settled": 42.384,
+   "neutral_post": 42.457,
+   "terminated_post": 42.483
+  },
+  "calls": {
+   "_adb": {
+    "n": 19,
+    "s": 0.664,
+    "bg_n": 1,
+    "bg_s": 0.036
+   },
+   "_stop_stream": {
+    "n": 2,
+    "s": 0.002,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.118,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.039,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.024,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "evict": {
+    "n": 1,
+    "s": 0.028,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "installed": {
+    "n": 1,
+    "s": 0.034,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.523,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "location_accuracy": {
+    "n": 2,
+    "s": 0.044,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 3,
+    "s": 0.081,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "native_resolved": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "network_default": {
+    "n": 2,
+    "s": 0.002,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.141,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 40,
+    "s": 0.023,
+    "bg_n": 40,
+    "bg_s": 0.023
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 3,
+    "s": 0.081,
+    "bg_n": 1,
+    "bg_s": 0.036
+   },
+   "reset_app": {
+    "n": 1,
+    "s": 0.028,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.698,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 3,
+    "s": 0.085,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": -0.334,
+  "clock_offset_rtt_s": 0.018,
+  "log_phases": {
+   "boot": 0.863
+  }
+ },
+ "measure_from": "launch",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": true,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": null,
+ "host": null,
+ "network": {
+  "read": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "default": {
+   "wifi": "1",
+   "data": "1",
+   "powerSave": "0"
+  },
+  "differs": [],
+  "put": false
+ },
+ "privacy": null,
+ "location_accuracy": {
+  "want": true,
+  "was": true,
+  "now": true
+ },
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [],
+ "hooks": [
+  {
+   "api": "configure",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "function"
+    }
+   }
+  },
+  {
+   "api": "registerHeadlessTask",
+   "probe": true,
+   "returns": {
+    "$": {
+     "type": "function"
+    }
+   },
+   "absent_on": {
+    "capacitor": "2026-11-12 \u2014 headless is Java only on Capacitor (the app's BackgroundFetchHeadlessTask), and src/index.ts's BackgroundFetch declares no registerHeadlessTask (WO-002).",
+    "cordova": "2026-11-15 \u2014 headless is Java only on Cordova (the app's BackgroundFetchHeadlessTask, at the class name CDVBackgroundFetch hands the SDK), and src/typescript/index.ts declares no registerHeadlessTask (WO-002)."
+   }
+  },
+  {
+   "api": "status",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "api": "start",
+   "returns": {
+    "$": {
+     "type": "number",
+     "in": [
+      0,
+      1,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "api": "scheduleTask",
+   "args": {
+    "taskId": "com.transistorsoft.fetchlab.smoke",
+    "delay": 600000,
+    "periodic": false
+   },
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  },
+  {
+   "api": "stop",
+   "args": "com.transistorsoft.fetchlab.smoke",
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  },
+  {
+   "api": "finish",
+   "args": "react-native-background-fetch",
+   "returns": {
+    "$": {
+     "type": "null|undefined"
+    }
+   }
+  },
+  {
+   "api": "stop",
+   "returns": {
+    "$": {
+     "type": "boolean",
+     "equals": true
+    }
+   }
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-15 19:10:38"
+}

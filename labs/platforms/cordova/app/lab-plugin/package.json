@@ -1,0 +1,12 @@
+{
+  "name": "lab-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "(WO-002) The fetch lab's Cordova plugin: the driver's channel to the host (window.Lab).",
+  "cordova": {
+    "id": "lab-plugin",
+    "platforms": [
+      "android"
+    ]
+  }
+}

@@ -23,7 +23,7 @@ description: >
     * jobStops `999:app_called_jobFinished=1,999:onStartJob_returned_false=1` (configure()'s ignored first run, then
       the timed-out run, finished).
   NOT CHECKED before this scenario: no capture yet holds a `[BGTask] timeout` line.
-platforms: [react-native, capacitor, flutter]
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   ios: "2026-11-09 — `job:` is JobScheduler's; an iOS timeout is driven by the lab hook (WO-002 D3), which is
     ios-timeout-sim's."
@@ -67,3 +67,4 @@ steps:
       react-native: {driverTally: "fetch:react-native-background-fetch=1,timeout:react-native-background-fetch=1"}
       capacitor: {driverTally: "fetch:capacitor-background-fetch=1,timeout:capacitor-background-fetch=1"}
       flutter: {driverTally: "fetch:flutter_background_fetch=1,timeout:flutter_background_fetch=1"}
+      cordova: {driverTally: "fetch:cordova-background-fetch=1,timeout:cordova-background-fetch=1"}

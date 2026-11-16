@@ -30,6 +30,8 @@ platforms: [react-native, capacitor, flutter]
 not_applicable:
   android: "2026-11-10 — `fire:`, `background:` and `terminate:` are the Simulator's (a SpringBoard background fetch);
     Android's fetches are JobScheduler's, events-fetch-android's."
+  cordova: "2026-11-15 — the Cordova host is Android-only until its iOS slice (WO-002: Cordova Android, then
+    iOS); un-excuse it with the iOS host."
 measure_from: launch
 # (WO-002, Capacitor iOS) Each bridge delivers its own fetch taskId: `returns` takes either, driverTally pins each.
 platform_expect:

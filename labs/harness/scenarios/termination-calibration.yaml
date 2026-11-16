@@ -45,7 +45,7 @@ description: >
   run.py force-stops the app before and after every step (backends.Adb.terminate, `am force-stop`) — wipes the
   app's jobs between steps: every step must configure() again (the RN driver does at boot), and a job can never be
   carried from one step to the next except across a `process: live` step.
-platforms: [react-native, capacitor, flutter]
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   ios: "2026-11-05 — iOS has no headless mode and `stopOnTerminate` is a no-op there (TSBackgroundFetch.m:388-393);
     `actions:` (kill, force_stop, job) are Android's."
@@ -57,8 +57,10 @@ steps:
     settle: 10
     after: 35
     hooks:
+      # (WO-002, 2026-11-15) The kill's anchor only, so bridge-neutral: `outcome: resolved` (Chris's decision; what
+      # status() returns is api-smoke's to score, and Cordova's resolves nothing, callback-style).
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     actions:
       - {after: {api: "status#0"}, delay_s: 3, kill: true}
       # `point: host` matches ANY host mark: here the kill's, the only one before it.
@@ -82,8 +84,10 @@ steps:
     settle: 10
     after: 35
     hooks:
+      # (WO-002, 2026-11-15) The force-stop's anchor only, so bridge-neutral: `outcome: resolved` (Chris's decision; what
+      # status() returns is api-smoke's to score, and Cordova's resolves nothing, callback-style).
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
     actions:
       - {after: {api: "status#0"}, delay_s: 3, force_stop: true}
       # `point: host` matches ANY host mark: here the force-stop's, the only one before it.

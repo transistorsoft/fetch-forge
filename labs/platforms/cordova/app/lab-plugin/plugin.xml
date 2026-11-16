@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- (WO-002) The fetch lab's own Cordova plugin: the driver's channel to the host (window.Lab).  bg-forge's lab-plugin
+     (labs/platforms/cordova, addc50501), with the Capacitor fetch host's Lab methods.  Android only until the Cordova
+     iOS slice; its iOS half must not sit under a directory named `ios` (run.py's source stamp skips every one). -->
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="lab-plugin" version="1.0.0">
+    <name>Lab</name>
+    <js-module src="www/lab.js" name="Lab">
+        <clobbers target="window.Lab" />
+    </js-module>
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="Lab">
+                <param name="android-package" value="com.transistorsoft.fetchlab.cordova.LabPlugin"/>
+            </feature>
+        </config-file>
+        <source-file src="src/android/LabPlugin.java" target-dir="src/com/transistorsoft/fetchlab/cordova" />
+    </platform>
+</plugin>

@@ -1,0 +1,80 @@
+// LAB (WO-002): the native SDK under test.  build.sh applies this file from the GENERATED platforms/android/build.gradle
+// (`apply from:`), so it is tracked here and hashed into run.py's source stamp.
+//
+// The plugin hard-codes `implementation 'com.transistorsoft:tsbackgroundfetch:4.1.+'` with no ext variable to pin
+// (cordova/background-fetch src/android/build.gradle), unlike the React Native, Capacitor and Flutter plugins'
+// `backgroundFetchVersion`.  So, in every project:
+//   * exclusiveContent makes labs/m2 the ONLY repository searched for that module — the plugin's own
+//     `repositories { mavenCentral() }` included — so a label missing from labs/m2 fails the build instead of quietly
+//     resolving a released SDK;
+//   * a resolution rule replaces whatever version is requested with the label: `4.1.+` alone would pick whichever
+//     4.1.x label labs/m2 ranks highest (it holds two).
+// build.sh then refuses an APK whose resolved version is not the label, or whose AAR is not byte-identical to labs/m2's
+// (labNativeResolved, below).
+def labNative = rootProject.findProperty("labNativeVersion")
+if (!labNative) {
+    throw new GradleException("labNativeVersion is required (-PlabNativeVersion=<label>): build through labs/platforms/cordova/build.sh")
+}
+
+allprojects {
+    repositories {
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "labM2"
+                    // From platforms/cordova/app/platforms/android, ../../../../../m2 = labs/m2; build.sh passes it.
+                    url = rootProject.hasProperty("labMavenRepo") ? rootProject.property("labMavenRepo")
+                                                                  : "${rootProject.projectDir}/../../../../../m2"
+                }
+            }
+            filter { includeModule("com.transistorsoft", "tsbackgroundfetch") }
+        }
+    }
+    configurations.configureEach {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == "com.transistorsoft" && details.requested.name == "tsbackgroundfetch") {
+                details.useVersion(labNative)
+                details.because("the lab's native label (labs/platforms/cordova/build.sh)")
+            }
+        }
+    }
+}
+
+// Which tsbackgroundfetch the debug APK actually links, read from the RESOLVED graph, never from the label it was asked
+// for (the Capacitor host's task, labs/platforms/capacitor/app/android/app/build.gradle).
+project(":app") { app ->
+    app.tasks.register("labNativeResolved") {
+        notCompatibleWithConfigurationCache("reads the resolved dependency graph")
+        doLast {
+            def cfg = app.configurations.getByName("debugRuntimeClasspath")
+            def result = cfg.incoming.resolutionResult
+            def comps = result.allComponents.findAll {
+                it.moduleVersion?.group == "com.transistorsoft" && it.moduleVersion?.name == "tsbackgroundfetch"
+            }
+            if (comps.isEmpty()) {
+                println("[lab] tsbackgroundfetch resolved=NONE")
+                return
+            }
+            def requested = result.allDependencies.findAll {
+                it.requested instanceof org.gradle.api.artifacts.component.ModuleComponentSelector &&
+                    it.requested.group == "com.transistorsoft" && it.requested.module == "tsbackgroundfetch"
+            }.collect { "${it.from.id.displayName}->${it.requested.version}" }.unique().join(",")
+            comps.each { c ->
+                def reasons = c.selectionReason.descriptions.collect { it.description }.join("|").replace(' ', '_')
+                println("[lab] tsbackgroundfetch resolved=${c.moduleVersion.version} requested=${requested} reason=${reasons}")
+            }
+            def aars = cfg.incoming.artifactView { view ->
+                view.attributes { it.attribute(Attribute.of("artifactType", String), "aar") }
+                view.componentFilter { id ->
+                    id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier &&
+                        id.group == "com.transistorsoft" && id.module == "tsbackgroundfetch"
+                }
+            }.files.files
+            aars.each { f ->
+                def md = java.security.MessageDigest.getInstance("SHA-256")
+                f.withInputStream { s -> byte[] buf = new byte[1 << 16]; int n; while ((n = s.read(buf)) > 0) md.update(buf, 0, n) }
+                println("[lab] tsbackgroundfetch aar=${f} sha256=${md.digest().encodeHex()}")
+            }
+        }
+    }
+}

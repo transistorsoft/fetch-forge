@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- (WO-002) The fetch lab's Cordova host.  The widget id is the Android package lab.yaml names: distinct from bg-forge's
+     com.transistorsoft.labs.* (the two labs share the Lab devices, and each lab's first step evicts every other lab
+     app by prefix).  config.xml reaches the generated project only through `cordova platform add` (build.sh's
+     platforms/android/.lab-host hashes it, so an edit here regenerates the platform). -->
+<widget id="com.transistorsoft.fetchlab.cordova" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>FetchCordovaLab</name>
+    <description>WO-002 device lab: the Cordova host the fetch harness drives.</description>
+    <content src="index.html" />
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <!-- The template's android:configChanges is left untouched: it omits fontScale and fontWeightAdjustment, so bold
+         and fontscale recreate the Activity (build.sh asserts it).  The native sources (app/native) and the driver
+         (app/www, labs/platforms/_shared) are copied in by build.sh, never through cordova prepare. -->
+</widget>
