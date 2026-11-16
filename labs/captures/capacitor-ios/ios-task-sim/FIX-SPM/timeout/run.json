@@ -6,7 +6,7 @@
  "scenario": "ios-task-sim",
  "variant": "FIX-SPM",
  "step": "timeout",
- "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
  "evicted": null,
  "foreignTransistorApps": null,
  "native": "4.1.1-master-399765c",
@@ -22,11 +22,11 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "capacitor/background-fetch",
-  "commit": "4d431c1e21ba40e2329b5cc344eb4051401430a8",
-  "dirty": "yes"
+  "commit": "3fa169afc3cf4ec97b5f893c8d040e2017f01b0a",
+  "dirty": "no"
  },
  "device": {
-  "model": "Lab2",
+  "model": "Lab1",
   "os": "iOS 27.2"
  },
  "activity": "",
@@ -38,57 +38,57 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 42.0,
-  "t0": 1794591999.551,
+  "step_s": 41.8,
+  "t0": 1794797321.643,
   "phases": {
-   "terminated": 0.099,
-   "swept": 0.317,
-   "neutral_pre": 0.317,
-   "permissions": 0.317,
-   "sleep_end": 0.317,
-   "log_begun": 0.739,
-   "launch_mark": 0.88,
-   "verdict_cleared": 0.88,
-   "launch": 1.011,
-   "settle_end": 11.021,
-   "trigger": 11.173,
-   "end": 41.564,
-   "runner_joined": 41.564,
-   "capture_mark": 41.676,
-   "pusher_joined": 41.676,
-   "log_ended": 41.92,
-   "log_written": 41.92,
-   "capture_extras": 41.92,
-   "db_pulled": 41.921,
-   "run_json": 41.989,
-   "judged": 42.036,
-   "verdict_pushed": 42.036,
-   "settled": 42.543,
-   "neutral_post": 42.543,
-   "terminated_post": 42.688
+   "terminated": 0.095,
+   "swept": 0.268,
+   "neutral_pre": 0.268,
+   "permissions": 0.268,
+   "sleep_end": 0.268,
+   "log_begun": 0.576,
+   "launch_mark": 0.68,
+   "verdict_cleared": 0.68,
+   "launch": 0.792,
+   "settle_end": 10.796,
+   "trigger": 10.929,
+   "end": 41.341,
+   "runner_joined": 41.342,
+   "capture_mark": 41.478,
+   "pusher_joined": 41.478,
+   "log_ended": 41.71,
+   "log_written": 41.711,
+   "capture_extras": 41.711,
+   "db_pulled": 41.711,
+   "run_json": 41.773,
+   "judged": 41.848,
+   "verdict_pushed": 41.848,
+   "settled": 42.356,
+   "neutral_post": 42.356,
+   "terminated_post": 42.499
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.236,
+    "s": 0.226,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 11,
-    "s": 1.71,
+    "s": 1.659,
     "bg_n": 2,
-    "bg_s": 0.231
+    "bg_s": 0.223
    },
    "_tap_text": {
-    "n": 88,
-    "s": 0.021,
-    "bg_n": 86,
+    "n": 86,
+    "s": 0.022,
+    "bg_n": 84,
     "bg_s": 0.021
    },
    "begin_log": {
     "n": 1,
-    "s": 0.422,
+    "s": 0.308,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.218,
+    "s": 0.174,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.244,
+    "s": 0.233,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,25 +124,25 @@
    },
    "fire_task": {
     "n": 2,
-    "s": 0.489,
+    "s": 0.461,
     "bg_n": 2,
-    "bg_s": 0.489
+    "bg_s": 0.461
    },
    "launch": {
     "n": 1,
-    "s": 0.131,
+    "s": 0.112,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.634,
+    "s": 0.595,
     "bg_n": 2,
-    "bg_s": 0.231
+    "bg_s": 0.223
    },
    "native_resolved": {
     "n": 1,
-    "s": 0.009,
+    "s": 0.011,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -153,10 +153,10 @@
     "bg_s": 0.0
    },
    "peek": {
-    "n": 86,
-    "s": 0.104,
-    "bg_n": 86,
-    "bg_s": 0.104
+    "n": 84,
+    "s": 0.127,
+    "bg_n": 84,
+    "bg_s": 0.127
    },
    "permissions": {
     "n": 1,
@@ -178,13 +178,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.373,
+    "s": 0.406,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.244,
+    "s": 0.235,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -193,7 +193,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.871
+   "boot": 3.313
   }
  },
  "measure_from": "launch",
@@ -236,12 +236,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 3.095,
-   "action1": 6.828
+   "action0": 2.562,
+   "action1": 6.267
   },
   "sent_s": {
-   "action0": 6.199,
-   "action1": 11.979
+   "action0": 5.646,
+   "action1": 11.445
   }
  },
  "network": null,
@@ -281,16 +281,7 @@
  "hooks": [
   {
    "api": "status",
-   "returns": {
-    "$": {
-     "type": "number",
-     "in": [
-      0,
-      1,
-      2
-     ]
-    }
-   }
+   "outcome": "resolved"
   },
   {
    "api": "scheduleTask",
@@ -299,9 +290,9 @@
     "delay": 600000,
     "periodic": false
    },
-   "outcome": "rejected"
+   "outcome": "settled 2026-11-15 the fire's anchor; the promise rejects on the Simulator (Unavailable), and Cordova's callback-style scheduleTask returns nothing"
   }
  ],
  "year": 2026,
- "when": "2026-11-13 12:47:21"
+ "when": "2026-11-15 21:49:23"
 }

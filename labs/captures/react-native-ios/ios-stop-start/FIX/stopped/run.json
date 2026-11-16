@@ -38,59 +38,59 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 57.7,
-  "t0": 1794588576.822,
+  "step_s": 57.6,
+  "t0": 1794790607.104,
   "phases": {
-   "terminated": 0.086,
-   "others_stopped": 0.187,
-   "reset": 0.722,
-   "swept": 0.926,
-   "neutral_pre": 0.926,
-   "permissions": 0.926,
-   "sleep_end": 0.926,
-   "log_begun": 1.331,
-   "launch_mark": 1.448,
-   "verdict_cleared": 1.553,
-   "launch": 1.678,
-   "settle_end": 11.682,
-   "trigger": 11.823,
-   "end": 57.22,
-   "runner_joined": 57.221,
-   "capture_mark": 57.36,
-   "pusher_joined": 57.36,
-   "log_ended": 57.609,
-   "log_written": 57.609,
-   "capture_extras": 57.609,
-   "db_pulled": 57.61,
-   "run_json": 57.67,
-   "judged": 57.7,
-   "verdict_pushed": 57.7,
-   "settled": 58.202,
-   "neutral_post": 58.202,
-   "terminated_post": 58.339
+   "terminated": 0.09,
+   "others_stopped": 0.193,
+   "reset": 0.717,
+   "swept": 0.901,
+   "neutral_pre": 0.901,
+   "permissions": 0.901,
+   "sleep_end": 0.901,
+   "log_begun": 1.309,
+   "launch_mark": 1.419,
+   "verdict_cleared": 1.541,
+   "launch": 1.679,
+   "settle_end": 11.684,
+   "trigger": 11.827,
+   "end": 57.217,
+   "runner_joined": 57.217,
+   "capture_mark": 57.325,
+   "pusher_joined": 57.325,
+   "log_ended": 57.563,
+   "log_written": 57.563,
+   "capture_extras": 57.563,
+   "db_pulled": 57.564,
+   "run_json": 57.622,
+   "judged": 57.666,
+   "verdict_pushed": 57.667,
+   "settled": 58.172,
+   "neutral_post": 58.172,
+   "terminated_post": 58.282
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.24,
+    "s": 0.232,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 15,
-    "s": 2.307,
+    "s": 2.244,
     "bg_n": 1,
-    "bg_s": 0.112
+    "bg_s": 0.107
    },
    "_tap_text": {
-    "n": 76,
-    "s": 0.026,
-    "bg_n": 74,
-    "bg_s": 0.026
+    "n": 77,
+    "s": 0.018,
+    "bg_n": 75,
+    "bg_s": 0.018
    },
    "begin_log": {
     "n": 1,
-    "s": 0.404,
+    "s": 0.408,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -102,19 +102,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.215,
+    "s": 0.241,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.204,
+    "s": 0.184,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.248,
+    "s": 0.238,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -126,25 +126,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.101,
+    "s": 0.104,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.126,
+    "s": 0.138,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 4,
-    "s": 0.512,
+    "s": 0.468,
     "bg_n": 1,
-    "bg_s": 0.112
+    "bg_s": 0.107
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.123,
+    "s": 0.129,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,10 +155,10 @@
     "bg_s": 0.0
    },
    "peek": {
-    "n": 74,
-    "s": 0.131,
-    "bg_n": 74,
-    "bg_s": 0.131
+    "n": 75,
+    "s": 0.086,
+    "bg_n": 75,
+    "bg_s": 0.086
    },
    "permissions": {
     "n": 1,
@@ -168,19 +168,19 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.138,
+    "s": 0.133,
     "bg_n": 1,
-    "bg_s": 0.138
+    "bg_s": 0.133
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.106,
+    "s": 0.123,
     "bg_n": 2,
-    "bg_s": 0.002
+    "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.419,
+    "s": 0.4,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -192,13 +192,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.391,
+    "s": 0.38,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.222,
+    "s": 0.197,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -207,7 +207,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.113
+   "boot": 3.304
   }
  },
  "measure_from": "launch",
@@ -239,10 +239,10 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.517
+   "action0": 1.778
   },
   "sent_s": {
-   "action0": 4.581
+   "action0": 4.819
   }
  },
  "network": null,
@@ -263,16 +263,7 @@
  "hooks": [
   {
    "api": "status",
-   "returns": {
-    "$": {
-     "type": "number",
-     "in": [
-      0,
-      1,
-      2
-     ]
-    }
-   }
+   "outcome": "resolved"
   },
   {
    "api": "stop",
@@ -285,5 +276,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-13 11:50:34"
+ "when": "2026-11-15 19:57:44"
 }

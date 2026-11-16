@@ -6,7 +6,7 @@
  "scenario": "ios-registration",
  "variant": "FIX",
  "step": "delegate",
- "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
  "evicted": [],
  "foreignTransistorApps": [],
  "native": "4.1.1-master-399765c",
@@ -22,11 +22,11 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "capacitor/background-fetch",
-  "commit": "4d431c1e21ba40e2329b5cc344eb4051401430a8",
-  "dirty": "yes"
+  "commit": "3fa169afc3cf4ec97b5f893c8d040e2017f01b0a",
+  "dirty": "no"
  },
  "device": {
-  "model": "Lab2",
+  "model": "Lab1",
   "os": "iOS 27.2"
  },
  "activity": "",
@@ -38,58 +38,58 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 15.7,
-  "t0": 1794591703.568,
+  "step_s": 15.6,
+  "t0": 1794790794.803,
   "phases": {
-   "terminated": 0.09,
-   "others_stopped": 0.192,
-   "reset": 0.673,
-   "swept": 0.881,
-   "neutral_pre": 0.881,
-   "permissions": 0.881,
-   "sleep_end": 0.881,
-   "log_begun": 1.291,
-   "launch_mark": 1.417,
-   "verdict_cleared": 1.531,
-   "launch": 1.651,
-   "settle_end": 9.657,
-   "trigger": 9.8,
-   "end": 15.226,
-   "capture_mark": 15.363,
-   "pusher_joined": 15.363,
-   "log_ended": 15.614,
-   "log_written": 15.614,
-   "capture_extras": 15.614,
-   "db_pulled": 15.614,
-   "run_json": 15.682,
-   "judged": 15.702,
-   "verdict_pushed": 15.702,
-   "settled": 16.207,
-   "neutral_post": 16.207,
-   "terminated_post": 16.357
+   "terminated": 0.113,
+   "others_stopped": 0.227,
+   "reset": 0.706,
+   "swept": 0.886,
+   "neutral_pre": 0.886,
+   "permissions": 0.886,
+   "sleep_end": 0.886,
+   "log_begun": 1.287,
+   "launch_mark": 1.4,
+   "verdict_cleared": 1.517,
+   "launch": 1.633,
+   "settle_end": 9.638,
+   "trigger": 9.783,
+   "end": 15.159,
+   "capture_mark": 15.272,
+   "pusher_joined": 15.272,
+   "log_ended": 15.512,
+   "log_written": 15.513,
+   "capture_extras": 15.513,
+   "db_pulled": 15.513,
+   "run_json": 15.571,
+   "judged": 15.595,
+   "verdict_pushed": 15.595,
+   "settled": 16.1,
+   "neutral_post": 16.1,
+   "terminated_post": 16.249
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.242,
+    "s": 0.235,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.205,
+    "s": 2.138,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_tap_text": {
     "n": 15,
-    "s": 0.004,
+    "s": 0.003,
     "bg_n": 13,
-    "bg_s": 0.004
+    "bg_s": 0.003
    },
    "begin_log": {
     "n": 1,
-    "s": 0.41,
+    "s": 0.401,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -107,13 +107,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.208,
+    "s": 0.181,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.251,
+    "s": 0.24,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -125,25 +125,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.102,
+    "s": 0.114,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.12,
+    "s": 0.116,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.406,
+    "s": 0.37,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.119,
+    "s": 0.115,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,9 +155,9 @@
    },
    "peek": {
     "n": 13,
-    "s": 0.013,
+    "s": 0.01,
     "bg_n": 13,
-    "bg_s": 0.013
+    "bg_s": 0.01
    },
    "permissions": {
     "n": 1,
@@ -167,13 +167,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.116,
+    "s": 0.119,
     "bg_n": 2,
     "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.367,
+    "s": 0.37,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -185,13 +185,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.42,
+    "s": 0.371,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.24,
+    "s": 0.257,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -200,7 +200,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 4.572
+   "boot": 4.538
   }
  },
  "measure_from": "launch",
@@ -238,18 +238,9 @@
  "hooks": [
   {
    "api": "status",
-   "returns": {
-    "$": {
-     "type": "number",
-     "in": [
-      0,
-      1,
-      2
-     ]
-    }
-   }
+   "outcome": "resolved"
   }
  ],
  "year": 2026,
- "when": "2026-11-13 12:41:59"
+ "when": "2026-11-15 20:00:10"
 }

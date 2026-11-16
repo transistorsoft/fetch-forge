@@ -47,44 +47,44 @@
  },
  "timings": {
   "install_s": 0.1,
-  "step_s": 47.0,
-  "t0": 1794787971.206,
+  "step_s": 47.1,
+  "t0": 1794797673.01,
   "phases": {
-   "terminated": 0.02,
-   "others_stopped": 0.06,
-   "reset": 0.086,
-   "swept": 0.107,
-   "neutral_pre": 0.167,
-   "accuracy": 0.206,
-   "permissions": 0.206,
-   "sleep_end": 0.206,
-   "log_begun": 0.327,
-   "launch_mark": 0.344,
-   "verdict_cleared": 0.367,
-   "launch": 0.818,
-   "settle_end": 10.827,
-   "trigger": 10.864,
-   "end": 46.931,
-   "runner_joined": 46.931,
-   "capture_mark": 46.967,
-   "pusher_joined": 46.967,
-   "log_ended": 46.989,
-   "log_written": 46.99,
-   "capture_extras": 47.011,
-   "db_pulled": 47.012,
-   "run_json": 47.049,
-   "judged": 47.103,
-   "verdict_pushed": 47.127,
-   "settled": 47.637,
-   "neutral_post": 47.71,
-   "terminated_post": 47.732
+   "terminated": 0.024,
+   "others_stopped": 0.069,
+   "reset": 0.1,
+   "swept": 0.125,
+   "neutral_pre": 0.178,
+   "accuracy": 0.216,
+   "permissions": 0.216,
+   "sleep_end": 0.216,
+   "log_begun": 0.336,
+   "launch_mark": 0.353,
+   "verdict_cleared": 0.377,
+   "launch": 0.828,
+   "settle_end": 10.829,
+   "trigger": 10.866,
+   "end": 46.924,
+   "runner_joined": 46.924,
+   "capture_mark": 46.962,
+   "pusher_joined": 46.962,
+   "log_ended": 46.984,
+   "log_written": 46.984,
+   "capture_extras": 47.007,
+   "db_pulled": 47.008,
+   "run_json": 47.051,
+   "judged": 47.107,
+   "verdict_pushed": 47.131,
+   "settled": 47.632,
+   "neutral_post": 47.706,
+   "terminated_post": 47.73
   },
   "calls": {
    "_adb": {
     "n": 19,
-    "s": 0.634,
+    "s": 0.644,
     "bg_n": 1,
-    "bg_s": 0.047
+    "bg_s": 0.048
    },
    "_stop_stream": {
     "n": 2,
@@ -94,19 +94,19 @@
    },
    "alive": {
     "n": 2,
-    "s": 0.052,
+    "s": 0.05,
     "bg_n": 2,
-    "bg_s": 0.052
+    "bg_s": 0.05
    },
    "begin_log": {
     "n": 1,
-    "s": 0.121,
+    "s": 0.12,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.021,
+    "s": 0.026,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -118,7 +118,7 @@
    },
    "evict": {
     "n": 1,
-    "s": 0.02,
+    "s": 0.024,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -130,21 +130,21 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.02,
+    "s": 0.022,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "job": {
     "n": 2,
-    "s": 5.57,
+    "s": 5.562,
     "bg_n": 2,
-    "bg_s": 5.57
+    "bg_s": 5.562
    },
    "kill": {
     "n": 1,
-    "s": 0.076,
+    "s": 0.07,
     "bg_n": 1,
-    "bg_s": 0.076
+    "bg_s": 0.07
    },
    "launch": {
     "n": 1,
@@ -160,9 +160,9 @@
    },
    "mark": {
     "n": 6,
-    "s": 0.152,
+    "s": 0.148,
     "bg_n": 3,
-    "bg_s": 0.061
+    "bg_s": 0.057
    },
    "native_resolved": {
     "n": 1,
@@ -178,15 +178,15 @@
    },
    "neutral": {
     "n": 2,
-    "s": 0.134,
+    "s": 0.126,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "peek": {
     "n": 71,
-    "s": 0.049,
+    "s": 0.047,
     "bg_n": 71,
-    "bg_s": 0.049
+    "bg_s": 0.047
    },
    "permissions": {
     "n": 1,
@@ -196,13 +196,13 @@
    },
    "push_verdict": {
     "n": 3,
-    "s": 0.094,
+    "s": 0.096,
     "bg_n": 1,
     "bg_s": 0.048
    },
    "reset_app": {
     "n": 1,
-    "s": 0.026,
+    "s": 0.03,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -214,22 +214,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 1.058,
+    "s": 1.05,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.062,
+    "s": 0.071,
     "bg_n": 0,
     "bg_s": 0.0
    }
   },
   "dialogs": [],
-  "clock_offset_s": -0.335,
-  "clock_offset_rtt_s": 0.017,
+  "clock_offset_s": -31.598,
+  "clock_offset_rtt_s": 0.016,
   "log_phases": {
-   "boot": 0.75
+   "boot": 0.756
   }
  },
  "measure_from": "launch",
@@ -281,13 +281,13 @@
   "error": null,
   "held_s": {
    "action0": 0.001,
-   "action1": 3.42,
-   "action2": 3.42
+   "action1": 3.435,
+   "action2": 3.435
   },
   "sent_s": {
-   "action0": 3.065,
-   "action1": 6.485,
-   "action2": 6.546
+   "action0": 3.085,
+   "action1": 6.502,
+   "action2": 6.563
   }
  },
  "network": {
@@ -334,5 +334,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-15 19:13:38"
+ "when": "2026-11-15 21:55:20"
 }

@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- (WO-002) The fetch lab's own Cordova plugin: the driver's channel to the host (window.Lab).  bg-forge's lab-plugin
-     (labs/platforms/cordova, addc50501), with the Capacitor fetch host's Lab methods.  Android only until the Cordova
-     iOS slice; its iOS half must not sit under a directory named `ios` (run.py's source stamp skips every one). -->
+     (labs/platforms/cordova, addc50501), with the Capacitor fetch host's Lab methods.  Its iOS half sits under
+     src/apple, never a directory named `ios` (run.py's source stamp skips every one). -->
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="lab-plugin" version="1.0.0">
     <name>Lab</name>
     <js-module src="www/lab.js" name="Lab">
         <clobbers target="window.Lab" />
     </js-module>
+    <!-- (WO-002, iOS) A plain Cordova plugin (no package attribute), compiled into the App target.  onload: its
+         pluginInitialize logs `point=pluginLoad n=` and arms the Darwin custom-task hook when the view controller loads
+         its startup plugins. -->
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="Lab">
+                <param name="ios-package" value="LabPlugin"/>
+                <param name="onload" value="true"/>
+            </feature>
+        </config-file>
+        <source-file src="src/apple/LabPlugin.m" />
+    </platform>
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="Lab">

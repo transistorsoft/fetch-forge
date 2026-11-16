@@ -31,12 +31,13 @@ description: >
       1 s later, and SpringBoard records `RetrievedNewData`.  bgSubmits counts configure's request, start()'s, and the
       one the SDK makes on each fetch (:182-183): 3.  Unlike Android's stop-start (suspected defect 2), start() after
       stop() works here: MEASURED 2026-11-11.
-platforms: [react-native, capacitor, flutter]
+
+  (WO-002, 2026-11-15) Cordova: stop#1 and start#2 read undefined, the callback-style finding (api-smoke-ios); every
+  metric holds, the SDK's own record of the stop and the restart (sweeps 20261115-220040 FIX, -220507 FIX-SPM).
+platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   android: "2026-11-11 — `fire:` is the Simulator's (a SpringBoard background fetch); Android's stop()/start() is
     stop-start's (suspected defect 2)."
-  cordova: "2026-11-15 — the Cordova host is Android-only until its iOS slice (WO-002: Cordova Android, then
-    iOS); un-excuse it with the iOS host."
 measure_from: launch
 steps:
   - name: stopped
@@ -44,8 +45,10 @@ steps:
     after: 45
     end: window
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
       - api: stop
         returns: {$: {type: boolean, equals: true}}
     actions:
@@ -61,8 +64,10 @@ steps:
     after: 20
     end: window
     hooks:
+      # (WO-002, 2026-11-15) An anchor, so bridge-neutral (Chris's decision): what status() returns is
+      # api-smoke-ios's to score, and Cordova's resolves nothing, callback-style.
       - api: status
-        returns: {$: {type: number, in: [0, 1, 2]}}
+        outcome: resolved
       - api: stop
         returns: {$: {type: boolean, equals: true}}
       - api: start
@@ -73,6 +78,7 @@ steps:
     platform_expect:
       capacitor: {sdkSubscribers: "capacitor-background-fetch"}
       flutter: {sdkSubscribers: "flutter_background_fetch"}
+      cordova: {sdkSubscribers: "cordova-background-fetch"}
     expect:
       crashes: 0
       bgCancels: "com.transistorsoft.fetch=1"

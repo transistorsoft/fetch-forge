@@ -13,4 +13,16 @@
     <!-- The template's android:configChanges is left untouched: it omits fontScale and fontWeightAdjustment, so bold
          and fontscale recreate the Activity (build.sh asserts it).  The native sources (app/native) and the driver
          (app/www, labs/platforms/_shared) are copied in by build.sh, never through cordova prepare. -->
+    <platform name="ios">
+        <!-- (WO-002, iOS) The plugin's Swift package declares iOS 15: this is what lifts cordova-ios 8's CordovaPlugins
+             package (template iOS 13) to it, at platform add and every prepare (cordova-ios SwiftPackage.js). -->
+        <preference name="deployment-target" value="15.0" />
+        <!-- The lab's custom task (ios-task-sim, api-smoke-ios), permitted the way the plugin's README tells customers;
+             the plugin's own plugin.xml adds com.transistorsoft.fetch and UIBackgroundModes fetch, processing. -->
+        <config-file target="*-Info.plist" parent="BGTaskSchedulerPermittedIdentifiers">
+            <array>
+                <string>com.transistorsoft.fetchlab.task</string>
+            </array>
+        </config-file>
+    </platform>
 </widget>

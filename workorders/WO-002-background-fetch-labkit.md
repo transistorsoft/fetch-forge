@@ -1272,3 +1272,43 @@ Use `fetch-forge/labs/` with a root `./labkit`, so bg-forge's commands and READM
     - Cordova restart ordering: the WO-007 rule (act on the current Activity alone). The plugin is created lazily, so the fix needs another record of the current Activity (onload, or ActivityLifecycleCallbacks).
     - **The Cordova iOS slice:** on cordova-ios 8 the plugin builds from `Package.swift` only (`package="swift"`, the pod `nospm`), and cordova-ios 7 crashes on Xcode 27 (WO-001), so its channel is SwiftPM; a CocoaPods channel would need a lab-modified plugin.xml. Also needed: the `deployment-target 15.0` preference, the per-label mirror, the plugin's legacy-fetch category on CDVAppDelegate wrapped and not shadowed, no tracked source under a directory named `ios`, and the hidden-page pause measured.
     - KNOWN GAP (lab.yaml): the global cordova CLI is in the `.lab-host` but not in run.py's stamp.
+- 2026-11-15 — **Cordova iOS host, on Swift Package Manager (Simulator, MEASURED): 5 of 7, and the two reds are the callback-style finding.** Branch `feat/WO-002-cordova-ios`, from `master` `28c34c6`. Chris: "proceed next task" (the last slice of his order).
+  - **Chris's decisions (2026-11-15):**
+    - (1) **SwiftPM only.** On cordova-ios 8 the plugin builds from its Package.swift alone (plugin.xml `package="swift"`, its pod `nospm`), and cordova-ios 7 crashes on Xcode 27. lab.yaml declares `channels: [spm]`; FIX (no channel) builds the same SwiftPM app as FIX-SPM.
+    - (2) **Neutral anchors on iOS too:** the 12 `status` anchors in ios-fetch-sim, ios-timeout-sim, ios-registration, ios-stop-start and ios-task-sim assert `outcome: resolved`. api-smoke-ios still scores the returns; ios-stop-start keeps its stop/start return checks.
+    - (3) **ios-task-sim's two `scheduleTask` hooks anchor the fire:** `outcome: settled 2026-11-15 …` for every bridge. The Simulator's rejection stays proven by taskSubmitErrors and scored by api-smoke-ios.
+  - **The host.**
+    - **A Cordova project of its own, `app/build/ios-spm`** (gitignored, skipped by run.py's stamp), not a second platform in `app/`: `cordova plugin add/rm` act on every installed platform. It sits under `app/` so cordova-fetch takes the cordova-ios 8.1.1 that `npm ci` installed from the committed lock (`app/package.json` now pins cordova-ios too). Its `platforms/` is made first (cordova takes the first ancestor with www + config.xml + platforms/ for the root), and it is regenerated with rm -rf when its `.lab-host` changes.
+    - **CocoaPods runs, installing nothing:** cordova-ios 8 requires CocoaPods ≥ 1.16 and runs `pod install` on every plugin add and rm even for a SwiftPM plugin (its `<podspec>` carries a `<source>`). build.sh proves the Podfile names no pod and Podfile.lock no TSBackgroundFetch.
+    - **config.xml's iOS block:** the `deployment-target 15.0` preference (it lifts the CordovaPlugins package to the plugin's iOS 15) and the lab's custom task id, the route the plugin's README gives customers.
+    - **`app/native-ios/AppDelegate.swift`:** the template's `@objc @implementation` AppDelegate, plus the launch lines and a wrapper around the legacy fetch whose `super` IS the plugin's category on CDVAppDelegate — the plugin forwards the fetch, as in a customer's app.
+    - **The lab plugin's iOS half** (`app/lab-plugin/src/apple/LabPlugin.m`, never under a directory named `ios`: run.py's stamp skips them): onload (`pluginLoad n=`, the Darwin custom-task hook), the Android half's keys and types, and an `extern` reference that links the SDK's version string in. It logs each driver line as `LAB <line>`.
+  - **The proofs:**
+    - cordova did not take `app/` for the root, did not touch `app/node_modules`, and installed no cordova-ios of its own; the platform is 8.1.1;
+    - both plugins installed for iOS; the installed package is the stage's (its Package.swift but for cordova-ios's one rewrite); the CordovaPlugins package names it at iOS 15; LabPlugin.m is in the App target;
+    - the per-label mirror pinned in the workspace's Package.resolved, with nothing fetched from GitHub;
+    - from the artifact: the slice's sha256 and version; one carrier of the version string (`FetchCordovaLab.debug.dylib`); the SDK's, the plugin's and LabPlugin's classes; the plugin's CDVAppDelegate category; the driver, the shared scripts and the plugin JS; the stage verified. The app (built at the template's DSTROOT, `platforms/ios/build`) is copied to `app/build/lab-ios`.
+  - **Reversal, MEASURED:** the first sweeps (`20261115-212810`, `-213250`) failed 7/7 with every native line present and no driver line. LabPlugin.m logged `app=…` verbatim, as the Android half does under the tag LAB; os_log has no tag, and the harness's tap keeps only messages containing `LAB `. Logged as `LAB <line>`, api-constants and ios-fetch-sim passed at once.
+  - **Sweeps, native 4.1.1-master-399765c, plugin `368eb85`, cordova-ios 8.1.1:**
+
+    | Sweep | What | Result |
+    |---|---|---|
+    | `20261115-195448` / `-200600` | React Native, Capacitor, Flutter: the five anchor-edited iOS scenarios, FIX / FIX-SPM | 14/15 each (Flutter's known `stop#1`) |
+    | `20261115-213730` / `-214427` | the same three: ios-fetch-sim, ios-timeout-sim, ios-task-sim after the `returns` and `settled` edits | 9/9 each |
+    | `20261115-215127` | Cordova Android (config.xml and package.json changed: the platform regenerated) | 11/13, as before |
+    | `20261115-223641` / `-224122` | Cordova iOS FIX / FIX-SPM, from a freshly generated project (the committed captures) | 5/7 each |
+
+  - **The reds, the callback-style finding (Chris: findings):**
+    - **ios-stop-start:** `stop#1` and `start#2` read undefined; every metric of the stop and the restart holds.
+    - **api-smoke-ios:** status#2, start#3 and stop#7 read undefined; scheduleTask#4 resolves (it returns nothing to reject); **stop#5 throws**: stop(taskId) hands the id to cordova.js as the success callback, and iOSExec refuses a string as exec's first argument, so nothing reaches native. Two metrics read red with them: bgSubmits `appRefresh=2` and sdkSubscribers left. The plugin's start does its work in the SDK's asynchronous status callback, and the callback-style start gives a caller nothing to wait on, so start's native half landed AFTER stop#7's (`[TSBackgroundFetch stop]` .647, `[TSBackgroundFetch start]` with a second submit .648). A customer who calls start() then stop() without chaining the callbacks gets the same.
+    - **Green:** api-constants, ios-registration (the plugin is onload on iOS: its pluginInitialize makes the launch call at scene connect, ~40 ms before `Handling app launch`), ios-task-sim, ios-timeout-sim, and ios-fetch-sim in all three states: the fetch goes through the plugin's category, and bgSilenceMs reads 5933-6312 with the driver's iOS pause.
+  - **Review (three lenses, three skeptics per finding: 11 findings, 8 upheld, two pairs the same).** No finding changed a verdict.
+    - **The platform-add proof was vacuous:** it watched `app/node_modules`, but a cordova-ios that cordova-fetch installed itself would land in the project's own node_modules. It now requires none there, and checks that the platform's cordova.js is 8.1.1.
+    - **ios-fetch-sim `background`:** Cordova's finish reply crosses Capacitor's WKWebView race (the plugin finishes the SDK, completing UIKit's handler, before it replies: 73-76 ms). It gets Capacitor's `driverFinishes: any`; `cold` stays pinned.
+    - **api-smoke-ios's bgCancels and sdkTasks cannot show stop(taskId)'s effect:** both are end-of-step tallies, and stop() also cancels every task — on Cordova they read the task gone from stop#7 alone. The bullets now say so.
+    - **Wording:** ios-registration's Cordova paragraph (the plugin is onload on iOS, not created on first exec), a `platform rm` comment, lab.yaml's onload sentence (Android only), FIX-SPM's note.
+  - **Re-scored on the final scenarios:** 208 captures, 44 not PASS. 18 are the findings: Cordova iOS 6, Cordova Android 3, Flutter iOS 6, Flutter Android 3. 26 are React Native captures of the done WO-004 variants, all `spec-changed-since-capture` and none failing a measurement: every iOS scenario's hooks changed in this slice (precedent: left, WO-004 is done). selftest passes (204 checks); vendor_check passes.
+  - **Open, for work orders:**
+    - The Cordova JS surface, on iOS too: start, stop, status and scheduleTask return nothing; stop(taskId) throws on iOS and cancels every task on Android; start's native half is asynchronous and unordered against a later stop.
+    - api-smoke-ios: an ordered reading of stop(taskId)'s own cancel, between stop#5 and stop#7, on every bridge.
+    - The 26 WO-004 captures: re-sweep or retire.

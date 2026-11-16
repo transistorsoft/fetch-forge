@@ -1,0 +1,11 @@
+   crashes                          0                      expected 0            ok
+   bgSubmits                        com.transistorsoft.fetch:appRefresh=2,com.transistorsoft.fetchlab.task:processing=1 expected com.transistorsoft.fetch:appRefresh=1,com.transistorsoft.fetchlab.task:processing=1 MISMATCH
+   taskSubmitErrors                 BGTaskSchedulerErrorDomain:1=1 expected BGTaskSchedulerErrorDomain:1=1 ok
+   bgCancels                        com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1 expected com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1 ok
+   sdkTasks                         -                      expected -            ok
+   sdkSubscribers                   cordova-background-fetch expected -            MISMATCH
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    status#2.$=want-number-got-undefined, start#3.$=want-number-got-undefined, scheduleTask#4=want-rejected-got-resolved, stop#5=threw, stop#7.$=want-boolean-got-undefined expected ok           MISMATCH
+   => FAIL
