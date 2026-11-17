@@ -212,6 +212,7 @@ This is the transition hazard. Picture an app that combines a fetch plugin on Sw
 2. TSBackgroundFetch 4.2.0 to Trunk (from 2026-11-06 12:00pm ET).
 3. TSLocationManager release to Trunk: widened range and iOS 15 (bg-forge; before 2026-12-01).
 4. Fetch-plugin releases (Phase 1 pins plus Phase 2 manifests), then geolocation-plugin releases, both channels per platform together.
+   - ✅ **Fetch plugins released 2026-11-17** (React Native 4.5.0, Capacitor 8.2.0, Cordova 7.4.0, Flutter 2.0.0), ahead of step 3 and of both gates below, by Chris's decision, with a warning to geolocation users instead (see Log, 2026-11-17). The geolocation-plugin releases remain.
    - **Pre-publish gate for every fetch plugin:** `pod trunk info TSBackgroundFetch` lists 4.2.0, *and* the TSLocationManager release with a widened range is out. Until both are true, `~> 4.2` cannot resolve for CocoaPods apps, and apps that also use geolocation cannot resolve at all.
    - **Cordova fetch release is also gated on `cordova-background-geolocation-lt` gaining SwiftPM support.**
      - cordova-ios 8 builds a `package="swift"` plugin through SwiftPM automatically; there's no opt-in.
@@ -411,6 +412,37 @@ This is the transition hazard. Picture an app that combines a fetch plugin on Sw
 - 2026-11-12 — **TSBackgroundFetch 4.2.1 released** (WO-004's fix; native `399765c`, tags `ios/4.2.1` and `4.2.1`), with no Catalyst slice. Chris chose "No Catalyst; defer D4", so D4 is deferred again.
   - **Trunk, pushed by hand** (`--no-cocoapods`, then `pod trunk push` from the tag): both pushes, at 13:55:58Z and 14:01:52Z, printed "Calling the GitHub commit API timed out". 4.2.1 was in `Specs/c/4/1/TSBackgroundFetch/` and in Trunk's API (created 13:55:59 UTC) by 14:02:31Z: the same pattern as 4.2.0, above. The CDN index (`all_pods_versions_c_4_1.txt`) did not list it at 14:09:51Z and did at 14:30:22Z.
   - The unreleased bridge branches' `~> 4.2` and `from: "4.2.0"` accept 4.2.1 unchanged.
+- 2026-11-17 — **Release order step 4, fetch half: all four fetch plugins released with the Phase 1 pins and Phase 2 manifests, ahead of the pre-publish gate by Chris's decision.**
+  - **How:** each was released from its submodule's `master`, tagged on a `--no-ff` merge of its release branch, and pushed on Chris's word ("Push all three", "Push and publish"). The three npm packages were published by their release workflows (Trusted Publishing, with provenance). Every tag contains both WO-001 merges, `fix/WO-001-spm-first` and `chore/tsbackgroundfetch-4.2.0`.
+  - **PROVEN published (registries, today):**
+    - **React Native 4.5.0** (was 4.4.2): merge and tag `07ce9e2`; WO-001 merges `c6dff5f` and `1532161`. Run 44126043940 first failed at `npm publish` with ENEEDAUTH: no Trusted Publisher matched, because of a typo in Chris's npmjs.com registration. He fixed it and re-ran the workflow, which published at 16:32Z. npm `latest` 4.5.0, gitHead `07ce9e2`, SLSA provenance (Sigstore logIndex 3949177049).
+    - **Capacitor 8.2.0** (was 8.1.4): merge and tag `1e1ebbd`; WO-001 merges `afefa27` and `9dd204a`. Run 44126049789. npm `latest` 8.2.0, gitHead `1e1ebbd`, provenance (3949122188).
+    - **Cordova 7.4.0** (was 7.3.1): merge and tag `6394125`; WO-001 merges `88ec66c` and `3e77e80`. Run 44126056780. npm `latest` 7.4.0, gitHead `6394125`, provenance (3949124793).
+    - **Flutter 2.0.0** (was 1.7.0): `4f55be8` ("[RELEASE] 2.0.0") on `release-2.0.0`; merge and lightweight tag `2.0.0` = `ac9f41b`; WO-001 merges `0712e28` and `11d53b8`. `dart pub publish` ran at 16:35:07Z; pub.dev latest 2.0.0.
+  - **Versions:** for the three npm packages, Chris said "Minors as listed", although strict semver would make them majors. For Flutter he said "2.0.0 from master" (WO-011's breaking `stop()`), so Flutter's WO-001 changes ship in 2.0.0, not in a 1.x.
+  - **What shipped (read from the tags):**
+    - podspecs pin `~> 4.2`, with iOS 15.0;
+    - SwiftPM manifests use `from: "4.2.0"`, with iOS 15;
+    - React Native ships `ios/Package.swift` and `swiftpmConfig`, without the vendored XCFramework;
+    - Cordova ships `package="swift"`, `Package.swift`, the guarded `CDVAppDelegate` category and the `<pod nospm="true">` fallback (D3).
+    - No native release was needed: the pins accept 4.2.1, on Trunk and SwiftPM since 2026-11-12.
+  - **The gate, reversed by Chris:** "After we get TSBackgroundFetch, with all latest plugins, we're going to cut a release for TSLocationManager pinning TSBackgroundFetch ~4.2". So step 4's fetch half went before step 3. The gate's Trunk half was met. Its TSLocationManager half was not: TSLocationManager 4.8.3, the newest on Trunk, still declares TSBackgroundFetch `'~> 4.1.0'` (cdn.cocoapods.org, today).
+  - **A warning instead of the gate.** Every CHANGELOG, and Cordova's README, tells apps that also use the geolocation plugin to stay on the previous version, pinned exactly: 4.4.2, 8.1.4 or 7.3.1 (Flutter's `^1.x` constraint already keeps them on 1.7.0). They upgrade once a TSLocationManager that accepts TSBackgroundFetch 4.2 is out and their geolocation plugin accepts it, then run `pod update TSLocationManager TSBackgroundFetch`.
+  - **Cordova's extra gate** (`cordova-background-geolocation-lt` gaining SwiftPM): Chris said "Release, add a warning". The warning treats the two cordova-ios versions separately:
+    - cordova-ios 7: CocoaPods cannot resolve both plugins.
+    - cordova-ios 8: the app would carry two copies (the Diagnosis §6 hazard), so wait for SwiftPM in `cordova-background-geolocation-lt`.
+  - **Verification: no box ticked.**
+    - **Docs and changelogs box:** the changelog half is done; all four CHANGELOGs carry the one-channel rule and the freeze notice. The docs half is not: the React Native, Capacitor and Flutter READMEs and the docforge install pages carry neither, and Cordova's README carries the one-channel rule only.
+    - **Built-and-run box:** the lab's green board (236/236, fetch-forge `b6ac6e7`) ran code identical to the released plugins; the release branches add only CHANGELOG, README and package metadata. It ran on the Simulator, on CocoaPods and SwiftPM (Cordova on SwiftPM only). The device BGTask path has not run.
+  - **Adjacent defects from the 2026-11-05 list:**
+    - React Native 4.5.0 stops tracking the `xcuserstate` that 4.4.2 shipped, and its `.npmignore` ignores `xcuserdata/` (`a489fd7`).
+    - Cordova 7.4.0's `.npmignore` excludes `example/` (`89cc071`).
+    - React Native's `docs/INSTALL-MANUAL-IOS.md` is still stale.
+  - **Remains:**
+    - TSLocationManager on Trunk accepting TSBackgroundFetch 4.2 (bg-forge), by 2026-12-01. Then the geolocation-plugin releases, step 4's other half. After those, each fetch plugin's warning can come out.
+    - Cordova: SwiftPM support in `cordova-background-geolocation-lt`.
+    - The other unticked boxes: TSLocationManager, D4 and D5, test-plan items 1–9, the device runs, Phase 3 and the docs.
+    - Phase 0's box looks met already: GitHub's `master` is `916231c`, which contains `5de5242` (`git ls-remote`, today). No release today did that, so the box is left for Chris to tick.
 
 ## Appendix A: React Native `ios/Package.swift` (PROVEN in experiment A on RN 0.88.1)
 
