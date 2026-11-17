@@ -1,0 +1,82 @@
+name: stop-scope-ios
+description: >
+  (WO-002 Tier 2, WO-013) stop-scope's iOS twin, on the Simulator: what stop() with NO argument stops.  Every bridge's
+  iOS half removes its fetch listener and calls the SDK's stop:nil (RNBackgroundFetch.mm:92-95 at 8d9ab19;
+  BackgroundFetchPlugin.swift:91-94 at 3fa169a; Flutter's BackgroundFetchPlugin.m stop:result:; Cordova's
+  CDVBackgroundFetch.m stop:), which stops every TSBGTask (TSBackgroundFetch.m:355-366 at 399765c).  So this is the
+  guard that WO-013's Android fix leaves iOS as it is.  The Simulator rejects the BGTaskScheduler submit
+  (taskSubmitErrors), but the SDK still lists the task, and the lab hook (`fire: task`, ios-task-sim) finds it or
+  not.  One stop() per step, so bgCancels (a whole-step tally) and sdkTasks (the last tick) are that call's.
+
+  WHAT THE STEPS READ:
+    * `run`: status, scheduleTask(task), stop(); then `fire: task` 3 s after stop#2.  bgCancels
+      `com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1` (the listener's removal cancelled the fetch
+      request, stop:nil the task's); taskFires `task:missing=1` (the hook found no task); sdkTasks `-`;
+      sdkSubscribers `-`; configure() declared `min: 0, max: 0`: driverEvents `-`.
+    * `rescheduled` (WO-013 D4, RECORDED, never asserted): stop(), then scheduleTask(task) again with no new
+      configure(), then the fire.  Each iOS bridge's scheduleTask gives the TSBGTask a callback of its own, so the
+      task is PREDICTED to reach the page on all four (on Android, after stop(null), it reaches none: stop-scope).
+  PREDICTED at the pins of 2026-11-16: green on all four bridges, FIX and FIX-SPM.
+  (WO-013, 2026-11-16) MEASURED green on all four, sweeps 20261116-231623 FIX and -231952 FIX-SPM: `[TSBGTask destroy]
+  com.transistorsoft.fetchlab.task` right after `[TSBackgroundFetch stop] (null)` on every cell; `rescheduled`
+  delivered on all four (taskFires `task:ran=1`, driverTally `fetch:com.transistorsoft.fetchlab.task=1`).
+platforms: [react-native, capacitor, flutter, cordova]
+not_applicable:
+  android: "2026-11-16 — `fire: task` is the Simulator's lab hook; stop-scope is the Android twin (WO-013)."
+measure_from: launch
+steps:
+  - name: run
+    settle: 10
+    after: 30
+    hooks:
+      # (WO-013, 2026-11-16) Anchors, bridge-neutral: status() resolves; scheduleTask is ios-task-sim's settled anchor
+      # (it rejects on the Simulator, and Cordova's callback-style form returned nothing until WO-009); stop()
+      # resolves.  What each returns is api-smoke-ios's to score.
+      - api: status
+        outcome: resolved
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        outcome: settled 2026-11-16 the stop's anchor; the promise rejects on the Simulator (Unavailable)
+      - api: stop
+        outcome: resolved
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 0
+        max: 0
+    actions:
+      - {after: {api: "stop#2"}, delay_s: 3, fire: task, taskId: com.transistorsoft.fetchlab.task}
+    expect:
+      crashes: 0
+      taskSubmitErrors: "BGTaskSchedulerErrorDomain:1=1"
+      bgCancels: "com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1"
+      taskFires: "task:missing=1"
+      sdkTasks: "-"
+      sdkSubscribers: "-"
+      driverEvents: "-"
+  - name: rescheduled
+    settle: 10
+    after: 30
+    hooks:
+      # (WO-013, 2026-11-16) As in `run`; scheduleTask#3 is the fire's anchor.  What the step delivers is recorded
+      # only (WO-013 D4): taskFires and driverTally `any`, configure() `arm_only`.
+      - api: status
+        outcome: resolved
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        outcome: settled 2026-11-16 the stop's anchor; the promise rejects on the Simulator (Unavailable)
+      - api: stop
+        outcome: resolved
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        outcome: settled 2026-11-16 the fire's anchor; the promise rejects on the Simulator (Unavailable)
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        arm_only: "2026-11-16 WO-013 D4: recorded, never asserted — where a task scheduled after stop(), with no new configure(), goes"
+    actions:
+      - {after: {api: "scheduleTask#3"}, delay_s: 3, fire: task, taskId: com.transistorsoft.fetchlab.task}
+    expect:
+      crashes: 0
+      taskFires: any
+      driverTally: any

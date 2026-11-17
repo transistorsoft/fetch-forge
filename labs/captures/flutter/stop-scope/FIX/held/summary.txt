@@ -1,0 +1,10 @@
+   crashes                          0                      expected 0            ok
+   jobsRegistered                   -1681675378,999        expected -1681675378,999 ok
+   jobsCancelled                    -1681675378,999        expected -1681675378,999 ok
+   jobIds                           -                      expected -            ok
+   bootBroadcasts                   -                      expected any          ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   => PASS

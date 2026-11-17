@@ -1,0 +1,305 @@
+{
+ "label": "capacitor.stop-scope-ios.FIX.run",
+ "platform": "capacitor",
+ "os": "ios",
+ "package": "com.transistorsoft.fetchlab.capacitor",
+ "scenario": "stop-scope-ios",
+ "variant": "FIX",
+ "step": "run",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
+ "evicted": [
+  "com.transistorsoft.fetchlab.flutter"
+ ],
+ "foreignTransistorApps": [],
+ "native": "4.1.1-master-399765c",
+ "native_source": {
+  "branch": "",
+  "commit": "399765cc89f03ccaec19464ea87f47c3f3d66f4d",
+  "dirty": "no",
+  "marketing": "4.2.1",
+  "build": "4201"
+ },
+ "channel": null,
+ "native_resolved": "4201",
+ "plugin": "default",
+ "plugin_source": {
+  "checkout": "capacitor/background-fetch",
+  "commit": "3fa169afc3cf4ec97b5f893c8d040e2017f01b0a",
+  "dirty": "no"
+ },
+ "device": {
+  "model": "Lab1",
+  "os": "iOS 27.2"
+ },
+ "activity": "",
+ "process": null,
+ "settle": 10,
+ "after": 30,
+ "end": {
+  "policy": "window",
+  "ended": "window"
+ },
+ "timings": {
+  "step_s": 42.9,
+  "t0": 1794889104.979,
+  "phases": {
+   "terminated": 0.09,
+   "others_stopped": 0.455,
+   "reset": 0.917,
+   "swept": 1.104,
+   "neutral_pre": 1.104,
+   "permissions": 1.104,
+   "sleep_end": 1.104,
+   "log_begun": 1.519,
+   "launch_mark": 1.636,
+   "verdict_cleared": 1.747,
+   "launch": 1.871,
+   "settle_end": 11.875,
+   "trigger": 12.011,
+   "end": 42.439,
+   "runner_joined": 42.439,
+   "capture_mark": 42.592,
+   "pusher_joined": 42.592,
+   "log_ended": 42.853,
+   "log_written": 42.853,
+   "capture_extras": 42.853,
+   "db_pulled": 42.853,
+   "run_json": 42.917,
+   "judged": 42.997,
+   "verdict_pushed": 42.997,
+   "settled": 43.5,
+   "neutral_post": 43.5,
+   "terminated_post": 43.657
+  },
+  "calls": {
+   "_alive": {
+    "n": 1,
+    "s": 0.253,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "_run": {
+    "n": 17,
+    "s": 2.583,
+    "bg_n": 1,
+    "bg_s": 0.115
+   },
+   "_tap_text": {
+    "n": 67,
+    "s": 0.023,
+    "bg_n": 65,
+    "bg_s": 0.023
+   },
+   "begin_log": {
+    "n": 1,
+    "s": 0.415,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "close": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "container": {
+    "n": 7,
+    "s": 0.38,
+    "bg_n": 2,
+    "bg_s": 0.0
+   },
+   "dismiss_stale_dialog": {
+    "n": 1,
+    "s": 0.187,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "end_log": {
+    "n": 1,
+    "s": 0.26,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "evict": {
+    "n": 1,
+    "s": 0.268,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "fire_task": {
+    "n": 1,
+    "s": 0.247,
+    "bg_n": 1,
+    "bg_s": 0.247
+   },
+   "installed": {
+    "n": 1,
+    "s": 0.098,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "launch": {
+    "n": 1,
+    "s": 0.124,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "mark": {
+    "n": 4,
+    "s": 0.521,
+    "bg_n": 1,
+    "bg_s": 0.115
+   },
+   "native_resolved": {
+    "n": 2,
+    "s": 0.139,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "neutral": {
+    "n": 2,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "peek": {
+    "n": 65,
+    "s": 0.103,
+    "bg_n": 65,
+    "bg_s": 0.103
+   },
+   "permissions": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "push_verdict": {
+    "n": 4,
+    "s": 0.112,
+    "bg_n": 2,
+    "bg_s": 0.001
+   },
+   "reset_app": {
+    "n": 1,
+    "s": 0.328,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "sdk_db": {
+    "n": 1,
+    "s": 0.0,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "snapshot": {
+    "n": 1,
+    "s": 0.418,
+    "bg_n": 0,
+    "bg_s": 0.0
+   },
+   "terminate": {
+    "n": 2,
+    "s": 0.246,
+    "bg_n": 0,
+    "bg_s": 0.0
+   }
+  },
+  "dialogs": [],
+  "clock_offset_s": null,
+  "clock_offset_rtt_s": null,
+  "log_phases": {
+   "boot": 4.72
+  }
+ },
+ "measure_from": "launch",
+ "arm": {
+  "nonfinal": "end",
+  "post_settle": 0
+ },
+ "permissions": "grant",
+ "fresh": true,
+ "fresh_declared": false,
+ "prompt": [],
+ "revoke": [],
+ "dialog": [],
+ "swept": null,
+ "permission_flags": null,
+ "dialog_observer": null,
+ "moves": null,
+ "actions": [
+  {
+   "after": [
+    {
+     "api": "stop#2"
+    }
+   ],
+   "delay_s": 3,
+   "fire": "task",
+   "taskId": "com.transistorsoft.fetchlab.task"
+  }
+ ],
+ "host": {
+  "error": null,
+  "held_s": {
+   "action0": 3.061
+  },
+  "sent_s": {
+   "action0": 6.127
+  }
+ },
+ "network": null,
+ "privacy": null,
+ "location_accuracy": null,
+ "config": {},
+ "lab_http": null,
+ "lab_http_script": null,
+ "driver": {
+  "stopOnTerminate": true,
+  "watch": false,
+  "noStart": false,
+  "persistGcp": false,
+  "tickGcp": false
+ },
+ "schedule": [],
+ "events": [
+  {
+   "subscribe": "configure",
+   "args": {
+    "minimumFetchInterval": 15,
+    "stopOnTerminate": true,
+    "enableHeadless": false,
+    "startOnBoot": false
+   },
+   "min": 0,
+   "max": 0
+  }
+ ],
+ "hooks": [
+  {
+   "api": "status",
+   "outcome": "resolved"
+  },
+  {
+   "api": "scheduleTask",
+   "args": {
+    "taskId": "com.transistorsoft.fetchlab.task",
+    "delay": 600000,
+    "periodic": false
+   },
+   "outcome": "settled 2026-11-16 the stop's anchor; the promise rejects on the Simulator (Unavailable)"
+  },
+  {
+   "api": "stop",
+   "outcome": "resolved"
+  }
+ ],
+ "year": 2026,
+ "when": "2026-11-16 23:19:07"
+}
