@@ -21,14 +21,14 @@
  "plugin_source": {
   "checkout": "react-native/background-fetch",
   "commit": "8d9ab19cc6b1f4925a87fba30bf34ea60d9cac81",
-  "dirty": "no"
+  "dirty": "yes"
  },
  "device": {
   "avd": "Lab1",
   "model": "sdk_gphone64_arm64",
   "os": "Android 16",
   "sdk": "36",
-  "data_free_mb": 2561,
+  "data_free_mb": 2562,
   "display": "awake",
   "fgs_timeout_ms": null,
   "play_services": 263635035
@@ -43,58 +43,58 @@
  },
  "timings": {
   "install_s": 0.4,
-  "step_s": 46.9,
-  "t0": 1794786205.155,
+  "step_s": 46.8,
+  "t0": 1794924039.149,
   "phases": {
-   "terminated": 0.023,
-   "swept": 0.042,
-   "neutral_pre": 0.092,
-   "accuracy": 0.129,
-   "permissions": 0.129,
-   "sleep_end": 0.129,
+   "terminated": 0.027,
+   "swept": 0.047,
+   "neutral_pre": 0.098,
+   "accuracy": 0.132,
+   "permissions": 0.132,
+   "sleep_end": 0.132,
    "log_begun": 0.248,
    "launch_mark": 0.265,
    "verdict_cleared": 0.285,
-   "launch": 0.665,
-   "settle_end": 10.676,
-   "trigger": 10.712,
-   "end": 46.795,
-   "runner_joined": 46.795,
-   "capture_mark": 46.829,
-   "pusher_joined": 46.829,
-   "log_ended": 46.853,
-   "log_written": 46.853,
-   "capture_extras": 46.877,
-   "db_pulled": 46.878,
-   "run_json": 46.924,
-   "judged": 46.976,
-   "verdict_pushed": 47.002,
-   "settled": 47.507,
-   "neutral_post": 47.58,
-   "terminated_post": 47.603
+   "launch": 0.633,
+   "settle_end": 10.638,
+   "trigger": 10.676,
+   "end": 46.718,
+   "runner_joined": 46.718,
+   "capture_mark": 46.737,
+   "pusher_joined": 46.737,
+   "log_ended": 46.759,
+   "log_written": 46.759,
+   "capture_extras": 46.783,
+   "db_pulled": 46.784,
+   "run_json": 46.832,
+   "judged": 46.895,
+   "verdict_pushed": 46.924,
+   "settled": 47.427,
+   "neutral_post": 47.491,
+   "terminated_post": 47.513
   },
   "calls": {
    "_adb": {
     "n": 17,
-    "s": 0.582,
+    "s": 0.539,
     "bg_n": 2,
-    "bg_s": 0.075
+    "bg_s": 0.055
    },
    "_stop_stream": {
     "n": 2,
-    "s": 0.002,
+    "s": 0.001,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "alive": {
     "n": 2,
-    "s": 0.038,
+    "s": 0.042,
     "bg_n": 2,
-    "bg_s": 0.038
+    "bg_s": 0.042
    },
    "begin_log": {
     "n": 1,
-    "s": 0.119,
+    "s": 0.116,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,7 +106,7 @@
    },
    "end_log": {
     "n": 1,
-    "s": 0.024,
+    "s": 0.022,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -118,31 +118,31 @@
    },
    "force_stop": {
     "n": 1,
-    "s": 0.09,
+    "s": 0.107,
     "bg_n": 1,
-    "bg_s": 0.09
+    "bg_s": 0.107
    },
    "job": {
     "n": 1,
-    "s": 0.031,
+    "s": 0.037,
     "bg_n": 1,
-    "bg_s": 0.031
+    "bg_s": 0.037
    },
    "launch": {
     "n": 1,
-    "s": 0.381,
+    "s": 0.348,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "location_accuracy": {
     "n": 2,
-    "s": 0.037,
+    "s": 0.034,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.125,
+    "s": 0.112,
     "bg_n": 2,
     "bg_s": 0.038
    },
@@ -160,15 +160,15 @@
    },
    "neutral": {
     "n": 2,
-    "s": 0.123,
+    "s": 0.115,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "peek": {
-    "n": 73,
-    "s": 0.038,
-    "bg_n": 73,
-    "bg_s": 0.038
+    "n": 72,
+    "s": 0.032,
+    "bg_n": 72,
+    "bg_s": 0.032
    },
    "permissions": {
     "n": 1,
@@ -178,9 +178,9 @@
    },
    "push_verdict": {
     "n": 3,
-    "s": 0.093,
+    "s": 0.08,
     "bg_n": 1,
-    "bg_s": 0.047
+    "bg_s": 0.03
    },
    "sdk_db": {
     "n": 1,
@@ -190,22 +190,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 1.072,
+    "s": 1.035,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.073,
+    "s": 0.072,
     "bg_n": 1,
-    "bg_s": 0.028
+    "bg_s": 0.025
    }
   },
   "dialogs": [],
-  "clock_offset_s": -0.326,
-  "clock_offset_rtt_s": 0.016,
+  "clock_offset_s": -0.195,
+  "clock_offset_rtt_s": 0.017,
   "log_phases": {
-   "boot": 0.933
+   "boot": 0.841
   }
  },
  "measure_from": "launch",
@@ -247,12 +247,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 0.507,
-   "action1": 3.94
+   "action0": 0.251,
+   "action1": 3.668
   },
   "sent_s": {
-   "action0": 3.579,
-   "action1": 7.025
+   "action0": 3.291,
+   "action1": 6.721
   }
  },
  "network": {
@@ -299,5 +299,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-15 18:44:12"
+ "when": "2026-11-17 09:01:25"
 }

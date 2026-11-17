@@ -1,7 +1,7 @@
 ---
 id: WO-013
 title: On Android, React Native's and Capacitor's stop() with no argument cancels only their own fetch task, where the types, the docs, their own iOS halves, Flutter and Cordova cancel every task
-status: approved
+status: in-progress
 created: 2026-11-16
 platforms: [android]
 submodules: [react-native/background-fetch, capacitor/background-fetch]
@@ -222,11 +222,11 @@ Each step makes exactly one `stop` call, so its whole-step tallies (jobsCancelle
 - [x] D1–D4 decided
 - [x] WO-002: `stop-scope` (steps `held`, `fired`) and `stop-scope-ios` built; red recorded at the current pins (React Native and Capacitor Android red as predicted; Flutter and Cordova Android green; all four iOS green on FIX and FIX-SPM), with sweep ids
 - [x] D4's `rescheduled` step recorded on both OSes (if taken)
-- [ ] On the fix: `stop-scope` green on React Native and Capacitor Android, on Lab1 and Lab2
-- [ ] On the fix: React Native's and Capacitor's Android suites as green as before; api-smoke's `stop#7` logs a bare `- stop`
-- [ ] `stop-scope-ios` still green on all four bridges, on FIX and FIX-SPM (no iOS code changed)
-- [ ] `// (WO-013)` at both changed methods; each plugin's CHANGELOG entry under `## Unreleased` carries `(WO-013)`; the scenario descriptions name WO-013; `api-smoke.yaml:22-24` and `:48-53` corrected (prose only)
-- [ ] Platform parity: Flutter and Cordova Android and all four iOS bridges unchanged, as cited
+- [x] On the fix: `stop-scope` green on React Native and Capacitor Android, on Lab1 and Lab2
+- [x] On the fix: React Native's and Capacitor's Android suites as green as before; api-smoke's `stop#7` logs a bare `- stop`
+- [x] `stop-scope-ios` still green on all four bridges, on FIX and FIX-SPM (no iOS code changed)
+- [x] `// (WO-013)` at both changed methods; each plugin's CHANGELOG entry under `## Unreleased` carries `(WO-013)`; the scenario descriptions name WO-013; `api-smoke.yaml:22-24` and `:48-53` corrected (prose only)
+- [x] Platform parity: Flutter and Cordova Android and all four iOS bridges unchanged, as cited
 
 ## Log
 
@@ -268,3 +268,22 @@ Each step makes exactly one `stop` call, so its whole-step tallies (jobsCancelle
   - **D4, `rescheduled` (recorded):** Android, React Native and Capacitor delivered (driverTally `fetch:com.transistorsoft.fetchlab.task=1`, configure@0 delivered 1); Flutter and Cordova did not (driverTally `-`, configure@0 delivered 0), though the SDK received the fetch (fetchTally `com.transistorsoft.fetchlab.task=1`) and logged no `- Stopping on terminate`. iOS delivered on all four, both channels (taskFires `task:ran=1`). So cost 2's premise is MEASURED on Flutter and Cordova Android; the cleared callback behind it is INFERRED from `BackgroundFetch.java:148`, `:272-275` (399765c); and that React Native and Capacitor Android will behave so after the fix is INFERRED (the same native `stop(null)`) until the fix's sweep reads `rescheduled`.
   - **Re-scored:** 236 captures (28 new), 30 not PASS: the 4 predicted reds and the 26 WO-004 captures; no existing verdict changed.
   - **Reviewed (three lenses, three skeptics per finding): 17 findings, 12 upheld, all applied.** `fired` now asserts jobsRegistered `-1681675378,999` in its own step (its `expect: absent` could otherwise pass with no job behind it, as every other absent-job step in the lab guards); `stop-scope` re-swept for it (below). The rest is wording: fetchTally is the SDK's receipt, not a delivery; the measured lines in both descriptions; dated anchor comments on every step; cost 2's MEASURED and INFERRED parts separated; the iOS task-destroy reading. Re-swept: `20261116-234720`, the same readings, with `fired`'s jobsRegistered `-1681675378,999` ok on all four; its captures are the committed ones.
+- 2026-11-17 — **Implemented** on `fix/WO-013-stop-no-arg-scope` in `react-native/background-fetch` (from `8d9ab19`) and `capacitor/background-fetch` (from `3fa169a`), both their origin/master; uncommitted, for Chris's diff review. Status `in-progress`.
+  - **The fix (D1 a):** the null → `FETCH_TASK_ID` line is gone from `RNBackgroundFetchModule.stop` and from Capacitor's `BackgroundFetchPlugin.stop`, each with a `// (WO-013)` comment; `FETCH_TASK_ID` stays (configure and start use it). No JS, iOS, native, types or docforge change.
+  - **CHANGELOG** (D2 a): the `[Changed] [Android]` line under each plugin's `## Unreleased`, plus one sentence on cost 2: a task scheduled after `stop()` reaches `configure()`'s callback only after a new `configure()`.
+  - **preflight** passes in both plugins (it checks the TypeScript shapes; the Java is not compiled there: the lab builds it).
+  - **Lab, MEASURED,** native `4.1.1-master-399765c`, React Native `8d9ab19+dirty` and Capacitor `3fa169a+dirty` (this order's trees; no other order's code):
+
+    | Sweep / run | What | Result |
+    |---|---|---|
+    | `20261117-085928` | React Native and Capacitor Android, the suite (13 scenarios each), FIX | 13/13 each |
+    | `labkit run`, Lab1 then Lab2 | `stop-scope`, both bridges | PASS on both devices (the committed captures are Lab2's) |
+    | `20261117-091659` / `-091841` | `stop-scope-ios`, React Native and Capacitor, FIX / FIX-SPM | PASS (no iOS code changed) |
+
+    - **By hand:** `held` jobsCancelled `-1681675378,999`, jobIds `-`; `fired` jobsRegistered `-1681675378,999`, driverEvents `-`, fetchTally `-`, actionsDone ok. api-smoke's `stop#7` now logs a bare `- stop` and cancels the fetch job; `stop#5` still `- stop: com.transistorsoft.fetchlab.smoke`.
+    - **Cost 2, now MEASURED on these two bridges too:** `rescheduled` reads fetchTally `com.transistorsoft.fetchlab.task=1` with driverTally `-` and configure@0 delivered 0 — the SDK received the re-scheduled task and delivered it nowhere, as on Flutter and Cordova.
+  - **The suite:** `stop-scope` and `stop-scope-ios` were not in `fetch_pack.SUITE`, so the sweep above ran 19 scenarios and `stop-scope` only by `labkit run`; both now join SUITE (WO-013's lab guard, as `restart-foreground-android` joined it as WO-007's).
+  - **Re-scored:** 236 captures, 26 not PASS (React Native's WO-004 captures). Exactly this order's four reds turned green. selftest passes (206 checks).
+  - **Lab text:** `api-smoke.yaml`'s stop bullet and its Flutter no-argument bullet (prose only), and `stop-scope.yaml`'s description.
+  - **Reviewed (three lenses, three skeptics per finding): 13 findings, 4 upheld, all applied; no code change.** The CHANGELOG's cost sentence now says a fire before the new `configure()` is lost, not deferred (not "call `configure()` first": a new `configure()` registers the fetch job again); the `// (WO-013)` comments no longer cite iOS for the Android scope, and say "this process holds"; `labs/README.md`'s Suite row lists the two scenarios; `stop-scope.yaml`'s opening is in the past tense. These came after the sweeps (Java comments only). Refuted (9), among them the CHANGELOG's "as documented" and the entry's place in Capacitor's list.
+- 2026-11-17 — **Committed** (Chris: "Commit all three"): React Native `065c6a1` and Capacitor `d991856`, each on `fix/WO-013-stop-no-arg-scope` (from `8d9ab19` and `3fa169a`), and fetch-forge's branch of the same name (this Log, the lab text, `fetch_pack.SUITE`, the captures). Not merged; the two submodule pointers move when the plugin branches are merged, and the order is `done` then.

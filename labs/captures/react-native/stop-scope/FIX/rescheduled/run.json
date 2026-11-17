@@ -21,14 +21,14 @@
  "plugin_source": {
   "checkout": "react-native/background-fetch",
   "commit": "8d9ab19cc6b1f4925a87fba30bf34ea60d9cac81",
-  "dirty": "no"
+  "dirty": "yes"
  },
  "device": {
   "avd": "Lab2",
   "model": "sdk_gphone64_arm64",
   "os": "Android 16",
   "sdk": "36",
-  "data_free_mb": 2444,
+  "data_free_mb": 2440,
   "display": "awake",
   "fgs_timeout_ms": null,
   "play_services": 263635035
@@ -42,43 +42,44 @@
   "ended": "window"
  },
  "timings": {
+  "build_s": 3.8,
   "install_s": 0.3,
   "step_s": 41.5,
-  "t0": 1794890916.68,
+  "t0": 1794925341.102,
   "phases": {
-   "terminated": 0.023,
-   "swept": 0.047,
+   "terminated": 0.024,
+   "swept": 0.046,
    "neutral_pre": 0.1,
-   "accuracy": 0.144,
-   "permissions": 0.144,
-   "sleep_end": 0.144,
-   "log_begun": 0.262,
-   "launch_mark": 0.28,
-   "verdict_cleared": 0.301,
+   "accuracy": 0.14,
+   "permissions": 0.14,
+   "sleep_end": 0.14,
+   "log_begun": 0.259,
+   "launch_mark": 0.275,
+   "verdict_cleared": 0.295,
    "launch": 0.641,
-   "settle_end": 10.647,
-   "trigger": 10.67,
-   "end": 41.375,
-   "runner_joined": 41.375,
-   "capture_mark": 41.411,
-   "pusher_joined": 41.411,
-   "log_ended": 41.432,
-   "log_written": 41.433,
-   "capture_extras": 41.454,
-   "db_pulled": 41.455,
-   "run_json": 41.493,
-   "judged": 41.574,
-   "verdict_pushed": 41.597,
-   "settled": 42.099,
-   "neutral_post": 42.171,
-   "terminated_post": 42.195
+   "settle_end": 10.65,
+   "trigger": 10.688,
+   "end": 41.403,
+   "runner_joined": 41.403,
+   "capture_mark": 41.441,
+   "pusher_joined": 41.442,
+   "log_ended": 41.465,
+   "log_written": 41.465,
+   "capture_extras": 41.485,
+   "db_pulled": 41.486,
+   "run_json": 41.524,
+   "judged": 41.604,
+   "verdict_pushed": 41.627,
+   "settled": 42.134,
+   "neutral_post": 42.207,
+   "terminated_post": 42.232
   },
   "calls": {
    "_adb": {
     "n": 16,
-    "s": 0.535,
+    "s": 0.549,
     "bg_n": 1,
-    "bg_s": 0.028
+    "bg_s": 0.031
    },
    "_stop_stream": {
     "n": 2,
@@ -94,13 +95,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.024,
+    "s": 0.023,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.021,
+    "s": 0.023,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -112,27 +113,27 @@
    },
    "job": {
     "n": 1,
-    "s": 0.041,
+    "s": 0.043,
     "bg_n": 1,
-    "bg_s": 0.041
+    "bg_s": 0.043
    },
    "launch": {
     "n": 1,
-    "s": 0.34,
+    "s": 0.346,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "location_accuracy": {
     "n": 2,
-    "s": 0.043,
+    "s": 0.041,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 4,
-    "s": 0.096,
+    "s": 0.112,
     "bg_n": 1,
-    "bg_s": 0.02
+    "bg_s": 0.021
    },
    "native_resolved": {
     "n": 1,
@@ -148,15 +149,15 @@
    },
    "neutral": {
     "n": 2,
-    "s": 0.125,
+    "s": 0.126,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "peek": {
-    "n": 55,
-    "s": 0.023,
-    "bg_n": 55,
-    "bg_s": 0.023
+    "n": 54,
+    "s": 0.03,
+    "bg_n": 54,
+    "bg_s": 0.03
    },
    "permissions": {
     "n": 1,
@@ -166,9 +167,9 @@
    },
    "push_verdict": {
     "n": 3,
-    "s": 0.073,
+    "s": 0.074,
     "bg_n": 1,
-    "bg_s": 0.028
+    "bg_s": 0.031
    },
    "sdk_db": {
     "n": 1,
@@ -178,22 +179,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.692,
+    "s": 0.709,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.047,
+    "s": 0.049,
     "bg_n": 0,
     "bg_s": 0.0
    }
   },
   "dialogs": [],
-  "clock_offset_s": -0.41,
-  "clock_offset_rtt_s": 0.017,
+  "clock_offset_s": -0.201,
+  "clock_offset_rtt_s": 0.016,
   "log_phases": {
-   "boot": 0.868
+   "boot": 0.838
   }
  },
  "measure_from": "launch",
@@ -225,10 +226,10 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 0.511
+   "action0": 0.26
   },
   "sent_s": {
-   "action0": 3.582
+   "action0": 3.34
   }
  },
  "network": {
@@ -303,5 +304,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-16 23:49:18"
+ "when": "2026-11-17 09:23:02"
 }

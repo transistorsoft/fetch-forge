@@ -18,7 +18,7 @@
    fetchTimeouts                    0                      expected 0            ok
    jobIds                           999                    expected 999          ok
    headlessTally                    fetch=1                expected any          ok
-   bootBroadcasts                   -                      expected any          ok
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok
