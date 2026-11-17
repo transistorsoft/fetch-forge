@@ -1,0 +1,12 @@
+   crashes                          0                      expected 0            ok
+   jobsRegistered                   -1681675378,999        expected -1681675378,999 ok
+   driverEvents                     fetch=1                expected -            MISMATCH
+   fetchTally                       com.transistorsoft.fetchlab.task=1 expected -            MISMATCH
+   bootBroadcasts                   BOOT_COMPLETED=1       expected any          ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   eventAssertions                  configure@0=fired-1-over-max-0 expected ok           MISMATCH
+   actionsDone                      action0=missed(present) expected ok           MISMATCH
+   => FAIL

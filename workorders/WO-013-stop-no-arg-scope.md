@@ -1,7 +1,7 @@
 ---
 id: WO-013
 title: On Android, React Native's and Capacitor's stop() with no argument cancels only their own fetch task, where the types, the docs, their own iOS halves, Flutter and Cordova cancel every task
-status: draft
+status: approved
 created: 2026-11-16
 platforms: [android]
 submodules: [react-native/background-fetch, capacitor/background-fetch]
@@ -219,9 +219,9 @@ Each step makes exactly one `stop` call, so its whole-step tallies (jobsCancelle
 
 ## Verification
 
-- [ ] D1–D4 decided
-- [ ] WO-002: `stop-scope` (steps `held`, `fired`) and `stop-scope-ios` built; red recorded at the current pins (React Native and Capacitor Android red as predicted; Flutter and Cordova Android green; all four iOS green on FIX and FIX-SPM), with sweep ids
-- [ ] D4's `rescheduled` step recorded on both OSes (if taken)
+- [x] D1–D4 decided
+- [x] WO-002: `stop-scope` (steps `held`, `fired`) and `stop-scope-ios` built; red recorded at the current pins (React Native and Capacitor Android red as predicted; Flutter and Cordova Android green; all four iOS green on FIX and FIX-SPM), with sweep ids
+- [x] D4's `rescheduled` step recorded on both OSes (if taken)
 - [ ] On the fix: `stop-scope` green on React Native and Capacitor Android, on Lab1 and Lab2
 - [ ] On the fix: React Native's and Capacitor's Android suites as green as before; api-smoke's `stop#7` logs a bare `- stop`
 - [ ] `stop-scope-ios` still green on all four bridges, on FIX and FIX-SPM (no iOS code changed)
@@ -252,3 +252,19 @@ Each step makes exactly one `stop` call, so its whole-step tallies (jobsCancelle
     - Out of scope, WO-009: start's unordered native half is iOS only, as its title says. Cordova Android's start is ordered (MEASURED: `cordova/api-smoke/FIX/run/logcat.txt:331-332` before `ret id=start#3`, `:351`).
     - `platforms: [android]`: the recommended fix changes only Android files. iOS stays in the Test plan as `stop-scope-ios`, the guard.
     - The Android-only correction is recorded in WO-002's 2026-11-16 entry. No box here points WO-002's open item at this order or corrects sweep citations; the `api-smoke.yaml` prose edit stays, because the fix makes it wrong. The one citation into `api-smoke-ios.yaml` (`:37-40`) is above the added line and still holds.
+- 2026-11-16 — **Approved by Chris** ("Approve as recommended"): D1 (a) align React Native and Capacitor Android to the contract (pass null); D2 (a) each plugin's next release, with the `[Changed] [Android]` line; D3 (a) WO-002 builds `stop-scope` and `stop-scope-ios` and sweeps all four bridges at the current pins first; D4 (a) the record-only `rescheduled` step. Status `approved`.
+  - **Re-checked first, after WO-009..WO-012 merged** (Cordova `2b5f956`, Flutter `5a01d8d`; React Native `8d9ab19` and Capacitor `3fa169a` unchanged): the mapping is still `RNBackgroundFetchModule.java:70` and `BackgroundFetchPlugin.java:115`; Cordova's no-argument `stop()` still sends `[]` (now `src/typescript/index.ts:127-131`, native `CDVBackgroundFetch.java:87-95`), and Flutter's still passes null (`lib/background_fetch.dart:531`, `BackgroundFetchModule.java:214-216`). The Diagnosis holds; those Cordova and Flutter line citations have moved.
+  - **One piece of evidence changed:** native `stop(null)` cancelling a live custom task was MEASURED on Cordova, on both OSes, through its old `stop(taskId)` bug, which WO-009 fixed; those logcats were overwritten by WO-009's sweeps. `stop-scope` (D3 a) measures it again on Flutter and Cordova Android, and `stop-scope-ios` on all four iOS bridges.
+- 2026-11-16 — **D3 (a) done: the red MEASURED at the current pins** (WO-002 built `stop-scope` and `stop-scope-ios`, on fetch-forge `feat/WO-002-stop-scope`). React Native `8d9ab19`, Capacitor `3fa169a`, Flutter `5a01d8d` and Cordova `2b5f956` (this worktree's Flutter and Cordova checkouts sat on `4cf0ae2` and `256372c`, whose trees the `--no-ff` merges kept unchanged), native `4.1.1-master-399765c`.
+
+  | Sweep | What | Result |
+  |---|---|---|
+  | `20261116-232354` | `stop-scope`, Android, FIX | React Native and Capacitor FAIL (Lab2), Flutter and Cordova PASS (Lab1) |
+  | `20261116-231623` / `-231952` | `stop-scope-ios`, FIX / FIX-SPM | PASS on all four bridges |
+
+  - **`held`, as predicted:** React Native and Capacitor read jobsCancelled `999` and jobIds `-1681675378`: one `stop()` cancelled the fetch job and left the custom task's. Flutter and Cordova read jobsCancelled `-1681675378,999` and jobIds `-`.
+  - **`fired`, as predicted:** on React Native and Capacitor the task's job was still there (actionsDone `action0=missed(present)`) and its fetch reached `configure()`'s retained callback (eventAssertions `configure@0=fired-1-over-max-0`, driverEvents `fetch=1`, fetchTally `com.transistorsoft.fetchlab.task=1`). Flutter and Cordova: the job gone, nothing delivered. **So native `stop(null)` cancelling a live custom task is MEASURED again** (Flutter and Cordova), after WO-009 removed the accidental Cordova reading.
+  - **`stop-scope-ios`:** bgCancels `com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1`, taskFires `task:missing=1`, sdkTasks `-`, sdkSubscribers `-`, driverEvents `-` on every cell: the guard for the fix. `stop:nil` removing a kept `TSBGTask` (`[TSBGTask destroy] com.transistorsoft.fetchlab.task` right after `[TSBackgroundFetch stop] (null)`) is now MEASURED on all four bridges, FIX and FIX-SPM: it replaces the lost Cordova iOS reading and Platform parity's "INFERRED for the other three".
+  - **D4, `rescheduled` (recorded):** Android, React Native and Capacitor delivered (driverTally `fetch:com.transistorsoft.fetchlab.task=1`, configure@0 delivered 1); Flutter and Cordova did not (driverTally `-`, configure@0 delivered 0), though the SDK received the fetch (fetchTally `com.transistorsoft.fetchlab.task=1`) and logged no `- Stopping on terminate`. iOS delivered on all four, both channels (taskFires `task:ran=1`). So cost 2's premise is MEASURED on Flutter and Cordova Android; the cleared callback behind it is INFERRED from `BackgroundFetch.java:148`, `:272-275` (399765c); and that React Native and Capacitor Android will behave so after the fix is INFERRED (the same native `stop(null)`) until the fix's sweep reads `rescheduled`.
+  - **Re-scored:** 236 captures (28 new), 30 not PASS: the 4 predicted reds and the 26 WO-004 captures; no existing verdict changed.
+  - **Reviewed (three lenses, three skeptics per finding): 17 findings, 12 upheld, all applied.** `fired` now asserts jobsRegistered `-1681675378,999` in its own step (its `expect: absent` could otherwise pass with no job behind it, as every other absent-job step in the lab guards); `stop-scope` re-swept for it (below). The rest is wording: fetchTally is the SDK's receipt, not a delivery; the measured lines in both descriptions; dated anchor comments on every step; cost 2's MEASURED and INFERRED parts separated; the iOS task-destroy reading. Re-swept: `20261116-234720`, the same readings, with `fired`'s jobsRegistered `-1681675378,999` ok on all four; its captures are the committed ones.

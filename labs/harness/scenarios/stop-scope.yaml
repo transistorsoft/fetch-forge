@@ -1,0 +1,111 @@
+name: stop-scope
+description: >
+  (WO-002 Tier 2, WO-013) What stop() with NO argument stops on Android.  The types (BackgroundFetch.ts:188-189), the
+  docs site (BackgroundFetch.stop.yaml:7 and every bridge's Examples page), the native SDK (stop(null):
+  BackgroundFetch.java:147-160 at 399765c) and six of the eight bridge x OS cells say every task: the fetch and the
+  scheduleTask() ones.  React Native's and Capacitor's Android halves map null to their own fetch taskId
+  (RNBackgroundFetchModule.java:70 at 8d9ab19; BackgroundFetchPlugin.java:115 at 3fa169a), so a custom task survives
+  their stop().  api-smoke cannot tell: its stop#5 has already stopped the task its stop#7 would find.  Here each
+  step makes exactly ONE stop call, so its whole-step tallies (jobsCancelled) and end-of-step reads (jobIds) are that
+  call's.  com.transistorsoft.fetchlab.task hashes to jobId -1681675378 (events-task-android); its delay is 10
+  minutes, so JobScheduler never runs it on its own in the window.
+
+  WHAT THE STEPS READ:
+    * `held`: status, scheduleTask(task), stop() — no fire.  jobsRegistered `-1681675378,999` (the SDK asked for
+      both); jobsCancelled `-1681675378,999` (one stop() cancelled both); jobIds `-` (none left).
+    * `fired`: the same hooks, then `job: <task>` 3 s after stop#2 with `expect: absent` — JobScheduler holds no such
+      job; a present one is a scored miss (actionsDone `missed(present)`).  jobsRegistered `-1681675378,999` holds the
+      absence to a job the SDK asked for in this step.  Nothing runs and nothing is delivered: fetchTally `-` (the SDK
+      received no fetch), driverEvents `-` and configure() declared `min: 0, max: 0` (nothing reached its callback).
+      `rescheduled`'s `job:` (expected present) is the scored check that `job: com.transistorsoft.fetchlab.task`
+      reaches the SDK's job -1681675378.
+    * `rescheduled` (WO-013 D4, RECORDED, never asserted): stop(), then scheduleTask(task) again with no new
+      configure(), then the task's job.  Where it goes is the cost of WO-013's fix: Android's stop(null) clears the
+      SDK's one callback (BackgroundFetch.java:148), so the task reaches no callback; iOS keeps a callback per task.
+      driverTally and configure's delivery count (arm_only: the `recorded` row) record it.
+  PREDICTED at the pins of 2026-11-16 (React Native 8d9ab19, Capacitor 3fa169a, Flutter 5a01d8d, Cordova 2b5f956):
+  React Native and Capacitor red in `held` (jobsCancelled `999`, jobIds `-1681675378`) and in `fired` (the job runs
+  and its fetch reaches configure()'s retained callback); Flutter and Cordova green.  `rescheduled`: delivered on
+  React Native and Capacitor, not on Flutter and Cordova.
+  (WO-013, 2026-11-16) MEASURED as predicted, sweeps 20261116-232354 and -234720 (the committed captures, after
+  `fired` gained jobsRegistered): React Native and Capacitor red in `held` and
+  `fired` (Lab2), Flutter and Cordova green (Lab1); `rescheduled` delivered on React Native and Capacitor, not on
+  Flutter and Cordova (whose SDK received the fetch: fetchTally).  Captures at 8d9ab19 / 3fa169a / 4cf0ae2 / 256372c
+  (the trees of 5a01d8d / 2b5f956).  A finding for WO-013, never relaxed here.
+platforms: [react-native, capacitor, flutter, cordova]
+not_applicable:
+  ios: "2026-11-16 — `job:` is JobScheduler's; stop-scope-ios is the iOS twin (WO-013)."
+measure_from: launch
+steps:
+  - name: held
+    settle: 10
+    after: 20
+    # (WO-013, 2026-11-16) Anchors and the one stop(), asserted bridge-neutrally: each call resolves.  What stop()
+    # returns is api-smoke's to score.
+    hooks:
+      - api: status
+        outcome: resolved
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        outcome: resolved
+      - api: stop
+        outcome: resolved
+    expect:
+      crashes: 0
+      jobsRegistered: "-1681675378,999"
+      jobsCancelled: "-1681675378,999"
+      jobIds: "-"
+      bootBroadcasts: any
+  - name: fired
+    settle: 10
+    after: 30
+    # (WO-013, 2026-11-16) As in `held`: anchors and the one stop(), asserted bridge-neutrally: each call resolves.
+    # What stop() returns is api-smoke's to score.
+    hooks:
+      - api: status
+        outcome: resolved
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        outcome: resolved
+      - api: stop
+        outcome: resolved
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        min: 0
+        max: 0
+    actions:
+      - {after: {api: "stop#2"}, delay_s: 3, job: com.transistorsoft.fetchlab.task, expect: absent}
+    expect:
+      crashes: 0
+      jobsRegistered: "-1681675378,999"
+      driverEvents: "-"
+      fetchTally: "-"
+      bootBroadcasts: any
+  - name: rescheduled
+    settle: 10
+    after: 30
+    # (WO-013, 2026-11-16) As in `held`, each call resolves; scheduleTask#3 is the job's anchor.  What the step
+    # delivers is recorded only (WO-013 D4): driverTally and fetchTally `any`, configure() `arm_only`.
+    hooks:
+      - api: status
+        outcome: resolved
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        outcome: resolved
+      - api: stop
+        outcome: resolved
+      - api: scheduleTask
+        args: {taskId: com.transistorsoft.fetchlab.task, delay: 600000, periodic: false}
+        outcome: resolved
+    events:
+      - subscribe: configure
+        args: {minimumFetchInterval: 15, stopOnTerminate: true, enableHeadless: false, startOnBoot: false}
+        arm_only: "2026-11-16 WO-013 D4: recorded, never asserted — where a task scheduled after stop(), with no new configure(), goes"
+    actions:
+      - {after: {api: "scheduleTask#3"}, delay_s: 3, job: com.transistorsoft.fetchlab.task}
+    expect:
+      crashes: 0
+      driverTally: any
+      fetchTally: any
+      bootBroadcasts: any

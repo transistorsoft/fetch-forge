@@ -1,0 +1,15 @@
+   crashes                          0                      expected 0            ok
+   taskSubmitErrors                 BGTaskSchedulerErrorDomain:1=1 expected BGTaskSchedulerErrorDomain:1=1 ok
+   bgCancels                        com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1 expected com.transistorsoft.fetch=1,com.transistorsoft.fetchlab.task=1 ok
+   taskFires                        task:missing=1         expected task:missing=1 ok
+   sdkTasks                         -                      expected -            ok
+   sdkSubscribers                   -                      expected -            ok
+   driverEvents                     -                      expected -            ok
+   configDropped                    -                      expected -            ok
+   configureOutcome                 ok                     expected ok           ok
+   foreignLines                     0                      expected 0            ok
+   apiAssertions                    ok                     expected ok           ok
+   recorded                         scheduleTask#1.$err=string:BGTaskScheduler%20is%20not%20available%2~ expected any          ok
+   eventAssertions                  ok                     expected ok           ok
+   actionsDone                      ok                     expected ok           ok
+   => PASS
