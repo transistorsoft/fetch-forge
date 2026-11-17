@@ -1,7 +1,7 @@
 ---
 id: WO-011
 title: Flutter's stop() is Future<int> and resolves the background-fetch status, where the shared types declare Promise<boolean> and React Native and Capacitor resolve true
-status: verify
+status: done
 created: 2026-11-16
 platforms: [android, ios]
 submodules: [flutter/background_fetch]
@@ -237,7 +237,7 @@ The choice decides what else can ship in a 1.x: WO-001's iOS 15 change, already 
 - [x] Platform parity: both OSes changed in one commit (D2) and both measured green; React Native and Capacitor untouched
 - [x] Customer patterns from the Scope check compiled against the fix, with the `Future<dynamic>` / `Future<Object>` checks and (D2 b) the int-answering channel mock run; results recorded in the Log
 - [x] `example/example.md:99` and `example/lib/main.dart:177` read a `bool`
-- [ ] docforge `BackgroundFetch.stop.yaml:42` updated when the D3 release is published
+- [x] docforge `BackgroundFetch.stop.yaml:42` updated when the D3 release is published (2026-11-17, with 2.0.0: see the Log)
 - [x] Lab text names WO-011, with the red and green sweeps: `api-smoke.yaml:42-47`, `lab.yaml:61`, `main.dart:930-932` and `:940`, and dated Flutter lines in `api-smoke-ios.yaml` and `ios-stop-start.yaml`
 - [x] CHANGELOG entry carries `(WO-011)`, in the release D3 picks; under D3 (a), the branch merged only as Chris decided (where the code waits)
 - [x] N/A: D1 is (a). Under D1 (b) instead: doc comment, docforge `platform_description` (the shared description in full, with `@example example-1`, plus the status sentence) and a `[Docs] (WO-011)` line; status `wont-fix` with Chris's reason in the Log; the reds left in place, with their descriptions naming WO-011
@@ -310,3 +310,16 @@ The choice decides what else can ship in a 1.x: WO-001's iOS 15 change, already 
 - 2026-11-16 — **Chris decided where it waits (D3 a): "Next release is 2.0.0"** — the plugin's `master` carries this change toward 2.0.0, the second option under "Under D3 (a), where the code waits". So WO-001's iOS 15 change and WO-012's fix reach 1.x apps only through a 1.x release from a branch that excludes WO-011, or with 2.0.0 (WO-012's D3 is decided at release).
   - **Merged and pushed** (Chris: "Push plugin, then bump"; the first push attempt was refused by the session's permission check until Chris approved it in words): plugin `master` `9ccc569` (the `--no-ff` merge of `f07857e`, its message recording the 2.0.0 decision), pushed to GitHub (`11d53b8..9ccc569`); fetch-forge `master` `62e21d8`, and the `flutter/background_fetch` pointer moved to `9ccc569` in this commit.
   - **Status `verify`:** every box is ticked but one, docforge's Dart signature (`BackgroundFetch.stop.yaml:42`), which is published with the 2.0.0 release and not before. Then `done`.
+- 2026-11-17 — **Released in 2.0.0** (Chris: "2.0.0 from master"), the release D3 (a) picked. Status stays `verify`.
+  - **The release, MEASURED today:**
+    - Branch `release-2.0.0` in `flutter/background_fetch` adds one commit to `master`'s `5a01d8d`: `4f55be8` "[RELEASE] 2.0.0". It sets `pubspec.yaml` to 2.0.0 and turns `## Unreleased` into `## 2.0.0 &mdash; 2026-11-17`, with this order's Breaking entry first.
+    - Its `--no-ff` merge is `ac9f41b` on `master`, with the lightweight tag `2.0.0` on it, the first Flutter tag since 1.5.1. Both were pushed on Chris's word: `origin/master` and the remote tag read `ac9f41b`.
+    - `dart pub publish` ran at 16:35:07Z. pub.dev's latest is 2.0.0.
+  - **What shipped of this order:** `f07857e`, through its merge `9ccc569`: Dart, Java and Objective-C in one commit, the two `(WO-011)` test files, and the examples reading a `bool`. The `[Changed] **Breaking:** … (WO-011)` entry and its OLD/NEW block now sit under `## 2.0.0`.
+  - **The released code is the code the lab measured.** `5a01d8d..ac9f41b` changes only `CHANGELOG.md` and `pubspec.yaml`. fetch-forge `b6ac6e7`, the green board (236/236), points at `5a01d8d`.
+  - **2.0.0 also carries WO-001's iOS 15 change (`0712e28`) and WO-012's fix (`5a01d8d`).** No 1.x was cut, so both reach apps with 2.0.0 only. That is WO-012's D3 answer.
+  - **The CHANGELOG's "as … the React Native and Capacitor plugins do" now holds for customers.** The Proposed fix made that true only "once Capacitor's WO-006 change is published". It shipped today in `@transistorsoft/capacitor-background-fetch` 8.2.0: npm's latest is 8.2.0, gitHead `1e1ebbd`, whose `## [8.2.0]` carries the `(WO-006)` line.
+  - **Left for the release (2026-11-16 entry):**
+    - The merge: done on 2026-11-16 (`9ccc569`).
+    - docforge: `BackgroundFetch.stop.yaml:42` now reads `static Future<bool> stop([String? taskId])`, committed with fetch-forge's release bookkeeping (`chore/release-2026-11-17`). With 2.0.0 out, publishing it is no longer early (Not an acceptable shortcut).
+  - **Docs published** (Chris: "Publish now"): `./forge publish docs` pushed `transistor-background-fetch` `gh-pages` `8a2d8aa..a73c593`. It changed `flutter/BackgroundFetch/index.html`, the search index and the sitemap's dates, nothing else. The live https://fetch.transistorsoft.com/flutter/BackgroundFetch/ reads `Future<bool> stop([String? taskId])` (MEASURED). The docforge box is ticked. Status `done`.

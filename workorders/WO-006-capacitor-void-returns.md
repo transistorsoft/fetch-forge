@@ -1,7 +1,7 @@
 ---
 id: WO-006
 title: Capacitor's scheduleTask() and stop() resolve undefined, where the shared types declare, and React Native resolves, true
-status: verify
+status: done
 created: 2026-11-12
 platforms: [android, ios]
 submodules: [capacitor/background-fetch]
@@ -180,11 +180,11 @@ Under D1, no native file changes. The anchor `// (WO-006)` goes at each change. 
 - [x] preflight's `(WO-006)` consumer assertions red before the fix, green on the fix; `npm run build` clean (2026-11-13, at `5cf84f0`, whose `src/` is `9dd204a`'s: see the Log)
 - [x] Capacitor Android `api-smoke` green on the fix's label: the three hooks read boolean `true`, the job rows are unchanged (sweep `20261113-095342`)
 - [x] Capacitor events-duplicate and events-task-android still green; React Native `api-smoke` still green (sweeps `20261113-095342`, `20261113-091839`)
-- [ ] Capacitor iOS `api-smoke-ios`: `stop#5` and `stop#7` read `true`, once the host exists (WO-002)
+- [x] Capacitor iOS `api-smoke-ios`: `stop#5` and `stop#7` read `true`, once the host exists (WO-002) (sweeps `20261113-175553` FIX and `-175657` FIX-SPM, on plugin `3fa169a`: see the Log, 2026-11-17)
 - [x] `api-smoke.yaml:25-28` updated from PREDICTED to MEASURED, naming WO-006 and its red and green sweeps
 - [x] `events-duplicate.yaml:40-41` and `events-task-android.yaml:32-33` updated: scheduleTask resolves `true` on both bridges (WO-006); their `outcome: resolved` hooks stay as they are
 - [x] CHANGELOG `[Changed]` entry carries `(WO-006)`, in the release D3 picks (the next, under `## Unreleased`)
-- [ ] Platform parity: both OSes fixed through the one wrapper, as cited; React Native conforms (MEASURED on Android; on iOS, stop MEASURED, scheduleTask PROVEN); Cordova and Flutter recorded, not changed
+- [x] Platform parity: both OSes fixed through the one wrapper, as cited; React Native conforms (MEASURED on Android; on iOS, stop MEASURED, scheduleTask PROVEN); Cordova and Flutter recorded, not changed
 
 ## Log
 
@@ -223,3 +223,14 @@ Under D1, no native file changes. The anchor `// (WO-006)` goes at each change. 
     - The Capacitor captures committed with this order are that sweep's. Re-scored against the edited scenario descriptions: 15 of 15 step captures PASS, and none reads `spec-changed`.
 - 2026-11-13 — **Committed** `c2bb2e4` on `fix/WO-006-capacitor-void-returns` (Capacitor plugin, from `5cf84f0`; not merged or pushed). Status `verify`: the only open box is iOS `api-smoke-ios`, which waits for WO-002's Capacitor iOS host. The branch and WO-007's both add a line at the same point under `## Unreleased`, so the second to merge resolves that conflict by keeping both lines.
 - 2026-11-13 — **Merged and pushed** in the plugin's `master` `4d431c1` (merge commit; WO-007's merge `08b5ac0` came first). fetch-forge's capacitor pointer moves `5cf84f0` → `4d431c1`. Status stays `verify` until the iOS box (`api-smoke-ios` on WO-002's Capacitor iOS host) is ticked.
+- 2026-11-17 — **Released in `@transistorsoft/capacitor-background-fetch` 8.2.0** (was 8.1.4). It is the next release, as D3 (a) chose, beside WO-001, WO-007, WO-008 and WO-013. It is a minor by Chris's "Minors as listed", strict semver notwithstanding: the `[Changed]` line breaks the TypeScript callers the Scope check lists.
+  - **Branch and tag.** `chore/release-8.2.0` from the plugin's `master` `5e8872a`: `18837c4` (`release.sh prepare`), then `edcf2a2` (the geolocation warning, and `@transistorsoft/background-fetch-types` `^1.0.1`). Merged `--no-ff`. The merge `1e1ebbd` is tagged `8.2.0` and was pushed on Chris's word.
+  - **What ships of this order.** `src/index.ts` at `1e1ebbd` is the file WO-006's merge `4d431c1` left (`git diff` empty). Both methods declare `Promise<boolean>` (`:247`, `:334`) and resolve `true` (`// (WO-006)` at `:258`, `:337`). The release branch changes only `CHANGELOG.md`, `package.json` and `package-lock.json`. The `[Changed] … (WO-006)` line now sits under `## [8.2.0] &mdash; 2026-11-17` (`CHANGELOG.md:11`).
+  - **Published by GitHub Actions**, run `44126049789`, with provenance (sigstore logIndex `3949122188`). npm `latest` is 8.2.0, `gitHead` `1e1ebbd` (MEASURED today). The `publish` job `needs: check`, and `check` ends with `scripts/preflight.sh --release` (`.github/workflows/release.yml:55-58`). So D4's guard (`scripts/preflight.sh:97-104, :118-121`) passed before the upload (PROVEN from the workflow file).
+  - **Lab.** The green board (236/236, fetch-forge `b6ac6e7`) ran on a Capacitor tree whose code is 8.2.0's.
+  - **Left for the release, and not done:** the checked-in typedoc `docs/` (Scope check). At `1e1ebbd` it still shows `Promise<void>` for both (`docs/classes/backgroundfetch.html:513, :664`). `docs/` is not in the npm package (`package.json` `files`), so only the GitHub copy is stale. Regenerating it or leaving it is still Chris's decision.
+  - fetch-forge's capacitor pointer moves `5e8872a` → `1e1ebbd` (branch `chore/release-2026-11-17`).
+  - **The two open boxes, ticked** (Chris: "Tick both, mark done"). WO-002's Capacitor iOS host has existed since 2026-11-13, and this order was not updated then.
+    - **`api-smoke-ios`:** the committed captures read `stop#5` and `stop#7` as `type=boolean value=true` on both channels, PASS with apiAssertions ok (sweeps `20261113-175553` FIX and `-175657` FIX-SPM, `labs/captures/capacitor-ios/api-smoke-ios/{FIX,FIX-SPM}/run`; the raw lines are in `labs/baselines/2026-11-17-board-green-all-bridges/`, local). They ran plugin `3fa169a`, clean, whose `src/` and `ios/` equal 8.2.0's (`git diff` empty).
+    - **Platform parity:** with that, stop is MEASURED on both OSes through the one wrapper. scheduleTask's iOS resolve stays PROVEN, since the Simulator cannot reach it (Test plan).
+  - Status `done`.

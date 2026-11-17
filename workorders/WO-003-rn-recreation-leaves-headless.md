@@ -178,3 +178,13 @@ Change 2 alone would leave a window of about 5–10 ms between the old Activity'
 - 2026-11-10 — **Re-run on the committed fix, Lab1: both steps PASS** (96 s). Both `run.json` record plugin `cffcbb157037`, dirty no, and native `5de52423e1c5`, dirty no. These two steps' `summary.txt` + `run.json` replace the board's 2026-11-09 `run` capture (FAIL on `a3c6996`) and add `stop-on-terminate-false`. The board's other cells stay 2026-11-09's.
   - **Status `done`:** every Verification box is ticked.
   - **Not done here (release work, each its own approval):** merging the two plugin branches into their `master`s, bumping the parent's submodule pointers, and releasing the plugins.
+- 2026-11-17 — **Released** in react-native-background-fetch 4.5.0 and cordova-plugin-background-fetch 7.4.0, each tagged on its `master` and pushed on Chris's word ("Push all three"). The versions are Chris's ("Minors as listed").
+  - **The release work left on 2026-11-10 is all done:**
+    - **The merges** (2026-11-10, not logged here then): `react-native/background-fetch` `85a6bf4` and `cordova/background-fetch` `38ad0fe`, each `master` merging `fix/WO-003-recreation-leaves-headless`. The parent's pointers moved to them in `402f29a`.
+    - **React Native 4.5.0** (was 4.4.2): tag `4.5.0` on `07ce9e2`, the `--no-ff` merge of `chore/release-4.5.0`. Workflow run 44126043940 published it at 16:32Z with provenance, on a re-run: the first attempt failed at `npm publish` with `ENEEDAUTH` (a typo in the npmjs.com Trusted Publisher, which Chris fixed). npm: `latest` 4.5.0, `gitHead` `07ce9e2` (MEASURED).
+    - **Cordova 7.4.0** (was 7.3.1): tag `7.4.0` on `6394125`, the `--no-ff` merge of `chore/release-7.4.0`. Run 44126056780, with provenance. npm: `latest` 7.4.0, `gitHead` `6394125` (MEASURED).
+  - **Both tags carry the fix** (PROVEN): `85a6bf4` and `38ad0fe` are their ancestors, the `(WO-003)` comments are in `RNBackgroundFetchModule.java` and `CDVBackgroundFetch.java`, and each CHANGELOG's `(WO-003)` entry sits under the new heading (`## 4.5.0 &mdash; 2026-11-17`, `## [7.4.0] &mdash; 2026-11-17`).
+  - **The released code is the code the lab measured:** the green board (236/236, fetch-forge `b6ac6e7`, `recreate-foreground-android` included) ran on the same plugin code. The release branches add only CHANGELOG, README and package metadata.
+  - **No native release was needed** (D1): Maven Central's `tsbackgroundfetch` 4.1.1 AAR is bytecode-identical, all 23 classes, to the lab's build of native `399765c` (MEASURED).
+  - **Parent bookkeeping:** on `chore/release-2026-11-17` (uncommitted), the pointers move to `07ce9e2` and `6394125`.
+  - Status stays `done`.
