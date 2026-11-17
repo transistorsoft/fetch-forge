@@ -1,7 +1,7 @@
 ---
 id: WO-013
 title: On Android, React Native's and Capacitor's stop() with no argument cancels only their own fetch task, where the types, the docs, their own iOS halves, Flutter and Cordova cancel every task
-status: in-progress
+status: done
 created: 2026-11-16
 platforms: [android]
 submodules: [react-native/background-fetch, capacitor/background-fetch]
@@ -287,3 +287,4 @@ Each step makes exactly one `stop` call, so its whole-step tallies (jobsCancelle
   - **Lab text:** `api-smoke.yaml`'s stop bullet and its Flutter no-argument bullet (prose only), and `stop-scope.yaml`'s description.
   - **Reviewed (three lenses, three skeptics per finding): 13 findings, 4 upheld, all applied; no code change.** The CHANGELOG's cost sentence now says a fire before the new `configure()` is lost, not deferred (not "call `configure()` first": a new `configure()` registers the fetch job again); the `// (WO-013)` comments no longer cite iOS for the Android scope, and say "this process holds"; `labs/README.md`'s Suite row lists the two scenarios; `stop-scope.yaml`'s opening is in the past tense. These came after the sweeps (Java comments only). Refuted (9), among them the CHANGELOG's "as documented" and the entry's place in Capacitor's list.
 - 2026-11-17 — **Committed** (Chris: "Commit all three"): React Native `065c6a1` and Capacitor `d991856`, each on `fix/WO-013-stop-no-arg-scope` (from `8d9ab19` and `3fa169a`), and fetch-forge's branch of the same name (this Log, the lab text, `fetch_pack.SUITE`, the captures). Not merged; the two submodule pointers move when the plugin branches are merged, and the order is `done` then.
+- 2026-11-17 — **Merged and done.** React Native `master` `9383a60` (the `--no-ff` merge of `065c6a1`) and Capacitor `master` `5e8872a` (of `d991856`), both pushed to GitHub (Chris: "Merge, push, bump"; `8d9ab19..9383a60`, `3fa169a..5e8872a`); fetch-forge `master` `dff04f7`, and the two pointers moved in the commit that marks this order `done`. Every Verification box is ticked. Not released: each CHANGELOG line waits under `## Unreleased` (D2 a).
