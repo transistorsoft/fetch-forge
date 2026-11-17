@@ -6,6 +6,7 @@
    legacyFetchStates                active=1               expected active=1     ok
    legacyResults                    newData=1              expected newData=1    ok
    springboardResults               RetrievedNewData=1     expected RetrievedNewData=1 ok
+   driverTally                      fetch:react-native-background-fetch=1 expected fetch:react-native-background-fetch=1 ok
    configDropped                    -                      expected -            ok
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok

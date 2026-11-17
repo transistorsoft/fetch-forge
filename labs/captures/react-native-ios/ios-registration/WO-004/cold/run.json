@@ -22,7 +22,7 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "react-native/background-fetch",
-  "commit": "85a6bf4ecd515409aa1fabde8db4e27c16f40541",
+  "commit": "065c6a13e69f4e9ecf3ec6fcdde37a1c26e0c40d",
   "dirty": "no"
  },
  "device": {
@@ -38,57 +38,57 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 32.0,
-  "t0": 1794433725.805,
+  "step_s": 31.9,
+  "t0": 1794926543.628,
   "phases": {
-   "terminated": 0.097,
-   "swept": 0.316,
-   "neutral_pre": 0.316,
-   "permissions": 0.316,
-   "sleep_end": 0.316,
-   "log_begun": 0.723,
-   "launch_mark": 0.85,
-   "verdict_cleared": 0.85,
-   "launch": 0.981,
-   "settle_end": 10.983,
-   "trigger": 11.122,
-   "end": 31.593,
-   "runner_joined": 31.593,
-   "capture_mark": 31.733,
-   "pusher_joined": 31.733,
-   "log_ended": 31.976,
-   "log_written": 31.976,
-   "capture_extras": 31.976,
-   "db_pulled": 31.977,
-   "run_json": 32.035,
-   "judged": 32.056,
-   "verdict_pushed": 32.057,
-   "settled": 32.56,
-   "neutral_post": 32.56,
-   "terminated_post": 32.694
+   "terminated": 0.092,
+   "swept": 0.27,
+   "neutral_pre": 0.27,
+   "permissions": 0.27,
+   "sleep_end": 0.27,
+   "log_begun": 0.67,
+   "launch_mark": 0.793,
+   "verdict_cleared": 0.793,
+   "launch": 0.909,
+   "settle_end": 10.914,
+   "trigger": 11.047,
+   "end": 31.531,
+   "runner_joined": 31.531,
+   "capture_mark": 31.641,
+   "pusher_joined": 31.641,
+   "log_ended": 31.866,
+   "log_written": 31.867,
+   "capture_extras": 31.867,
+   "db_pulled": 31.867,
+   "run_json": 31.916,
+   "judged": 31.971,
+   "verdict_pushed": 31.971,
+   "settled": 32.475,
+   "neutral_post": 32.475,
+   "terminated_post": 32.583
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.236,
+    "s": 0.221,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 12,
-    "s": 1.909,
+    "s": 1.808,
     "bg_n": 3,
-    "bg_s": 0.351
+    "bg_s": 0.338
    },
    "_tap_text": {
     "n": 58,
-    "s": 0.016,
+    "s": 0.012,
     "bg_n": 56,
-    "bg_s": 0.016
+    "bg_s": 0.012
    },
    "begin_log": {
     "n": 1,
-    "s": 0.407,
+    "s": 0.4,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -106,13 +106,13 @@
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.219,
+    "s": 0.178,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.243,
+    "s": 0.226,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,15 +124,15 @@
    },
    "launch": {
     "n": 1,
-    "s": 0.131,
+    "s": 0.116,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 5,
-    "s": 0.62,
+    "s": 0.589,
     "bg_n": 2,
-    "bg_s": 0.214
+    "bg_s": 0.223
    },
    "native_resolved": {
     "n": 1,
@@ -148,9 +148,9 @@
    },
    "peek": {
     "n": 56,
-    "s": 0.068,
+    "s": 0.055,
     "bg_n": 56,
-    "bg_s": 0.068
+    "bg_s": 0.055
    },
    "permissions": {
     "n": 1,
@@ -160,15 +160,15 @@
    },
    "push_fetch": {
     "n": 1,
-    "s": 0.149,
+    "s": 0.121,
     "bg_n": 1,
-    "bg_s": 0.149
+    "bg_s": 0.121
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.002,
+    "s": 0.001,
     "bg_n": 2,
-    "bg_s": 0.002
+    "bg_s": 0.001
    },
    "sdk_db": {
     "n": 1,
@@ -178,22 +178,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.462,
+    "s": 0.48,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 3,
-    "s": 0.367,
+    "s": 0.316,
     "bg_n": 1,
-    "bg_s": 0.137
+    "bg_s": 0.115
    }
   },
   "dialogs": [],
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 2.306
+   "boot": 2.265
   }
  },
  "measure_from": "launch",
@@ -234,12 +234,12 @@
  "host": {
   "error": null,
   "held_s": {
-   "action0": 1.526,
-   "action1": 1.526
+   "action0": 1.527,
+   "action1": 1.527
   },
   "sent_s": {
-   "action0": 3.56,
-   "action1": 6.615
+   "action0": 3.552,
+   "action1": 6.599
   }
  },
  "network": null,
@@ -262,18 +262,9 @@
  "hooks": [
   {
    "api": "status",
-   "returns": {
-    "$": {
-     "type": "number",
-     "in": [
-      0,
-      1,
-      2
-     ]
-    }
-   }
+   "outcome": "resolved"
   }
  ],
  "year": 2026,
- "when": "2026-11-11 16:49:17"
+ "when": "2026-11-17 09:42:55"
 }

@@ -10,6 +10,7 @@
    configureOutcome                 ok                     expected ok           ok
    foreignLines                     0                      expected 0            ok
    apiAssertions                    ok                     expected ok           ok
+   recorded                         scheduleTask#1.$err=object, scheduleTask#1.$err.code=string:scheduleTask, scheduleTask#1.$err.message=string:BGTaskScheduler%20is%20not%20available%2~ expected any          ok
    eventAssertions                  ok                     expected ok           ok
    actionsDone                      ok                     expected ok           ok
    => PASS
