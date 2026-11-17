@@ -6,7 +6,7 @@
  "scenario": "api-smoke-ios",
  "variant": "WO-004-SPM",
  "step": "run",
- "serial": "DA789A0B-CC68-4417-90B8-F58A9B906902",
+ "serial": "B1070F11-3B19-4148-A698-6634B89563D0",
  "evicted": [],
  "foreignTransistorApps": [],
  "native": "4.1.1-WO-004-0670713",
@@ -22,11 +22,11 @@
  "plugin": "default",
  "plugin_source": {
   "checkout": "react-native/background-fetch",
-  "commit": "85a6bf4ecd515409aa1fabde8db4e27c16f40541",
+  "commit": "065c6a13e69f4e9ecf3ec6fcdde37a1c26e0c40d",
   "dirty": "no"
  },
  "device": {
-  "model": "Lab2",
+  "model": "Lab1",
   "os": "iOS 27.2"
  },
  "activity": "",
@@ -38,58 +38,58 @@
   "ended": "window"
  },
  "timings": {
-  "step_s": 42.7,
-  "t0": 1794434022.651,
+  "step_s": 43.0,
+  "t0": 1794926716.378,
   "phases": {
-   "terminated": 0.087,
-   "others_stopped": 0.182,
-   "reset": 0.779,
-   "swept": 0.948,
-   "neutral_pre": 0.948,
-   "permissions": 0.948,
-   "sleep_end": 0.948,
-   "log_begun": 1.363,
-   "launch_mark": 1.485,
-   "verdict_cleared": 1.587,
-   "launch": 1.713,
-   "settle_end": 11.724,
-   "trigger": 11.83,
-   "end": 42.257,
-   "capture_mark": 42.403,
-   "pusher_joined": 42.403,
-   "log_ended": 42.65,
-   "log_written": 42.65,
-   "capture_extras": 42.65,
-   "db_pulled": 42.65,
-   "run_json": 42.707,
-   "judged": 42.721,
-   "verdict_pushed": 42.721,
-   "settled": 43.227,
-   "neutral_post": 43.227,
-   "terminated_post": 43.36
+   "terminated": 0.13,
+   "others_stopped": 0.281,
+   "reset": 1.088,
+   "swept": 1.303,
+   "neutral_pre": 1.303,
+   "permissions": 1.303,
+   "sleep_end": 1.303,
+   "log_begun": 1.711,
+   "launch_mark": 1.83,
+   "verdict_cleared": 1.956,
+   "launch": 2.085,
+   "settle_end": 12.09,
+   "trigger": 12.206,
+   "end": 42.624,
+   "capture_mark": 42.752,
+   "pusher_joined": 42.752,
+   "log_ended": 42.984,
+   "log_written": 42.985,
+   "capture_extras": 42.985,
+   "db_pulled": 42.985,
+   "run_json": 43.042,
+   "judged": 43.073,
+   "verdict_pushed": 43.074,
+   "settled": 43.576,
+   "neutral_post": 43.576,
+   "terminated_post": 43.709
   },
   "calls": {
    "_alive": {
     "n": 1,
-    "s": 0.239,
+    "s": 0.226,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_run": {
     "n": 14,
-    "s": 2.248,
+    "s": 2.556,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "_tap_text": {
     "n": 42,
-    "s": 0.018,
+    "s": 0.014,
     "bg_n": 40,
-    "bg_s": 0.017
+    "bg_s": 0.014
    },
    "begin_log": {
     "n": 1,
-    "s": 0.415,
+    "s": 0.408,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -101,19 +101,19 @@
    },
    "container": {
     "n": 6,
-    "s": 0.21,
+    "s": 0.266,
     "bg_n": 2,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.169,
+    "s": 0.215,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.247,
+    "s": 0.233,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -125,25 +125,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.095,
+    "s": 0.151,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.126,
+    "s": 0.129,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.374,
+    "s": 0.362,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "native_resolved": {
     "n": 2,
-    "s": 0.118,
+    "s": 0.156,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -155,9 +155,9 @@
    },
    "peek": {
     "n": 40,
-    "s": 0.088,
+    "s": 0.069,
     "bg_n": 40,
-    "bg_s": 0.088
+    "bg_s": 0.069
    },
    "permissions": {
     "n": 1,
@@ -167,13 +167,13 @@
    },
    "push_verdict": {
     "n": 4,
-    "s": 0.104,
+    "s": 0.127,
     "bg_n": 2,
     "bg_s": 0.001
    },
    "reset_app": {
     "n": 1,
-    "s": 0.485,
+    "s": 0.661,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -185,13 +185,13 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.417,
+    "s": 0.411,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
     "n": 2,
-    "s": 0.22,
+    "s": 0.263,
     "bg_n": 0,
     "bg_s": 0.0
    }
@@ -200,7 +200,7 @@
   "clock_offset_s": null,
   "clock_offset_rtt_s": null,
   "log_phases": {
-   "boot": 3.166
+   "boot": 3.693
   }
  },
  "measure_from": "launch",
@@ -252,6 +252,10 @@
     "$": {
      "type": "function"
     }
+   },
+   "absent_on": {
+    "capacitor": "2026-11-13 \u2014 iOS has no headless mode, and src/index.ts's BackgroundFetch declares no registerHeadlessTask (as api-smoke.yaml, WO-002).",
+    "cordova": "2026-11-15 \u2014 iOS has no headless mode, and src/typescript/index.ts declares no registerHeadlessTask (as api-smoke.yaml, WO-002)."
    }
   },
   {
@@ -304,7 +308,7 @@
    "args": "react-native-background-fetch",
    "returns": {
     "$": {
-     "type": "undefined"
+     "type": "null|undefined"
     }
    }
   },
@@ -319,5 +323,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-11 16:54:25"
+ "when": "2026-11-17 09:45:59"
 }
