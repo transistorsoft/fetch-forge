@@ -86,7 +86,8 @@ SUITE = ["termination-calibration", "api-smoke", "events-fetch-android",
          "stop-on-terminate", "headless-kill", "headless-activity-destroyed", "recreate-foreground-android",
          "restart-foreground-android",                       # (WO-007's lab guard, 2026-11-13)
          "ios-fetch-sim", "ios-timeout-sim", "ios-task-sim",
-         "ios-registration", "api-smoke-ios", "ios-stop-start"]   # (WO-002 phase 2a) iOS's, n/a on Android
+         "ios-registration", "api-smoke-ios", "ios-stop-start",   # (WO-002 phase 2a) iOS's, n/a on Android
+         "stop-scope", "stop-scope-ios"]                     # (WO-013's lab guard, 2026-11-17; each n/a on the other OS)
 LISTS = {}
 
 OVERRIDES = []                                      # (symbol, kind, seam, why) — the Phase B cut list

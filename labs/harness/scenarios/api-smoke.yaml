@@ -20,8 +20,9 @@ description: >
     * scheduleTask(TaskConfig) — resolves a boolean, true.  A one-shot task 10 minutes out, stopped by the next hook so
       nothing fires after the step (or in the next scenario).
     * stop(taskId) and stop() — resolve a boolean, true.  stop(taskId) stops the custom task; stop() with no argument
-      stops the fetch task (the bridge passes null, the native module reads it as its own fetch taskId; Capacitor's
-      passes {taskId: undefined}, which its plugin reads the same way, BackgroundFetchPlugin.java stop()).
+      stops every task the SDK holds (each bridge hands the SDK null: stop(null)).  (WO-013) Until WO-013, React
+      Native's and Capacitor's Android modules read null as their own fetch taskId, which stopped the fetch task alone
+      (RNBackgroundFetchModule.java:70 at 8d9ab19; BackgroundFetchPlugin.java:115 at 3fa169a).
     * (WO-002, 2026-11-12) Capacitor's scheduleTask and stop resolve nothing: src/index.ts declares both
       `Promise<void>` and resolves no value, over BackgroundFetchPlugin.java's bare `call.resolve()`.  PREDICTED from
       source, then MEASURED: scheduleTask#4, stop#5 and stop#7 read `want-boolean-got-undefined` there (sweep
@@ -50,9 +51,9 @@ description: >
     * (WO-002, 2026-11-13) Flutter's stop() with no argument does NOT stop the fetch task alone, as the bullet above says
       of the other two: it hands null to the SDK unmapped (BackgroundFetchModule.java:166-170 at 11d53b8), which cancels
       EVERY task (native BackgroundFetch.java:147-159 at 399765c), as the types' doc says ("*all* background-fetch and
-      scheduled tasks are cancelled").  React Native and Capacitor map null to their own fetch taskId, which is the
+      scheduled tasks are cancelled").  React Native and Capacitor mapped null to their own fetch taskId, which was the
       divergence from the types.  This step cannot tell the two apart (stop#5 has already stopped the smoke task before
-      stop#7), so it pins neither: a finding to measure in its own scenario.
+      stop#7), so it pins neither: stop-scope measures it (WO-013, which aligns React Native and Capacitor).
     * (WO-002, 2026-11-15) Cordova's JS is CALLBACK style but for configure() (www/index.js at 368eb85): start, stop,
       status, scheduleTask and finish take success/failure callbacks and return nothing.  Called as a customer calls
       them, status#2, start#3, scheduleTask#4, stop#5 and stop#7 read `want-…-got-undefined` — PREDICTED from source,

@@ -6,10 +6,11 @@
  "scenario": "api-smoke",
  "variant": "FIX",
  "step": "run",
- "serial": "emulator-5580",
+ "serial": "emulator-5582",
  "evicted": [
   "com.transistorsoft.backgroundgeolocation.react",
-  "com.transistorsoft.fetchlab.capacitor"
+  "com.transistorsoft.fetchlab.cordova",
+  "com.transistorsoft.fetchlab.flutter"
  ],
  "foreignTransistorApps": [
   "com.transistorsoft.backgroundgeolocation.react"
@@ -26,14 +27,14 @@
  "plugin_source": {
   "checkout": "react-native/background-fetch",
   "commit": "8d9ab19cc6b1f4925a87fba30bf34ea60d9cac81",
-  "dirty": "no"
+  "dirty": "yes"
  },
  "device": {
-  "avd": "Lab1",
+  "avd": "Lab2",
   "model": "sdk_gphone64_arm64",
   "os": "Android 16",
   "sdk": "36",
-  "data_free_mb": 2552,
+  "data_free_mb": 2442,
   "display": "awake",
   "fgs_timeout_ms": null,
   "play_services": 263635035
@@ -49,70 +50,70 @@
  "timings": {
   "install_s": 0.4,
   "step_s": 41.7,
-  "t0": 1794610509.859,
+  "t0": 1794923991.392,
   "phases": {
-   "terminated": 0.038,
-   "others_stopped": 0.132,
-   "reset": 0.165,
-   "swept": 0.198,
-   "neutral_pre": 0.267,
-   "accuracy": 0.31,
-   "permissions": 0.31,
-   "sleep_end": 0.31,
-   "log_begun": 0.434,
-   "launch_mark": 0.453,
-   "verdict_cleared": 0.477,
-   "launch": 0.914,
-   "settle_end": 10.923,
-   "trigger": 10.944,
-   "end": 41.627,
-   "capture_mark": 41.648,
-   "pusher_joined": 41.648,
-   "log_ended": 41.67,
-   "log_written": 41.67,
-   "capture_extras": 41.694,
-   "db_pulled": 41.695,
-   "run_json": 41.734,
-   "judged": 41.762,
-   "verdict_pushed": 41.786,
-   "settled": 42.295,
-   "neutral_post": 42.353,
-   "terminated_post": 42.383
+   "terminated": 0.032,
+   "others_stopped": 0.159,
+   "reset": 0.191,
+   "swept": 0.227,
+   "neutral_pre": 0.299,
+   "accuracy": 0.339,
+   "permissions": 0.339,
+   "sleep_end": 0.339,
+   "log_begun": 0.459,
+   "launch_mark": 0.475,
+   "verdict_cleared": 0.497,
+   "launch": 0.881,
+   "settle_end": 10.886,
+   "trigger": 10.911,
+   "end": 41.6,
+   "capture_mark": 41.638,
+   "pusher_joined": 41.638,
+   "log_ended": 41.661,
+   "log_written": 41.662,
+   "capture_extras": 41.684,
+   "db_pulled": 41.685,
+   "run_json": 41.725,
+   "judged": 41.763,
+   "verdict_pushed": 41.787,
+   "settled": 42.288,
+   "neutral_post": 42.367,
+   "terminated_post": 42.392
   },
   "calls": {
    "_adb": {
-    "n": 20,
-    "s": 0.684,
+    "n": 21,
+    "s": 0.73,
     "bg_n": 1,
-    "bg_s": 0.031
+    "bg_s": 0.027
    },
    "_stop_stream": {
     "n": 2,
-    "s": 0.002,
+    "s": 0.001,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "begin_log": {
     "n": 1,
-    "s": 0.124,
+    "s": 0.119,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "dismiss_stale_dialog": {
     "n": 1,
-    "s": 0.033,
+    "s": 0.036,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "end_log": {
     "n": 1,
-    "s": 0.022,
+    "s": 0.023,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "evict": {
-    "n": 2,
-    "s": 0.063,
+    "n": 3,
+    "s": 0.09,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -124,25 +125,25 @@
    },
    "installed": {
     "n": 1,
-    "s": 0.031,
+    "s": 0.037,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "launch": {
     "n": 1,
-    "s": 0.437,
+    "s": 0.384,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "location_accuracy": {
     "n": 2,
-    "s": 0.043,
+    "s": 0.041,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "mark": {
     "n": 3,
-    "s": 0.061,
+    "s": 0.08,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -160,15 +161,15 @@
    },
    "neutral": {
     "n": 2,
-    "s": 0.127,
+    "s": 0.15,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "peek": {
     "n": 40,
-    "s": 0.025,
+    "s": 0.026,
     "bg_n": 40,
-    "bg_s": 0.025
+    "bg_s": 0.026
    },
    "permissions": {
     "n": 1,
@@ -178,13 +179,13 @@
    },
    "push_verdict": {
     "n": 3,
-    "s": 0.079,
+    "s": 0.072,
     "bg_n": 1,
-    "bg_s": 0.031
+    "bg_s": 0.027
    },
    "reset_app": {
     "n": 1,
-    "s": 0.033,
+    "s": 0.032,
     "bg_n": 0,
     "bg_s": 0.0
    },
@@ -196,22 +197,22 @@
    },
    "snapshot": {
     "n": 1,
-    "s": 0.678,
+    "s": 0.685,
     "bg_n": 0,
     "bg_s": 0.0
    },
    "terminate": {
-    "n": 4,
-    "s": 0.13,
+    "n": 5,
+    "s": 0.146,
     "bg_n": 0,
     "bg_s": 0.0
    }
   },
   "dialogs": [],
-  "clock_offset_s": -0.229,
-  "clock_offset_rtt_s": 0.019,
+  "clock_offset_s": -0.194,
+  "clock_offset_rtt_s": 0.017,
   "log_phases": {
-   "boot": 1.156
+   "boot": 1.115
   }
  },
  "measure_from": "launch",
@@ -282,7 +283,8 @@
     }
    },
    "absent_on": {
-    "capacitor": "2026-11-12 \u2014 headless is Java only on Capacitor (the app's BackgroundFetchHeadlessTask), and src/index.ts's BackgroundFetch declares no registerHeadlessTask (WO-002)."
+    "capacitor": "2026-11-12 \u2014 headless is Java only on Capacitor (the app's BackgroundFetchHeadlessTask), and src/index.ts's BackgroundFetch declares no registerHeadlessTask (WO-002).",
+    "cordova": "2026-11-15 \u2014 headless is Java only on Cordova (the app's BackgroundFetchHeadlessTask, at the class name CDVBackgroundFetch hands the SDK), and src/typescript/index.ts declares no registerHeadlessTask (WO-002)."
    }
   },
   {
@@ -355,5 +357,5 @@
   }
  ],
  "year": 2026,
- "when": "2026-11-13 17:55:51"
+ "when": "2026-11-17 09:00:33"
 }

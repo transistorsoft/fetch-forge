@@ -2,10 +2,10 @@ name: stop-scope
 description: >
   (WO-002 Tier 2, WO-013) What stop() with NO argument stops on Android.  The types (BackgroundFetch.ts:188-189), the
   docs site (BackgroundFetch.stop.yaml:7 and every bridge's Examples page), the native SDK (stop(null):
-  BackgroundFetch.java:147-160 at 399765c) and six of the eight bridge x OS cells say every task: the fetch and the
-  scheduleTask() ones.  React Native's and Capacitor's Android halves map null to their own fetch taskId
-  (RNBackgroundFetchModule.java:70 at 8d9ab19; BackgroundFetchPlugin.java:115 at 3fa169a), so a custom task survives
-  their stop().  api-smoke cannot tell: its stop#5 has already stopped the task its stop#7 would find.  Here each
+  BackgroundFetch.java:147-160 at 399765c) and, at the pins of 2026-11-16, six of the eight bridge x OS cells say
+  every task: the fetch and the scheduleTask() ones (all eight since WO-013).  Until WO-013 (2026-11-17), React
+  Native's and Capacitor's Android halves mapped null to their own fetch taskId (RNBackgroundFetchModule.java:70 at
+  8d9ab19; BackgroundFetchPlugin.java:115 at 3fa169a), so a custom task survived their stop().  api-smoke cannot tell: its stop#5 has already stopped the task its stop#7 would find.  Here each
   step makes exactly ONE stop call, so its whole-step tallies (jobsCancelled) and end-of-step reads (jobIds) are that
   call's.  com.transistorsoft.fetchlab.task hashes to jobId -1681675378 (events-task-android); its delay is 10
   minutes, so JobScheduler never runs it on its own in the window.
@@ -32,6 +32,9 @@ description: >
   `fired` (Lab2), Flutter and Cordova green (Lab1); `rescheduled` delivered on React Native and Capacitor, not on
   Flutter and Cordova (whose SDK received the fetch: fetchTally).  Captures at 8d9ab19 / 3fa169a / 4cf0ae2 / 256372c
   (the trees of 5a01d8d / 2b5f956).  A finding for WO-013, never relaxed here.
+  (WO-013, 2026-11-17) Fixed: React Native's and Capacitor's Android stop() hands null to the SDK.  Green on both, on
+  Lab1 and Lab2 (`labkit run`; the committed captures are Lab2's); `rescheduled` now delivers nowhere on them too, as
+  on Flutter and Cordova (fetchTally `com.transistorsoft.fetchlab.task=1`, driverTally `-`).
 platforms: [react-native, capacitor, flutter, cordova]
 not_applicable:
   ios: "2026-11-16 — `job:` is JobScheduler's; stop-scope-ios is the iOS twin (WO-013)."
